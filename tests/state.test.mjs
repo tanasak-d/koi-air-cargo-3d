@@ -107,13 +107,12 @@ test('เวลาเลื่อน (shift) มาจากข้อมูล: 
 });
 
 test('เหตุการณ์ 4 (เอกสารไม่ตรง): แก้แล้วเวลาเลื่อนตามข้อมูล และบันทึกสถานะถุงตรงตามสูตร', () => {
-  // จดไว้: ตามข้อมูลเดิม เลื่อน +120 นาที ทำให้อายุถุงเกิน 21 ชม. -> bagStatus='over'
-  // เรื่องนี้เป็นข้อสังเกตที่ต้องถามมาร์ชว่าจะให้ผู้ชมเห็นอย่างไร (ยังไม่ตัดสินใจ)
+  // มาร์ชกำหนดเพดานแสดงผลไม่เกิน 24 ชม.: เลื่อน +120 นาที -> อายุถุง 23 ชม. ยังอยู่ในเพดาน
   const S = walk(L.newState(4));
   L.verify(S); L.correct(S, D.SCENARIOS[4].opts.findIndex(o => o.good));
   const at13 = Object.assign({}, S, { idx: 13 });
   assert.equal(L.bagAgeMin(at13), D.CONST.OPEN0 + 120 - D.CONST.SEAL0);
-  assert.equal(L.bagStatus(at13), 'over');
+  assert.equal(L.bagStatus(at13), 'ok');
 });
 
 // ---- Final review fix: เวลาปิดผนึกใหม่ใช้เฉพาะขั้นหลังบรรจุใหม่ ----

@@ -91,3 +91,14 @@ test('FOURFLOW มี 4 เลน p i d r', () => {
 test('ทุกสถานีมีชื่อสั้นสำหรับแถบเส้นทาง', () => {
   assert.deepEqual(D.STATIONS.map(s => s.short), ['ผู้ส่ง', 'NRT', 'เครื่องบิน', 'BKK', 'DOF', 'ผู้รับ']);
 });
+
+test('เพดานอายุปลาในถุงคือ 24 ชม. (1440 นาที)', () => {
+  assert.equal(D.CONST.BAG_LIMIT_MIN, 1440);
+});
+
+test('เอกสารทางการตรงกับรายงานของทีม: DOF 2/DOF 9/ร.6, Tor.Ror.Nor.6, ร.7 + IMD', () => {
+  const docs = n => D.STEPS[n - 1].docs.join(' | ');
+  assert.match(docs(11), /DOF 2/); assert.match(docs(11), /DOF 9/); assert.match(docs(11), /ร\.6/);
+  assert.match(docs(13), /Tor\.Ror\.Nor\.6/);
+  assert.match(docs(14), /ร\.7/); assert.match(docs(14), /IMD/);
+});

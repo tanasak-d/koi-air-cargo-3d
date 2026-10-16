@@ -93,19 +93,20 @@ test('ข้อมูลที่มี HTML ถูก escape', () => {
 test('renderTimeBadge: ขั้นประมาณการมีคำ "โดยประมาณ" และแสดงอายุถุงหลังปิดผนึก', () => {
   const S = L.newState(0); L.goTo(S, 10); // ขั้น 11 approx
   assert.match(UI.renderTimeBadge(S), /โดยประมาณ/);
-  assert.match(UI.renderTimeBadge(S), /21/);
+  assert.match(UI.renderTimeBadge(S), /24/);
   const early = L.newState(0);
   assert.doesNotMatch(UI.renderTimeBadge(early), /อายุถุง/); // ยังไม่ปิดผนึก
 });
 
-test('renderTimeBadge: ถุงเกิน 21 ชม. แสดง ✕ พร้อมข้อความ', () => {
-  const S = walk(L.newState(4));
-  L.verify(S); L.correct(S, D.SCENARIOS[4].opts.findIndex(o => o.good));
-  walk(S); // จบที่ขั้น 17 (index 16)
+test('renderTimeBadge: ถุงเกิน 24 ชม. แสดง ✕ พร้อมข้อความ และไม่เกินแสดง ✓', () => {
+  const S = walk(L.newState(0)); // จบที่ขั้น 17 อายุถุง 21 ชม. ยังไม่เกิน
+  assert.equal(L.bagStatus(S), 'ok');
+  assert.match(UI.renderTimeBadge(S), /✓ ไม่เกิน 24 ชม\./);
+  S.shift = 181; S.shiftFrom = 0; // เลื่อนจนเกิน 1440 นาที
   assert.equal(L.bagStatus(S), 'over');
   const h = UI.renderTimeBadge(S);
   assert.match(h, /✕/);
-  assert.match(h, /เกิน/);
+  assert.match(h, /เกิน 24 ชม\./);
 });
 
 test('renderGlossary: ห่อศัพท์ครั้งแรกด้วย abbr, ครั้งที่สองไม่ห่อ, และ escape ข้อความ', () => {

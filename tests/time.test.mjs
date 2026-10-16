@@ -47,9 +47,10 @@ test('bagAgeMin: null ก่อนปิดผนึก, ไม่ติดล�
   assert.equal(L.bagAgeMin(S0({ idx: 3, seal: 870 })), 0); // ปิดผนึกใหม่หลังเวลาจบขั้น -> ไม่ติดลบ
 });
 
-test('bagStatus: ไม่เกิน 21 ชม. (1260 นาที) = ok, เกิน = over', () => {
+test('bagStatus: ไม่เกิน 24 ชม. (1440 นาที) = ok, เกิน = over', () => {
   assert.equal(L.bagStatus(S0({ idx: 13 })), 'ok'); // เปิดถุง 1860 - 600 = 1260 พอดี
   assert.equal(L.bagAgeMin(S0({ idx: 13 })), 1260);
-  assert.equal(L.bagStatus(S0({ idx: 13, shift: 1, shiftFrom: 0 })), 'over'); // 1261
+  assert.equal(L.bagStatus(S0({ idx: 13, shift: 180, shiftFrom: 0 })), 'ok'); // 1440 พอดี
+  assert.equal(L.bagStatus(S0({ idx: 13, shift: 181, shiftFrom: 0 })), 'over'); // 1441
   assert.equal(L.bagStatus(S0({ idx: 1 })), 'ok'); // ยังไม่ปิดผนึก ไม่ถือว่าเกิน
 });
