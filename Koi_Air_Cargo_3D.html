@@ -117,6 +117,12 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #app{padding:8px 16px 24px}
   #stage{aspect-ratio:4/3}
 }
+/* ---- โหมดนำเสนอ (Task 11): ตัวอักษรใหญ่ ซ่อนแผงรอง ฉากกว้างขึ้น ---- */
+#app.present{max-width:none;font-size:1.2rem}
+#app.present .scenarios,#app.present .keys,#app.present .top small{display:none}
+#app.present .layout{grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
+#app.present .step{font-size:1.1rem}
+.keys{margin:6px 0 0;font-size:.85rem}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
 .sep{color:var(--muted)}
 .muted{color:var(--muted)}
@@ -864,7 +870,7 @@ var KoiUI = (function () {
   }
 
   // แผงควบคุมด้านล่าง: ก่อน/เล่น/ถัดไป + เลือกเหตุการณ์
-  function renderControls(S, playing) {
+  function renderControls(S, playing, present) {
     var can = L.canAdvance(S);
     var dis = can ? '' : ' disabled';
     var sc = D.SCENARIOS.map(function (c) {
@@ -876,7 +882,19 @@ var KoiUI = (function () {
       '<button type="button" data-act="next"' + dis + '>ถัดไป ▶</button>' +
       '<b>ขั้น ' + (S.idx + 1) + '/' + D.STEPS.length + '</b>' +
       '<button type="button" data-act="overview">' + (S.overview ? '↩ กลับสู่สถานี' : 'ดูทั้งเส้นทาง') + '</button>' +
-      '</div><div class="scenarios" aria-label="เลือกเหตุการณ์เสี่ยง"><span class="muted">เหตุการณ์:</span> ' + sc + '</div>';
+      '<button type="button" data-act="present">' + (present ? 'ออกจากโหมดนำเสนอ' : '📽 โหมดนำเสนอ') + '</button>' +
+      '</div><p class="muted keys">คีย์ลัด: ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · T สลับธีม · O ภาพรวม</p><div class="scenarios" aria-label="เลือกเหตุการณ์เสี่ยง"><span class="muted">เหตุการณ์:</span> ' + sc + '</div>';
+  }
+
+  // ปุ่มคีย์บอร์ด -> คำสั่ง (ไม่รู้จัก = null)
+  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', Escape: 'present' };
+  function keyToAction(key) { return Object.prototype.hasOwnProperty.call(KEYS, key) ? KEYS[key] : null; }
+  // ช่วงเวลาระหว่างขั้นตอนตอนเล่นอัตโนมัติ: โหมดนำเสนอช้าลง 2 เท่าให้ผู้พูดอธิบายทัน
+  function playIntervalMs(present) { return present ? 2200 : 1100; }
+  // คำสั่งเดิน/ถอย (ผ่านตรรกะ จึงไม่ข้ามด่านที่ค้างอยู่)
+  function runAction(S, action) {
+    if (action === 'next') L.next(S); else if (action === 'prev') L.prev(S);
+    return S;
   }
 
   /* ---------- 3) ผูกกับหน้าเว็บ ---------- */
@@ -884,7 +902,7 @@ var KoiUI = (function () {
   // hooks.onRender(S) ให้ส่วน 3 มิติมาเกาะเพื่ออัปเดตตามสถานะ
   function mount(root, hooks) {
     hooks = hooks || {};
-    var S = L.newState(0), tab = 'who', timer = null;
+    var S = L.newState(0), tab = 'who', timer = null, present = false, savedTab = 'who';
     var $ = function (id) { return root.querySelector(id); };
 
     function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
@@ -892,8 +910,9 @@ var KoiUI = (function () {
       $('#strip').innerHTML = renderStrip(S);
       $('#steps').innerHTML = renderStepList(S);
       $('#tabs').innerHTML = '<div class="badges">' + renderTimeBadge(S) + '</div>' + renderHold(S) + renderEnd(S) +
-        renderTabBar(tab) + '<div class="tabbody">' + renderTab(tab, S) + '</div>';
-      $('#controls').innerHTML = renderControls(S, !!timer);
+        (present ? '' : renderTabBar(tab)) + '<div class="tabbody">' + renderTab(tab, S) + '</div>';
+      $('#controls').innerHTML = renderControls(S, !!timer, present);
+      root.classList.toggle('present', present);
       if (hooks.onRender) hooks.onRender(S);
     }
     function togglePlay() {
@@ -902,10 +921,38 @@ var KoiUI = (function () {
         timer = setInterval(function () {
           if (!L.canAdvance(S)) { stopTimer(); render(); return; }
           L.next(S); render();
-        }, 1100);
+        }, playIntervalMs(present));
       }
       render();
     }
+
+    function togglePresentation() {
+      present = !present;
+      stopTimer();
+      if (present) { savedTab = tab; tab = 'what'; if (L.canAdvance(S)) { togglePlay(); return; } }
+      else { tab = savedTab; }
+      render();
+    }
+    function doAction(a) {
+      if (a === 'next' || a === 'prev') runAction(S, a);
+      else if (a === 'play') { if (L.canAdvance(S) || timer) { togglePlay(); return; } }
+      else if (a === 'present') { if (a === 'present') { togglePresentation(); return; } }
+      else if (a === 'theme') { if (hooks.onTheme) hooks.onTheme(toggleTheme()); else toggleTheme(); return; }
+      else if (a === 'overview') S.overview = !S.overview;
+      render();
+    }
+    // คีย์ลัด (ไม่ทำงานเมื่อพิมพ์ในช่องกรอก หรือกด Ctrl/Alt/Meta ร่วม)
+    document.addEventListener('keydown', function (e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var tg = e.target && e.target.tagName;
+      if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
+      var a = keyToAction(e.key);
+      if (!a) return;
+      if (a === 'present' && e.key === 'Escape' && !present) return; // Esc ใช้ออกจากโหมดนำเสนอเท่านั้น
+      if (e.key === ' ' && tg === 'BUTTON') return; // ปล่อยให้ปุ่มที่โฟกัสอยู่ทำงานตามปกติ
+      e.preventDefault();
+      doAction(a);
+    });
 
     root.addEventListener('click', function (e) {
       var el = e.target.closest ? e.target.closest('button') : null;
@@ -921,6 +968,7 @@ var KoiUI = (function () {
       else if (d.act === 'play') { togglePlay(); return; }
       else if (d.act === 'verify') { L.verify(S); }
       else if (d.act === 'overview') { S.overview = !S.overview; }
+      else if (d.act === 'present') { togglePresentation(); return; }
       render();
     });
     render();
@@ -931,7 +979,7 @@ var KoiUI = (function () {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
     esc: esc, renderGlossary: renderGlossary, renderStrip: renderStrip, renderStepList: renderStepList,
     renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
-    renderHold: renderHold, renderEnd: renderEnd, renderControls: renderControls, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderControls: renderControls, keyToAction: keyToAction, playIntervalMs: playIntervalMs, runAction: runAction, mount: mount
   };
 })();
 </script>
@@ -1464,7 +1512,10 @@ var KoiScene = (function () {
 (function () {
   KoiUI.initTheme();
   var ok = KoiScene.init(document.getElementById("c"));
-  KoiUI.mount(document.getElementById("app"), { onRender: function (S) { KoiScene.sync(S); } });
+  KoiUI.mount(document.getElementById("app"), {
+    onRender: function (S) { KoiScene.sync(S); },
+    onTheme: function (name) { KoiScene.setTheme(name); }   // กดคีย์ T สลับธีม
+  });
   document.getElementById("theme-btn").addEventListener("click", function () { KoiUI.toggleTheme(); KoiScene.setTheme(KoiUI.currentTheme({ doc: document, matchMedia: window.matchMedia.bind(window) })); });
 })();
 </script>

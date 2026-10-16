@@ -162,3 +162,42 @@ test('หลังแก้ถูกแผง HOLD หายและไม่�
   assert.equal(UI.renderHold(S), '');
   assert.equal(L.heldAtCheckpoint(S), false);
 });
+
+// ---- Task 11: โหมดนำเสนอ + คีย์ลัด ----
+test('keyToAction: แปลงปุ่มเป็นคำสั่ง', () => {
+  assert.equal(UI.keyToAction('ArrowRight'), 'next');
+  assert.equal(UI.keyToAction('ArrowLeft'), 'prev');
+  assert.equal(UI.keyToAction(' '), 'play');
+  assert.equal(UI.keyToAction('p'), 'present');
+  assert.equal(UI.keyToAction('P'), 'present');
+  assert.equal(UI.keyToAction('t'), 'theme');
+  assert.equal(UI.keyToAction('o'), 'overview');
+  assert.equal(UI.keyToAction('Escape'), 'present');
+  assert.equal(UI.keyToAction('x'), null);
+  assert.equal(UI.keyToAction(undefined), null);
+});
+
+test('playIntervalMs: โหมดนำเสนอช้าลงเป็น 2 เท่า (ผู้พูดทัน)', () => {
+  assert.equal(UI.playIntervalMs(false), 1100);
+  assert.equal(UI.playIntervalMs(true), 2200);
+});
+
+test('runAction: ใน hold คำสั่ง next/prev จากคีย์บอร์ดไม่ขยับ (ใช้ canAdvance)', () => {
+  const S = walk(L.newState(1));
+  const at = S.idx;
+  UI.runAction(S, 'next'); UI.runAction(S, 'prev');
+  assert.equal(S.idx, at);
+  const T = L.newState(0);
+  UI.runAction(T, 'next');
+  assert.equal(T.idx, 1);
+  UI.runAction(T, 'prev');
+  assert.equal(T.idx, 0);
+});
+
+test('renderControls: มีปุ่มโหมดนำเสนอ (เปลี่ยนข้อความตามโหมด) และข้อความบอกคีย์ลัด', () => {
+  const S = L.newState(0);
+  const a = UI.renderControls(S, false, false);
+  assert.match(a, /data-act="present"[^>]*>[^<]*โหมดนำเสนอ/);
+  assert.match(a, /Space/);
+  assert.match(UI.renderControls(S, false, true), /ออกจากโหมดนำเสนอ/);
+});
