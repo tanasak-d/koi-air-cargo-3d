@@ -129,3 +129,18 @@ test('บอกสถานะขั้นปัจจุบัน "ขั้น
   const S = L.newState(0); L.goTo(S, 4);
   assert.match(UI.renderControls(S, false), /ขั้น 5\/17/);
 });
+
+// ---- Task 9: ดูทั้งเส้นทาง ----
+test('renderStrip ตอน overview: มีปุ่ม "กลับสู่สถานี" และไม่มีสถานีใดเป็น aria-current', () => {
+  const S = L.newState(0); S.overview = true;
+  const h = UI.renderStrip(S);
+  assert.match(h, /กลับสู่สถานี/);
+  assert.equal(count(h, /aria-current="step"/g), 0);
+});
+
+test('renderControls: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
+  const S = L.newState(0);
+  assert.match(UI.renderControls(S, false), /ดูทั้งเส้นทาง/);
+  S.overview = true;
+  assert.match(UI.renderControls(S, false), /กลับสู่สถานี/);
+});

@@ -94,3 +94,29 @@ test('ป้ายสถานี 3 ระบุว่าผู้ดูแล�
   const txt = SC.STATION_LABELS[2].map(l => l.text).join(' ');
   assert.match(txt, /ห้องโดยสาร/);
 });
+
+// ---- Task 9: ป้ายสถานี 4–6 ----
+test('STATION_LABELS ครบทั้ง 6 สถานี และทุกขั้น 1–17 มีป้ายใกล้จุดวางกล่อง', () => {
+  assert.equal(SC.STATION_LABELS.length, 6);
+  for (let step = 0; step < 17; step++) {
+    const st = L.stationOf(step), p = SC.boxTarget(step);
+    assert.ok(SC.STATION_LABELS[st].some(l => Math.hypot(l.x - p.x, l.z - p.z) <= 3), 'ขั้น ' + (step + 1));
+  }
+  for (let i = 3; i <= 5; i++) {
+    const labels = SC.STATION_LABELS[i];
+    assert.ok(labels.length >= D.STATIONS[i].last - D.STATIONS[i].first + 1);
+    for (const l of labels) assert.ok(l.text.length > 0 && Math.abs(l.x) <= 10 && Math.abs(l.z) <= 10, l.text);
+  }
+});
+
+test('ป้ายสถานี 5 ใช้ถ้อยคำกักกันที่ล็อกไว้ และไม่มีจำนวนวัน', () => {
+  const txt = SC.STATION_LABELS[4].map(l => l.text).join(' ');
+  assert.match(txt, /จนกว่า DOF จะตรวจและอนุญาตให้ปล่อย/);
+  assert.doesNotMatch(txt, /\d+\s*วัน/);
+});
+
+test('overviewTile: ตำแหน่งกระเบื้อง 6 สถานีเรียงซ้ายไปขวา ไม่ซ้อนกัน และอยู่ในกรอบ', () => {
+  const xs = [0, 1, 2, 3, 4, 5].map(i => SC.overviewTile(i).x);
+  for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 3.5, 'กระเบื้อง ' + i + ' ชิดเกินไป');
+  assert.ok(Math.abs(xs[0]) <= 12 && Math.abs(xs[5]) <= 12);
+});
