@@ -350,7 +350,93 @@ co:{t:"บริษัทเรา (ผู้นำเข้า/เจ้าข�
 </script>
 <!-- บล็อกตรรกะ: เวลา/สถานะ ไม่แตะ DOM จึงทดสอบใน Node ได้ (Task 3-4) -->
 <script id="koi-logic">
-var KoiLogic = {};
+/* ============================================================
+   koi-logic : ตรรกะล้วน ๆ ไม่แตะหน้าเว็บ (DOM) และไม่แตะ Three.js
+   ทำไมแยกออกมา: เพื่อให้เขียนเทสต์ใน Node ได้ ถ้าตรรกะเพี้ยนจะรู้ทันที
+   ส่วนที่ 1 (ไฟล์นี้ตอนนี้): เวลา / สถานี / อายุปลาในถุง
+   ส่วนที่ 2 (Task 4): เครื่องสถานะและสถานการณ์เสี่ยง
+   หมายเหตุ: นาทีทุกค่าเป็น "เวลา JST นับจาก 00:00 ของวันส่ง" (ดู koi-data)
+   ============================================================ */
+var KoiLogic = (function () {
+  var D = KoiData;                 // ข้อมูลจากบล็อก koi-data
+  var DAY = 1440;                  // 1 วัน = 1440 นาที
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  // สถานีของขั้น (ทั้งสองเริ่มนับจาก 0): หาสถานีที่ขั้นนั้นตกอยู่ในช่วง first..last
+  function stationOf(stepIdx) {
+    for (var i = 0; i < D.STATIONS.length; i++) {
+      var s = D.STATIONS[i];
+      if (stepIdx >= s.first && stepIdx <= s.last) return i;
+    }
+    return -1;
+  }
+
+  // แปลงนาที JST เป็นนาทีของโซนที่ต้องการ (ICT ช้ากว่า JST 2 ชั่วโมง)
+  function inZone(minJST, zone) {
+    return zone === 'ICT' ? minJST - D.CONST.JST_MINUS_ICT : minJST;
+  }
+  // อยู่ "วันที่เท่าไรเทียบกับวันส่ง" (0 = วันส่ง, 1 = วันถัดไป, -1 = วันก่อน)
+  function dayOf(min) { return Math.floor(min / DAY); }
+  // "HH:MM" ของนาทีนั้น (ตัดวันทิ้ง)
+  function hhmm(min) { var m = ((min % DAY) + DAY) % DAY; return pad(Math.floor(m / 60)) + ':' + pad(m % 60); }
+  function daySuffix(d) { return d === 0 ? '' : ' (' + (d > 0 ? '+' : '−') + Math.abs(d) + ' วัน)'; }
+
+  // เวลาเป็นข้อความ เช่น "18:25" หรือ "01:00 (+1 วัน)"
+  function fmtTime(minJST, zone) {
+    var m = inZone(minJST, zone);
+    return hhmm(m) + daySuffix(dayOf(m));
+  }
+
+  // เวลาเริ่ม/จบของขั้น หลังคิดการเลื่อน (shift) จากสถานการณ์เสี่ยง
+  // shift ใช้กับขั้นที่ index >= shiftFrom เท่านั้น
+  function shiftOf(S, i) { return i >= S.shiftFrom ? S.shift : 0; }
+  function stepStart(S, i) { var t = D.STEPS[i].t; return t ? t[0] + shiftOf(S, i) : null; }
+  function stepEnd(S, i) { var t = D.STEPS[i].t; return t ? t[1] + shiftOf(S, i) : null; }
+  // เวลาเปิดถุงที่สถานที่กักกัน (ขยับตาม shift ถ้าเลื่อนตั้งแต่ก่อนขั้น 13)
+  function openMin(S) { return D.CONST.OPEN0 + (12 >= S.shiftFrom ? S.shift : 0); }
+
+  // ช่วงเวลาเป็นข้อความตามโซน เช่น "09:00–10:00" (ถ้าข้ามวันจะใส่ (+1 วัน) ที่ปลายช่วง)
+  function rangeText(a, b, zone) {
+    var x = inZone(a, zone), y = inZone(b, zone);
+    return fmtTime(a, zone) + '–' + (dayOf(y) !== dayOf(x) ? fmtTime(b, zone) : hhmm(y));
+  }
+
+  // ป้ายเวลาของขั้น ใช้แสดงบนหน้าจอ
+  // - มีเวลา + ไม่ประมาณ -> "09:00–10:00 JST · 07:00–08:00 ICT"
+  // - มีเวลาแต่เป็นค่าสมมติ (approx) -> ขึ้นต้นด้วย "โดยประมาณ"
+  // - ไม่มีเวลาเลย -> ข้อความ tl + "(โดยประมาณ)"
+  function stepTimeLabel(i, S) {
+    var st = D.STEPS[i];
+    if (!st.t) return (st.tl || 'ไม่ระบุเวลา') + ' (โดยประมาณ)';
+    var a = stepStart(S, i), b = stepEnd(S, i);
+    var txt = rangeText(a, b, 'JST') + ' JST · ' + rangeText(a, b, 'ICT') + ' ICT';
+    return st.approx ? 'โดยประมาณ ' + txt : txt;
+  }
+
+  // อายุปลาในถุง (นาที) นับจากปิดผนึก ถึงเวลาจบขั้นปัจจุบัน
+  // - ก่อนขั้นบรรจุ (index < 3) ยังไม่ปิดผนึก -> null
+  // - หลังขั้น 13 (index > 12) นับถึงเวลาเปิดถุง
+  // - ไม่ติดลบ (ถ้าปิดผนึกใหม่หลังเวลาจบขั้น ให้เป็น 0)
+  function bagAgeMin(S) {
+    if (S.idx < 3) return null;
+    var t = S.idx > 12 ? openMin(S) : stepEnd(S, S.idx);
+    if (t == null) t = openMin(S);
+    return Math.max(0, t - S.seal);
+  }
+
+  // สถานะเทียบเพดาน 21 ชม.: ไม่เกิน = ok, เกิน = over (ก่อนปิดผนึกถือว่า ok)
+  function bagStatus(S) {
+    var a = bagAgeMin(S);
+    return a != null && a > D.CONST.BAG_LIMIT_MIN ? 'over' : 'ok';
+  }
+
+  return {
+    stationOf: stationOf, fmtTime: fmtTime, stepTimeLabel: stepTimeLabel,
+    stepStart: stepStart, stepEnd: stepEnd, openMin: openMin,
+    bagAgeMin: bagAgeMin, bagStatus: bagStatus
+  };
+})();
 </script>
 <!-- บล็อกหน้าจอ: สร้าง HTML ของแผงต่าง ๆ (Task 6) -->
 <script id="koi-ui">
