@@ -5,12 +5,139 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Koi Air Cargo 3D</title>
 <style>
-/* สไตล์จะเพิ่มใน Task 5 */
-body{margin:0;font-family:system-ui,sans-serif}
+/* ============================================================
+   สไตล์ทั้งหมด
+   ธีม: ตั้งสีเป็น "โทเคน" (--ชื่อ) ไว้ที่ :root แล้วทุกส่วนเรียกใช้ var(--ชื่อ)
+   - ธีมสว่าง = ค่าใน :root
+   - ธีมมืดตามระบบ = media query (ยกเว้นผู้ใช้กดเลือกสว่างเอง data-theme="light")
+   - ธีมมืดที่ผู้ใช้กดเลือก = :root[data-theme="dark"]  (ค่าต้องเหมือนแบบตามระบบ)
+   กติกาสี: ฟ้า=กดได้/ผ่านแล้ว · ชมพู=ตรงนี้ตอนนี้ · เขียว/เหลือง/แดง=สถานะ (ต้องมี ✓ ✕ หรือข้อความคู่เสมอ)
+   ============================================================ */
+:root{
+  color-scheme:light;
+  --bg:#f4f8fd;
+  --surface:#ffffff;
+  --text:#0f1c2e;
+  --muted:#52657d;
+  --line:#c5d5e8;
+  --tint:#e3eefc;
+  --stage-bg:#e8f0fa;
+  --blue:#1d62c4;
+  --on-blue:#ffffff;
+  --pink:#c71f73;
+  --on-pink:#ffffff;
+  --ok:#11743a;
+  --warn:#8a5300;
+  --bad:#b3261e;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0b1220;
+    --surface:#141e33;
+    --text:#e8eef8;
+    --muted:#a3b3cb;
+    --line:#2a3a58;
+    --tint:#1b2c4d;
+    --stage-bg:#0f1a2e;
+    --blue:#7db0ff;
+    --on-blue:#08142b;
+    --pink:#ff7ab8;
+    --on-pink:#2a0618;
+    --ok:#4cd388;
+    --warn:#f2b84b;
+    --bad:#ff8a82;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0b1220;
+  --surface:#141e33;
+  --text:#e8eef8;
+  --muted:#a3b3cb;
+  --line:#2a3a58;
+  --tint:#1b2c4d;
+  --stage-bg:#0f1a2e;
+  --blue:#7db0ff;
+  --on-blue:#08142b;
+  --pink:#ff7ab8;
+  --on-pink:#2a0618;
+  --ok:#4cd388;
+  --warn:#f2b84b;
+  --bad:#ff8a82;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font-family:"Noto Sans Thai","Sarabun","Segoe UI",system-ui,sans-serif;line-height:1.55}
+/* ข้อความไทยยาว ๆ ต้องตัดบรรทัดได้ ไม่ดันหน้าจอให้เลื่อนแนวนอน */
+body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
+
+#app{max-width:1280px;margin:0 auto;padding:12px 16px 32px;display:grid;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top h1{margin:0;font-size:1.25rem}
+.top small{color:var(--muted)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
+button:hover{border-color:var(--blue)}
+button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button.primary{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+button[disabled]{opacity:.55;cursor:not-allowed}
+
+/* แถบ 6 สถานี */
+#strip{display:flex;gap:6px;align-items:center;overflow-x:auto;padding:2px}
+.pill{white-space:nowrap}
+.pill.passed{background:var(--tint);border-color:var(--blue);color:var(--blue)}
+.pill.here{background:var(--pink);border-color:var(--pink);color:var(--on-pink);font-weight:700}
+
+/* ฉาก 3 มิติ + แผงขั้นตอน : จอกว้าง = 2 คอลัมน์, จอแคบ = ซ้อนลงมา */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:12px}
+#stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:14px;
+  aspect-ratio:16/9;min-height:260px;overflow:hidden}
+#stage canvas{display:block;width:100%;height:100%}
+.stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
+#steps{min-width:0;display:grid;gap:6px;align-content:start}
+#tabs,#controls{min-width:0}
+.tabbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tabbar button[aria-selected="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
+.st-ok{color:var(--ok);font-weight:600}
+.st-warn{color:var(--warn);font-weight:600}
+.st-bad{color:var(--bad);font-weight:600}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:480px){
+  #app{padding:8px 16px 24px}
+  #stage{aspect-ratio:4/3}
+}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <header class="top">
+    <div>
+      <h1>Koi Air Cargo 3D</h1>
+      <small>ส่งปลาคาร์ฟพรีเมียม ญี่ปุ่น → ไทย ทางอากาศ</small>
+    </div>
+    <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด">ธีม</button>
+  </header>
+  <nav id="strip" aria-label="6 สถานีของเส้นทาง"></nav>
+  <main class="layout">
+    <section aria-label="ฉาก 3 มิติของสถานีปัจจุบัน">
+      <div id="stage"><canvas id="c" aria-label="ภาพ 3 มิติ"></canvas></div>
+    </section>
+    <aside id="steps" class="card" aria-label="ขั้นตอนของสถานีนี้"></aside>
+  </main>
+  <section id="tabs" class="card" aria-live="polite"></section>
+  <section id="controls" class="card"></section>
+</div>
 <script id="three">/**
  * @license
  * Copyright 2010-2021 Three.js Authors
@@ -531,11 +658,59 @@ var KoiLogic = (function () {
 </script>
 <!-- บล็อกหน้าจอ: สร้าง HTML ของแผงต่าง ๆ (Task 6) -->
 <script id="koi-ui">
-var KoiUI = {};
+/* ============================================================
+   koi-ui : ส่วนหน้าจอ
+   ตอนนี้มี: ธีมสว่าง/มืด  (ตัวแสดงผลแผงต่าง ๆ เพิ่มใน Task 6)
+   ============================================================ */
+var KoiUI = (function () {
+  var KEY = 'koi-theme'; // ชื่อที่ใช้จำค่าธีมใน localStorage
+
+  // ค่าเริ่มต้นของสภาพแวดล้อม (เทสต์ส่ง stub มาแทนได้) ห่อ try/catch เพราะบางเบราว์เซอร์บล็อก localStorage
+  function defaultEnv() {
+    var storage = null;
+    try { storage = window.localStorage; } catch (e) { storage = null; }
+    return { doc: document, storage: storage, matchMedia: window.matchMedia.bind(window) };
+  }
+  function read(env) { try { return env.storage ? env.storage.getItem(KEY) : null; } catch (e) { return null; } }
+  function write(env, v) { try { if (env.storage) env.storage.setItem(KEY, v); } catch (e) { /* บล็อกอยู่ ก็ไม่เป็นไร ธีมยังสลับได้ */ } }
+
+  // ธีมที่ผู้ชมเห็นอยู่ตอนนี้: ถ้าผู้ใช้เคยเลือกเองใช้ค่านั้น ไม่งั้นตามระบบ
+  function currentTheme(env) {
+    var set = env.doc.documentElement.getAttribute('data-theme');
+    if (set === 'light' || set === 'dark') return set;
+    return env.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  // เริ่มต้น: ถ้ามีค่าที่จำไว้ ตั้ง data-theme ถ้าไม่มี ปล่อยให้ CSS ตามระบบเอง
+  function initTheme(env) {
+    env = env || defaultEnv();
+    var saved = read(env);
+    if (saved === 'light' || saved === 'dark') env.doc.documentElement.setAttribute('data-theme', saved);
+    else env.doc.documentElement.removeAttribute('data-theme');
+  }
+
+  // สลับธีม แล้วจำไว้ คืนค่าธีมใหม่
+  function toggleTheme(env) {
+    env = env || defaultEnv();
+    var next = currentTheme(env) === 'dark' ? 'light' : 'dark';
+    env.doc.documentElement.setAttribute('data-theme', next);
+    write(env, next);
+    return next;
+  }
+
+  return { initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme };
+})();
 </script>
 <!-- บล็อก 3 มิติ: Three.js (Task 7-10) -->
 <script id="koi-scene">
 var KoiScene = {};
+</script>
+<!-- บล็อกเริ่มทำงาน: ผูกหน้าจอเข้ากับตรรกะ (ไม่ถูกเทสต์ใน Node เพราะแตะ DOM) -->
+<script id="koi-boot">
+(function () {
+  KoiUI.initTheme();
+  document.getElementById("theme-btn").addEventListener("click", function () { KoiUI.toggleTheme(); });
+})();
 </script>
 </body>
 </html>
