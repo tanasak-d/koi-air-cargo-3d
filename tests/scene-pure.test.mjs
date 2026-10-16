@@ -69,3 +69,28 @@ test('supported() ใน Node (ไม่มีเบราว์เซอร์)
 test('NO_WEBGL_MESSAGE ตรงข้อความที่ตกลงไว้', () => {
   assert.equal(SC.NO_WEBGL_MESSAGE, 'เครื่องนี้แสดงภาพ 3 มิติไม่ได้ ยังดูขั้นตอนได้ตามปกติ');
 });
+
+// ---- Task 8: ป้ายชื่อในฉากสถานี (ข้อมูลล้วน ทดสอบใน Node ได้) ----
+test('STATION_LABELS สถานี 1–3: ป้ายมีข้อความ อยู่ในกรอบ และมีป้ายอย่างน้อยเท่าจำนวนขั้น', () => {
+  for (let i = 0; i <= 2; i++) {
+    const labels = SC.STATION_LABELS[i];
+    assert.ok(labels && labels.length >= D.STATIONS[i].last - D.STATIONS[i].first + 1, 'สถานี ' + i);
+    for (const l of labels) {
+      assert.ok(typeof l.text === 'string' && l.text.length > 0);
+      assert.ok(Math.abs(l.x) <= 10 && Math.abs(l.z) <= 10, l.text);
+    }
+  }
+});
+
+test('ทุกขั้นของสถานี 1–3 มีป้ายอยู่ใกล้จุดวางกล่อง (ห่างไม่เกิน 3 หน่วย) ให้ผู้ชมรู้ว่าอยู่ตรงไหน', () => {
+  for (let step = 0; step <= 8; step++) {
+    const st = L.stationOf(step), p = SC.boxTarget(step);
+    const near = SC.STATION_LABELS[st].some(l => Math.hypot(l.x - p.x, l.z - p.z) <= 3);
+    assert.ok(near, 'ขั้น ' + (step + 1) + ' ไม่มีป้ายใกล้จุดวาง');
+  }
+});
+
+test('ป้ายสถานี 3 ระบุว่าผู้ดูแลปลานั่งในห้องโดยสาร (ไม่เข้าห้องสัมภาระ)', () => {
+  const txt = SC.STATION_LABELS[2].map(l => l.text).join(' ');
+  assert.match(txt, /ห้องโดยสาร/);
+});
