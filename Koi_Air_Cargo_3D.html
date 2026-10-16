@@ -123,6 +123,8 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 #app.present .layout{grid-template-columns:minmax(0,2fr) minmax(280px,1fr)}
 #app.present .step{font-size:1.1rem}
 .keys{margin:6px 0 0;font-size:.85rem}
+.howto summary{cursor:pointer;font-weight:600}
+.howto ul{margin:8px 0 0;padding-left:20px}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
 .sep{color:var(--muted)}
 .muted{color:var(--muted)}
@@ -155,6 +157,15 @@ abbr[title]{text-decoration:underline dotted var(--blue);cursor:help}
     </div>
     <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด">ธีม</button>
   </header>
+  <details class="card howto">
+    <summary>❓ วิธีใช้</summary>
+    <ul>
+      <li>กด <b>ถัดไป ▶</b> หรือ <b>▶ เล่น</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี)</li>
+      <li>กดชื่อสถานีด้านบนหรือชื่อขั้นตอนเพื่อข้ามไปดู · กด <b>ดูทั้งเส้นทาง</b> เพื่อดูภาพรวม</li>
+      <li>เลือก <b>เหตุการณ์</b> ด้านล่างเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างเป็นสีแดงที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
+      <li>กด <b>โหมดนำเสนอ</b> (หรือปุ่ม P) เมื่อฉายหน้าห้อง · สลับธีมสว่าง/มืดที่ปุ่มมุมขวาบน</li>
+    </ul>
+  </details>
   <nav id="strip" aria-label="6 สถานีของเส้นทาง"></nav>
   <main class="layout">
     <section aria-label="ฉาก 3 มิติของสถานีปัจจุบัน">
