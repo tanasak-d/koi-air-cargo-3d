@@ -1,0 +1,71 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { loadBlocks } from './helpers/load.mjs';
+
+const ctx = loadBlocks(['koi-data', 'koi-logic', 'koi-scene']);
+const SC = ctx.KoiScene;
+const D = ctx.KoiData;
+const L = ctx.KoiLogic;
+
+test('boxTarget: ทุกขั้น 0..16 มีตำแหน่งอยู่ในกรอบ [-10,10]', () => {
+  for (let i = 0; i < 17; i++) {
+    const p = SC.boxTarget(i);
+    assert.ok(Math.abs(p.x) <= 10 && Math.abs(p.z) <= 10, 'ขั้น ' + i);
+  }
+});
+
+test('boxTarget: ขั้นต่อเนื่องในสถานีเดียวกันอยู่คนละจุด', () => {
+  for (let i = 0; i < 16; i++) {
+    if (L.stationOf(i) !== L.stationOf(i + 1)) continue;
+    const a = SC.boxTarget(i), b = SC.boxTarget(i + 1);
+    assert.ok(a.x !== b.x || a.z !== b.z, 'ขั้น ' + i + ' กับ ' + (i + 1) + ' ซ้ำจุด');
+  }
+});
+
+test('easeInOut: 0→0, 1→1, 0.5→0.5 และเพิ่มขึ้นเสมอ', () => {
+  assert.equal(SC.easeInOut(0), 0);
+  assert.equal(SC.easeInOut(1), 1);
+  assert.ok(Math.abs(SC.easeInOut(0.5) - 0.5) < 1e-9);
+  let prev = -1;
+  for (let t = 0; t <= 1.0001; t += 0.05) {
+    const v = SC.easeInOut(Math.min(t, 1));
+    assert.ok(v >= prev);
+    prev = v;
+  }
+});
+
+test('easeInOut: ค่านอกช่วง 0..1 ถูกบีบให้อยู่ในช่วง', () => {
+  assert.equal(SC.easeInOut(-5), 0);
+  assert.equal(SC.easeInOut(5), 1);
+});
+
+test('lerpPose: ปลายทาง t=0 / t=1 ตรงจุด และกลางทางเป็นค่าเฉลี่ย', () => {
+  const a = { x: -4, z: 2 }, b = { x: 6, z: -2 };
+  assert.deepEqual(JSON.parse(JSON.stringify(SC.lerpPose(a, b, 0))), a);
+  assert.deepEqual(JSON.parse(JSON.stringify(SC.lerpPose(a, b, 1))), b);
+  const m = SC.lerpPose(a, b, 0.5);
+  assert.equal(m.x, 1); assert.equal(m.z, 0);
+});
+
+test('blinkOn: กระพริบช้า ไม่เกิน 2 ครั้ง/วินาที (นับการเปลี่ยนค่า ≤ 4 ใน 1 วินาที)', () => {
+  let changes = 0, last = SC.blinkOn(0, false);
+  for (let t = 10; t <= 1000; t += 10) {
+    const v = SC.blinkOn(t, false);
+    if (v !== last) changes++;
+    last = v;
+  }
+  assert.ok(changes <= 4, 'เปลี่ยน ' + changes + ' ครั้ง');
+  assert.ok(changes >= 1, 'ต้องกระพริบจริง');
+});
+
+test('blinkOn: reduced-motion ค้างสถานะ "เปิด" (ไม่กระพริบ) ทุกเวลา', () => {
+  for (let t = 0; t < 3000; t += 137) assert.equal(SC.blinkOn(t, true), true);
+});
+
+test('supported() ใน Node (ไม่มีเบราว์เซอร์) เป็น false และไม่ throw', () => {
+  assert.equal(SC.supported(), false);
+});
+
+test('NO_WEBGL_MESSAGE ตรงข้อความที่ตกลงไว้', () => {
+  assert.equal(SC.NO_WEBGL_MESSAGE, 'เครื่องนี้แสดงภาพ 3 มิติไม่ได้ ยังดูขั้นตอนได้ตามปกติ');
+});
