@@ -587,7 +587,9 @@ var KoiLogic = (function () {
     if (S.idx < 3) return null;
     var t = S.idx > 12 ? openMin(S) : stepEnd(S, S.idx);
     if (t == null) t = openMin(S);
-    return Math.max(0, t - S.seal);
+    // ขั้นก่อนบรรจุใหม่ ยังใช้เวลาปิดผนึกเดิม (กันอายุถุงติดลบแล้วถูกบีบเป็น 0 ปลอม)
+    var seal = (S.sealFrom == null || S.idx >= S.sealFrom) ? S.seal : D.CONST.SEAL0;
+    return Math.max(0, t - seal);
   }
 
   // สถานะเทียบเพดาน 21 ชม.: ไม่เกิน = ok, เกิน = over (ก่อนปิดผนึกถือว่า ok)
@@ -610,7 +612,7 @@ var KoiLogic = (function () {
     if (!D.SCENARIOS[scenarioId]) throw new RangeError('ไม่มีสถานการณ์ ' + scenarioId);
     return {
       sc: scenarioId, idx: 0, max: 0, mode: 'run', hp: 0, resolved: false,
-      shift: 0, shiftFrom: 99, seal: D.CONST.SEAL0, delay: 0,
+      shift: 0, shiftFrom: 99, seal: D.CONST.SEAL0, sealFrom: 0, delay: 0,
       lanes: { p: 1, i: 1, d: 1, r: 1 }, // 4-Flow: 1 = ปกติ, 0 = มีปัญหา
       log: [], end: null, opt: null
     };
@@ -671,7 +673,7 @@ var KoiLogic = (function () {
     if (o.good) {
       S.lanes[sc.lane] = 1; S.resolved = true;
       if (o.shift) { S.shift = o.shift; S.shiftFrom = sc.shiftFrom; }
-      if (o.seal) S.seal = o.seal;
+      if (o.seal) { S.seal = o.seal; S.sealFrom = sc.step + 1; } // บรรจุ/ปิดผนึกใหม่ มีผลกับขั้นหลังจุดที่แก้เท่านั้น
       if (o.delay) S.delay = o.delay;
       addLog(S, 'CORRECT — ' + o.res, 'ok');
       if (o.end === 'ctl') { S.mode = 'end'; S.end = 'ctl'; } else { S.mode = 'run'; }
@@ -908,6 +910,13 @@ var KoiUI = (function () {
     return S;
   }
 
+  // selector ของปุ่มจาก data-* (ใช้คืนโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ เพราะ innerHTML สร้างปุ่มใหม่ทั้งหมด)
+  function focusSelector(ds) {
+    var keys = ['act', 'opt', 'station', 'step', 'tab', 'sc'];
+    for (var i = 0; i < keys.length; i++) if (ds && ds[keys[i]] != null) return '[data-' + keys[i] + '="' + ds[keys[i]] + '"]';
+    return null;
+  }
+
   /* ---------- 3) ผูกกับหน้าเว็บ ---------- */
   // mount: สร้าง state, ผูกปุ่ม (event delegation), วาดหน้า
   // hooks.onRender(S) ให้ส่วน 3 มิติมาเกาะเพื่ออัปเดตตามสถานะ
@@ -918,12 +927,16 @@ var KoiUI = (function () {
 
     function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
     function render() {
+      var ae = document.activeElement, fsel = ae && root.contains(ae) ? focusSelector(ae.dataset) : null;
       $('#strip').innerHTML = renderStrip(S);
       $('#steps').innerHTML = renderStepList(S);
       $('#tabs').innerHTML = '<div class="badges">' + renderTimeBadge(S) + '</div>' + renderHold(S) + renderEnd(S) +
         (present ? '' : renderTabBar(tab)) + '<div class="tabbody">' + renderTab(tab, S) + '</div>';
       $('#controls').innerHTML = renderControls(S, !!timer, present);
       root.classList.toggle('present', present);
+      if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
+      var here = $('#strip').querySelector('.here'); // สถานีปัจจุบันต้องมองเห็นเสมอ (จอแคบแถบเลื่อนได้)
+      if (here && here.scrollIntoView) here.scrollIntoView({ inline: 'nearest', block: 'nearest' });
       if (hooks.onRender) hooks.onRender(S);
     }
     function togglePlay() {
@@ -990,7 +1003,7 @@ var KoiUI = (function () {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
     esc: esc, renderGlossary: renderGlossary, renderStrip: renderStrip, renderStepList: renderStepList,
     renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
-    renderHold: renderHold, renderEnd: renderEnd, renderControls: renderControls, keyToAction: keyToAction, playIntervalMs: playIntervalMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderControls: renderControls, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, runAction: runAction, mount: mount
   };
 })();
 </script>

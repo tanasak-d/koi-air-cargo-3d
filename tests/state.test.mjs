@@ -115,3 +115,21 @@ test('เหตุการณ์ 4 (เอกสารไม่ตรง): แ�
   assert.equal(L.bagAgeMin(at13), D.CONST.OPEN0 + 120 - D.CONST.SEAL0);
   assert.equal(L.bagStatus(at13), 'over');
 });
+
+// ---- Final review fix: เวลาปิดผนึกใหม่ใช้เฉพาะขั้นหลังบรรจุใหม่ ----
+test('เหตุการณ์ 2 หลังแก้: ย้อนไปขั้นก่อนบรรจุใหม่ต้องใช้เวลาปิดผนึกเดิม ไม่แสดงอายุ 0 ปลอม', () => {
+  const S = walk(L.newState(2));
+  L.verify(S); L.correct(S, D.SCENARIOS[2].opts.findIndex(o => o.good));
+  const before = L.bagAgeMin(Object.assign({}, S, { idx: 5, seal: D.CONST.SEAL0, sealFrom: 99 }));
+  L.prev(S); // กลับไปขั้นก่อนหน้า (index 5)
+  assert.equal(S.idx, 5);
+  assert.equal(L.bagAgeMin(S), before);
+  assert.ok(L.bagAgeMin(S) > 0);
+});
+
+test('เหตุการณ์ 1 หลังแก้: อายุถุงตอนอยู่ขั้นที่ติด HOLD ยังนับจากเวลาปิดผนึกเดิม', () => {
+  const S = walk(L.newState(1));
+  const held = L.bagAgeMin(S);
+  L.verify(S); L.correct(S, D.SCENARIOS[1].opts.findIndex(o => o.good));
+  assert.equal(L.bagAgeMin(S), held);
+});

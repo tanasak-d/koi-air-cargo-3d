@@ -201,3 +201,14 @@ test('renderControls: มีปุ่มโหมดนำเสนอ (เป�
   assert.match(a, /Space/);
   assert.match(UI.renderControls(S, false, true), /ออกจากโหมดนำเสนอ/);
 });
+
+// ---- Final review fix: คงโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ ----
+test('focusSelector: สร้าง selector ของปุ่มจาก data-* เพื่อคืนโฟกัสหลัง render', () => {
+  assert.equal(UI.focusSelector({ act: 'next' }), '[data-act="next"]');
+  assert.equal(UI.focusSelector({ opt: '2' }), '[data-opt="2"]');
+  assert.equal(UI.focusSelector({ station: '3' }), '[data-station="3"]');
+  assert.equal(UI.focusSelector({ tab: 'risk' }), '[data-tab="risk"]');
+  assert.equal(UI.focusSelector({ step: '4' }), '[data-step="4"]');
+  assert.equal(UI.focusSelector({ sc: '1' }), '[data-sc="1"]');
+  assert.equal(UI.focusSelector({}), null);
+});
