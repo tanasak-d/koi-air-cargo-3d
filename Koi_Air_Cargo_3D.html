@@ -431,10 +431,101 @@ var KoiLogic = (function () {
     return a != null && a > D.CONST.BAG_LIMIT_MIN ? 'over' : 'ok';
   }
 
+  /* ---------- ส่วนที่ 2: เครื่องสถานะ (state machine) ----------
+     State คือก้อนข้อมูลเดียวที่บอกว่า "ตอนนี้อยู่ตรงไหน เกิดอะไรขึ้นแล้ว"
+       sc        สถานการณ์ที่เลือก (0 = ปกติ, 1..5 = เหตุการณ์เสี่ยง)
+       idx / max ขั้นปัจจุบัน / ขั้นไกลสุดที่เคยถึง (เริ่มนับจาก 0)
+       mode      'run' เดินได้ · 'hold' ค้างที่ด่าน · 'done' ครบ 17 ขั้น · 'end' จบเพราะเหตุการณ์
+       hp        ความคืบหน้าใน hold: 0 รอตรวจ, 1 ตรวจแล้ว (VERIFY), 2 แก้แล้ว (CORRECT)
+       shift / shiftFrom  เวลาเลื่อน (นาที) และเริ่มเลื่อนตั้งแต่ขั้นไหน
+       seal      เวลาปิดผนึกถุง (นาที JST)
+     ทุกฟังก์ชันด้านล่างแก้ state แล้วคืน state เดิมกลับมา */
+
+  function newState(scenarioId) {
+    if (!D.SCENARIOS[scenarioId]) throw new RangeError('ไม่มีสถานการณ์ ' + scenarioId);
+    return {
+      sc: scenarioId, idx: 0, max: 0, mode: 'run', hp: 0, resolved: false,
+      shift: 0, shiftFrom: 99, seal: D.CONST.SEAL0, delay: 0,
+      lanes: { p: 1, i: 1, d: 1, r: 1 }, // 4-Flow: 1 = ปกติ, 0 = มีปัญหา
+      log: [], end: null, opt: null
+    };
+  }
+
+  // เพิ่มบรรทัดในบันทึกเหตุการณ์ (ใหม่สุดอยู่บนสุด) พร้อมเวลา JST ของขั้นนั้น
+  function addLog(S, txt, cls) {
+    var a = stepStart(S, S.idx);
+    S.log.unshift({ t: a == null ? '—' : fmtTime(a, 'JST'), txt: txt, cls: cls || '' });
+  }
+
+  // เข้าสู่ขั้นที่ i: ถ้าตรงกับขั้นของเหตุการณ์เสี่ยงและยังไม่แก้ -> ค้าง (hold)
+  function enter(S, i) {
+    S.idx = i;
+    if (i > S.max) S.max = i;
+    addLog(S, 'เข้าขั้น ' + D.STEPS[i].n + ' · ' + D.STEPS[i].name);
+    var sc = D.SCENARIOS[S.sc];
+    if (S.sc > 0 && sc.step === i && !S.resolved) {
+      S.mode = 'hold'; S.hp = 0; S.lanes[sc.lane] = 0;
+      addLog(S, 'HOLD — ' + sc.mm, 'bad');
+    }
+    if (i === D.STEPS.length - 1 && S.mode === 'run') {
+      S.mode = 'done'; S.end = 'ok'; addLog(S, 'ครบ 17 ขั้นตอน', 'ok');
+    }
+  }
+
+  // เดินต่อได้ก็ต่อเมื่ออยู่ในโหมดเดิน (ไม่ค้าง ไม่จบ)
+  function canAdvance(S) { return S.mode === 'run' && S.idx < D.STEPS.length - 1; }
+
+  function next(S) { if (canAdvance(S)) enter(S, S.idx + 1); return S; }
+
+  function prev(S) {
+    if (S.mode === 'hold' || S.mode === 'end') return S; // ค้างอยู่ห้ามถอย
+    if (S.idx > 0) { S.idx--; if (S.mode === 'done') S.mode = 'run'; }
+    return S;
+  }
+
+  // กระโดดไปขั้นที่ต้องการ: ไปข้างหน้าทีละขั้น (เพื่อให้ hold ทำงานครบ) ไปข้างหลังข้ามได้เลย
+  function goTo(S, to) {
+    if (S.mode === 'hold' || S.mode === 'end') return S;
+    while (S.idx < to && S.mode === 'run') enter(S, S.idx + 1);
+    if (S.idx > to && (S.mode === 'run' || S.mode === 'done')) { S.idx = to; S.mode = 'run'; }
+    return S;
+  }
+
+  // VERIFY: ตรวจให้แน่ใจว่าปัญหาจริง (ทำได้เมื่อ hold เท่านั้น)
+  function verify(S) {
+    if (S.mode !== 'hold') return S;
+    S.hp = 1; addLog(S, 'VERIFY — ' + D.SCENARIOS[S.sc].verify);
+    return S;
+  }
+
+  // CORRECT: เลือกวิธีแก้ที่ต้นเหตุ (ต้อง VERIFY แล้ว) ทางถูก -> เดินต่อ/จบแบบคุมได้, ทางผิด -> สูญเสีย
+  function correct(S, k) {
+    var sc = D.SCENARIOS[S.sc], o = sc.opts && sc.opts[k];
+    if (S.mode !== 'hold' || S.hp < 1 || !o) return S;
+    S.opt = k; S.hp = 2;
+    if (o.good) {
+      S.lanes[sc.lane] = 1; S.resolved = true;
+      if (o.shift) { S.shift = o.shift; S.shiftFrom = sc.shiftFrom; }
+      if (o.seal) S.seal = o.seal;
+      if (o.delay) S.delay = o.delay;
+      addLog(S, 'CORRECT — ' + o.res, 'ok');
+      if (o.end === 'ctl') { S.mode = 'end'; S.end = 'ctl'; } else { S.mode = 'run'; }
+    } else {
+      S.mode = 'end'; S.end = 'loss'; addLog(S, 'CORRECT ผิดทาง — ' + o.res, 'bad');
+    }
+    return S;
+  }
+
+  // กล่องปลากำลังถูกค้างที่ด่านหรือไม่ (ใช้สั่งให้กล่องเป็นสีแดงกระพริบ)
+  function heldAtCheckpoint(S) { return S.mode === 'hold'; }
+
   return {
     stationOf: stationOf, fmtTime: fmtTime, stepTimeLabel: stepTimeLabel,
     stepStart: stepStart, stepEnd: stepEnd, openMin: openMin,
-    bagAgeMin: bagAgeMin, bagStatus: bagStatus
+    bagAgeMin: bagAgeMin, bagStatus: bagStatus,
+    newState: newState, next: next, prev: prev, goTo: goTo,
+    verify: verify, correct: correct, canAdvance: canAdvance,
+    heldAtCheckpoint: heldAtCheckpoint
   };
 })();
 </script>
