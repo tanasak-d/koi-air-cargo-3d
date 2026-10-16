@@ -87,3 +87,7 @@ test('ทุกศัพท์ใน GLOSSARY ปรากฏในเนื้�
 test('FOURFLOW มี 4 เลน p i d r', () => {
   assert.deepEqual(D.FOURFLOW.map(f => f.lane), ['p', 'i', 'd', 'r']);
 });
+
+test('ทุกสถานีมีชื่อสั้นสำหรับแถบเส้นทาง', () => {
+  assert.deepEqual(D.STATIONS.map(s => s.short), ['ผู้ส่ง', 'NRT', 'เครื่องบิน', 'BKK', 'DOF', 'ผู้รับ']);
+});

@@ -117,6 +117,27 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #app{padding:8px 16px 24px}
   #stage{aspect-ratio:4/3}
 }
+/* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
+.sep{color:var(--muted)}
+.muted{color:var(--muted)}
+.side-title{margin:0 0 4px;font-size:1rem}
+.step{display:block;text-align:left;border-radius:12px;width:100%;line-height:1.4}
+.step.passed{background:var(--tint);border-color:var(--blue);color:var(--blue)}
+.step.here{background:var(--pink);border-color:var(--pink);color:var(--on-pink)}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.9rem}
+.tabbody h3{margin:8px 0 2px;font-size:1rem}
+.tabbody p,.tabbody ul{margin:0 0 6px}
+.lanes{list-style:none;padding:0}
+.lanes li{margin-bottom:6px}
+abbr[title]{text-decoration:underline dotted var(--blue);cursor:help}
+.hold,.end{border:2px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
+.hold{border-color:var(--bad)}
+.hold h3,.end h3{margin:0 0 4px}
+.opts{display:grid;gap:6px}
+.opts button{border-radius:12px;text-align:left}
+.scenarios{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+.scenarios button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
 </style>
 </head>
 <body>
@@ -169,12 +190,12 @@ var KoiData = (function () {
 
   // 6 สถานี (first/last นับจาก 0)
   var STATIONS = [
-    { id: 's1', name: 'ผู้ส่ง (ฟาร์มในญี่ปุ่น)', first: 0, last: 5 },
-    { id: 's2', name: 'สนามบินนาริตะ (NRT)', first: 6, last: 7 },
-    { id: 's3', name: 'บนเที่ยวบิน JL707', first: 8, last: 8 },
-    { id: 's4', name: 'สนามบินสุวรรณภูมิ (BKK)', first: 9, last: 9 },
-    { id: 's5', name: 'ด่านกรมประมง (DOF) และกักกัน', first: 10, last: 13 },
-    { id: 's6', name: 'ผู้รับ (ฟาร์มบริษัท)', first: 14, last: 16 }
+    { id: 's1', short: 'ผู้ส่ง', name: 'ผู้ส่ง (ฟาร์มในญี่ปุ่น)', first: 0, last: 5 },
+    { id: 's2', short: 'NRT', name: 'สนามบินนาริตะ (NRT)', first: 6, last: 7 },
+    { id: 's3', short: 'เครื่องบิน', name: 'บนเที่ยวบิน JL707', first: 8, last: 8 },
+    { id: 's4', short: 'BKK', name: 'สนามบินสุวรรณภูมิ (BKK)', first: 9, last: 9 },
+    { id: 's5', short: 'DOF', name: 'ด่านกรมประมง (DOF) และกักกัน', first: 10, last: 13 },
+    { id: 's6', short: 'ผู้รับ', name: 'ผู้รับ (ฟาร์มบริษัท)', first: 14, last: 16 }
   ];
 
   // ตำแหน่งที่กล่องปลาไปหยุดในฉาก (หน่วยฉาก x,z อยู่ในช่วง -10..10) ต่อสถานี 1 จุดต่อ 1 ขั้น
@@ -660,11 +681,16 @@ var KoiLogic = (function () {
 <script id="koi-ui">
 /* ============================================================
    koi-ui : ส่วนหน้าจอ
-   ตอนนี้มี: ธีมสว่าง/มืด  (ตัวแสดงผลแผงต่าง ๆ เพิ่มใน Task 6)
+   1) ธีมสว่าง/มืด
+   2) ตัวแสดงผล render*  = ฟังก์ชันที่รับ state แล้ว "คืนสตริง HTML" (ไม่แตะหน้าเว็บจริง จึงทดสอบใน Node ได้)
+   3) mount()            = ผูกปุ่ม/ตัวเล่นอัตโนมัติ แล้วเอา HTML ไปใส่หน้าเว็บ
+   กติกา: ข้อความจากข้อมูลทุกตัวต้องผ่าน esc() เพื่อกัน HTML แปลกปลอม
    ============================================================ */
 var KoiUI = (function () {
+  var D = KoiData, L = KoiLogic;
   var KEY = 'koi-theme'; // ชื่อที่ใช้จำค่าธีมใน localStorage
 
+  /* ---------- 1) ธีม ---------- */
   // ค่าเริ่มต้นของสภาพแวดล้อม (เทสต์ส่ง stub มาแทนได้) ห่อ try/catch เพราะบางเบราว์เซอร์บล็อก localStorage
   function defaultEnv() {
     var storage = null;
@@ -680,7 +706,6 @@ var KoiUI = (function () {
     if (set === 'light' || set === 'dark') return set;
     return env.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
-
   // เริ่มต้น: ถ้ามีค่าที่จำไว้ ตั้ง data-theme ถ้าไม่มี ปล่อยให้ CSS ตามระบบเอง
   function initTheme(env) {
     env = env || defaultEnv();
@@ -688,7 +713,6 @@ var KoiUI = (function () {
     if (saved === 'light' || saved === 'dark') env.doc.documentElement.setAttribute('data-theme', saved);
     else env.doc.documentElement.removeAttribute('data-theme');
   }
-
   // สลับธีม แล้วจำไว้ คืนค่าธีมใหม่
   function toggleTheme(env) {
     env = env || defaultEnv();
@@ -698,7 +722,216 @@ var KoiUI = (function () {
     return next;
   }
 
-  return { initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme };
+  /* ---------- 2) ตัวแสดงผล (คืนสตริง HTML) ---------- */
+  // กัน HTML แปลกปลอม: แปลงอักขระพิเศษเป็นข้อความธรรมดา
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // ห่อศัพท์เฉพาะด้วย <abbr title="คำอธิบาย"> เฉพาะ "ครั้งแรก" ที่เจอในข้อความนี้
+  // ทำรอบเดียวกับข้อความที่ escape แล้ว เพื่อไม่ให้ไปแทนซ้ำในคำอธิบายที่เพิ่งใส่
+  var TERM_RE = null, TERM_MAP = null;
+  function glossaryIndex() {
+    if (TERM_RE) return;
+    TERM_MAP = {};
+    var terms = D.GLOSSARY.map(function (g) { TERM_MAP[g.term] = g.plain; return g.term; });
+    terms.sort(function (a, b) { return b.length - a.length; }); // คำยาวก่อน
+    var alt = terms.map(function (t) { return t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|');
+    TERM_RE = new RegExp('(?<![A-Za-z0-9])(?:' + alt + ')(?![A-Za-z0-9])', 'g');
+  }
+  function renderGlossary(text) {
+    glossaryIndex();
+    var seen = {};
+    return esc(text).replace(TERM_RE, function (t) {
+      if (seen[t]) return t;
+      seen[t] = true;
+      return '<abbr title="' + esc(TERM_MAP[t]) + '" tabindex="0">' + t + '</abbr>';
+    });
+  }
+
+  // สถานีที่ผู้ชมอยู่ตอนนี้
+  function curStation(S) { return L.stationOf(S.idx); }
+
+  // แถบ 6 สถานี: ผ่านแล้ว = ฟ้า, ตรงนี้ = ชมพู, ยังไม่ถึง = ปกติ
+  function renderStrip(S) {
+    var cur = curStation(S), locked = S.mode === 'hold' || S.mode === 'end';
+    var items = D.STATIONS.map(function (st, i) {
+      var cls = i < cur ? 'pill passed' : i === cur ? 'pill here' : 'pill';
+      var mark = i < cur ? '✓ ' : '';
+      return '<button type="button" data-station="' + i + '" class="' + cls + '"' +
+        (i === cur && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
+        mark + (i + 1) + ' ' + esc(st.short) + '</button>';
+    });
+    return items.join('<span class="sep" aria-hidden="true">›</span>');
+  }
+
+  // รายการขั้นของสถานีปัจจุบัน
+  function renderStepList(S) {
+    var st = D.STATIONS[curStation(S)];
+    var out = ['<h2 class="side-title">' + esc(st.name) + '</h2>'];
+    for (var i = st.first; i <= st.last; i++) {
+      var s = D.STEPS[i], here = i === S.idx, passed = i < S.idx;
+      var bad = here && (S.mode === 'hold' || S.end === 'loss');
+      var cls = 'step' + (here ? ' here' : passed ? ' passed' : '');
+      var mark = bad ? '✕ ' : passed ? '✓ ' : '';
+      out.push('<button type="button" data-step="' + i + '" class="' + cls + '"' +
+        (here ? ' aria-current="step"' : '') + '>' +
+        '<b>' + mark + 'ขั้น ' + s.n + '</b> ' + esc(s.name) + '</button>');
+    }
+    return out.join('');
+  }
+
+  // ป้ายเวลา + อายุปลาในถุง (เทียบเพดาน 21 ชม.)
+  function renderTimeBadge(S) {
+    var out = '<span class="badge">🕒 ' + esc(L.stepTimeLabel(S.idx, S)) + '</span>';
+    var age = L.bagAgeMin(S);
+    if (age != null) {
+      var hrs = (age / 60).toFixed(1), over = L.bagStatus(S) === 'over';
+      out += ' <span class="badge ' + (over ? 'st-bad' : 'st-ok') + '">อายุถุง ' + hrs + ' ชม. · ' +
+        (over ? '✕ เกิน 21 ชม.' : '✓ ไม่เกิน 21 ชม.') + '</span>';
+    }
+    return out;
+  }
+
+  var TAB_NAMES = [['who', 'ใคร'], ['what', 'ทำอะไร'], ['docs', 'เอกสาร'], ['risk', 'ความเสี่ยง'], ['flow', '4-Flow']];
+  function renderTabBar(tab) {
+    return '<div class="tabbar" role="tablist">' + TAB_NAMES.map(function (t) {
+      return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
+    }).join('') + '</div>';
+  }
+
+  // เนื้อหาแท็บของขั้นปัจจุบัน
+  function renderTab(name, S) {
+    var s = D.STEPS[S.idx];
+    if (name === 'who') {
+      return '<h3>ใครทำ</h3><p>' + renderGlossary(s.who) + '</p>' +
+        '<p class="muted">' + esc(s.ph) + '</p>';
+    }
+    if (name === 'what') {
+      return '<h3>ทำอะไร</h3><p>' + renderGlossary(s.what) + '</p>' +
+        '<h3>ทำไมสำคัญ</h3><p>' + renderGlossary(s.why) + '</p>' +
+        '<h3>ถ้าผ่าน / ไม่ผ่าน</h3><p>' + renderGlossary(s.dec) + '</p>';
+    }
+    if (name === 'docs') {
+      return '<h3>เอกสารของขั้นนี้</h3><ul>' + s.docs.map(function (d) {
+        return '<li>' + renderGlossary(d) + '</li>';
+      }).join('') + '</ul>';
+    }
+    if (name === 'risk') {
+      return '<h3>ความเสี่ยง</h3><p>' + renderGlossary(s.risk) + '</p>';
+    }
+    // flow: 4 เลน ปกติ = ✓ มีปัญหา = ✕
+    return '<h3>4-Flow ต้องตรงกัน</h3><ul class="lanes">' + D.FOURFLOW.map(function (f) {
+      var okLane = S.lanes[f.lane] === 1;
+      var detail = f.lane === 'r' ? s.who : s.flow[f.lane];
+      return '<li data-lane="' + f.lane + '"><span class="' + (okLane ? 'st-ok' : 'st-bad') + '">' +
+        (okLane ? '✓' : '✕') + '</span> <b>' + esc(f.name) + '</b> (' + esc(f.sub) + '): ' + renderGlossary(detail) + '</li>';
+    }).join('') + '</ul>';
+  }
+
+  // แผง HOLD → VERIFY → CORRECT
+  function renderHold(S) {
+    if (S.mode !== 'hold') return '';
+    var sc = D.SCENARIOS[S.sc];
+    var out = '<div class="hold" role="alert"><h3><span class="st-bad">✕ HOLD</span> · กล่องปลาถูกค้างที่ด่าน</h3>' +
+      '<p>' + esc(sc.mm) + '</p>' +
+      '<p><b>สาเหตุที่เป็นไปได้:</b> ' + esc(sc.cause) + '<br><b>ถ้าปล่อยผ่าน:</b> ' + esc(sc.cons) +
+      '<br><b>ตัวควบคุม:</b> ' + esc(sc.ctrl) + '</p>';
+    if (S.hp === 0) {
+      out += '<p>ขั้นต่อไป — VERIFY: ' + esc(sc.verify) + '</p>' +
+        '<button type="button" class="primary" data-act="verify">VERIFY · ตรวจให้แน่ใจ</button>';
+    } else {
+      out += '<p>CORRECT — เลือกวิธีแก้ที่ต้นเหตุ:</p><div class="opts">' + sc.opts.map(function (o, k) {
+        return '<button type="button" data-opt="' + k + '">' + esc(o.t) + '</button>';
+      }).join('') + '</div>';
+    }
+    return out + '</div>';
+  }
+
+  // สรุปตอนจบ (ครบ 17 ขั้น / จบแบบคุมได้ / จบแบบสูญเสีย)
+  function renderEnd(S) {
+    if (S.mode !== 'done' && S.mode !== 'end') return '';
+    var res = S.opt != null ? D.SCENARIOS[S.sc].opts[S.opt].res : '';
+    if (S.end === 'loss') {
+      return '<div class="end" role="status"><h3 class="st-bad">✕ จบแบบสูญเสีย</h3><p>' + esc(res) + '</p></div>';
+    }
+    if (S.end === 'ctl') {
+      return '<div class="end" role="status"><h3 class="st-ok">✓ ควบคุมความเสี่ยงได้</h3><p>' + esc(res) + '</p></div>';
+    }
+    return '<div class="end" role="status"><h3 class="st-ok">✓ ส่งถึงมือผู้รับครบ 17 ขั้นตอน</h3>' +
+      (res ? '<p>' + esc(res) + '</p>' : '') + '</div>';
+  }
+
+  // แผงควบคุมด้านล่าง: ก่อน/เล่น/ถัดไป + เลือกเหตุการณ์
+  function renderControls(S, playing) {
+    var can = L.canAdvance(S);
+    var dis = can ? '' : ' disabled';
+    var sc = D.SCENARIOS.map(function (c) {
+      return '<button type="button" data-sc="' + c.id + '" aria-pressed="' + (S.sc === c.id) + '">' + esc(c.label) + '</button>';
+    }).join('');
+    return '<div class="controls">' +
+      '<button type="button" data-act="prev"' + ((S.mode === 'hold' || S.mode === 'end' || S.idx === 0) ? ' disabled' : '') + '>◀ ก่อนหน้า</button>' +
+      '<button type="button" class="primary" data-act="play"' + dis + '>' + (playing ? '⏸ หยุด' : '▶ เล่น') + '</button>' +
+      '<button type="button" data-act="next"' + dis + '>ถัดไป ▶</button>' +
+      '<b>ขั้น ' + (S.idx + 1) + '/' + D.STEPS.length + '</b>' +
+      '<button type="button" data-act="overview">ดูทั้งเส้นทาง</button>' +
+      '</div><div class="scenarios" aria-label="เลือกเหตุการณ์เสี่ยง"><span class="muted">เหตุการณ์:</span> ' + sc + '</div>';
+  }
+
+  /* ---------- 3) ผูกกับหน้าเว็บ ---------- */
+  // mount: สร้าง state, ผูกปุ่ม (event delegation), วาดหน้า
+  // hooks.onRender(S) ให้ส่วน 3 มิติมาเกาะเพื่ออัปเดตตามสถานะ
+  function mount(root, hooks) {
+    hooks = hooks || {};
+    var S = L.newState(0), tab = 'who', timer = null;
+    var $ = function (id) { return root.querySelector(id); };
+
+    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+    function render() {
+      $('#strip').innerHTML = renderStrip(S);
+      $('#steps').innerHTML = renderStepList(S);
+      $('#tabs').innerHTML = '<div class="badges">' + renderTimeBadge(S) + '</div>' + renderHold(S) + renderEnd(S) +
+        renderTabBar(tab) + '<div class="tabbody">' + renderTab(tab, S) + '</div>';
+      $('#controls').innerHTML = renderControls(S, !!timer);
+      if (hooks.onRender) hooks.onRender(S);
+    }
+    function togglePlay() {
+      if (timer) { stopTimer(); }
+      else {
+        timer = setInterval(function () {
+          if (!L.canAdvance(S)) { stopTimer(); render(); return; }
+          L.next(S); render();
+        }, 1100);
+      }
+      render();
+    }
+
+    root.addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('button') : null;
+      if (!el || el.disabled) return;
+      var d = el.dataset;
+      if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
+      else if (d.step != null) { L.goTo(S, +d.step); }
+      else if (d.tab != null) { tab = d.tab; }
+      else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); }
+      else if (d.opt != null) { L.correct(S, +d.opt); }
+      else if (d.act === 'next') { L.next(S); }
+      else if (d.act === 'prev') { L.prev(S); }
+      else if (d.act === 'play') { togglePlay(); return; }
+      else if (d.act === 'verify') { L.verify(S); }
+      else if (d.act === 'overview') { S.overview = !S.overview; }
+      render();
+    });
+    render();
+    return { render: render, getState: function () { return S; } };
+  }
+
+  return {
+    initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
+    esc: esc, renderGlossary: renderGlossary, renderStrip: renderStrip, renderStepList: renderStepList,
+    renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
+    renderHold: renderHold, renderEnd: renderEnd, renderControls: renderControls, mount: mount
+  };
 })();
 </script>
 <!-- บล็อก 3 มิติ: Three.js (Task 7-10) -->
@@ -709,6 +942,7 @@ var KoiScene = {};
 <script id="koi-boot">
 (function () {
   KoiUI.initTheme();
+  KoiUI.mount(document.getElementById("app"));
   document.getElementById("theme-btn").addEventListener("click", function () { KoiUI.toggleTheme(); });
 })();
 </script>
