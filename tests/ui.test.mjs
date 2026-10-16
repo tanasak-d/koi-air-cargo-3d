@@ -144,3 +144,21 @@ test('renderControls: ปุ่ม overview เปลี่ยนข้อคว
   S.overview = true;
   assert.match(UI.renderControls(S, false), /กลับสู่สถานี/);
 });
+
+// ---- Task 10: ภาพความเสี่ยง ----
+test('ทุกเหตุการณ์ 1–5 ที่เข้า hold: แผงแสดง HOLD + ✕ + สาเหตุ ไม่พึ่งสีอย่างเดียว', () => {
+  for (let id = 1; id <= 5; id++) {
+    const S = walk(L.newState(id));
+    const h = UI.renderHold(S);
+    assert.match(h, /HOLD/, 'เหตุการณ์ ' + id);
+    assert.match(h, /✕/);
+    assert.ok(h.includes(UI.esc(D.SCENARIOS[id].cause)), 'ไม่มีสาเหตุของเหตุการณ์ ' + id);
+  }
+});
+
+test('หลังแก้ถูกแผง HOLD หายและไม่ค้างแล้ว', () => {
+  const S = walk(L.newState(3));
+  L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => o.good));
+  assert.equal(UI.renderHold(S), '');
+  assert.equal(L.heldAtCheckpoint(S), false);
+});

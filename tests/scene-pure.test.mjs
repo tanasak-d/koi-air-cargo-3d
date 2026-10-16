@@ -120,3 +120,25 @@ test('overviewTile: ตำแหน่งกระเบื้อง 6 สถา
   for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 3.5, 'กระเบื้อง ' + i + ' ชิดเกินไป');
   assert.ok(Math.abs(xs[0]) <= 12 && Math.abs(xs[5]) <= 12);
 });
+
+// ---- Task 10: หน้าตาของกล่องปลาตามสถานะความเสี่ยง ----
+test('riskLook: hold = held (กระพริบ), จบสูญเสีย = loss (แดงนิ่ง), อื่น ๆ = normal', () => {
+  const walk = (S) => { while (L.canAdvance(S)) L.next(S); return S; };
+  const S = walk(L.newState(1));
+  assert.equal(SC.riskLook(S), 'held');
+  L.verify(S); L.correct(S, D.SCENARIOS[1].opts.findIndex(o => !o.good));
+  assert.equal(SC.riskLook(S), 'loss');
+  const ok = walk(L.newState(1)); L.verify(ok); L.correct(ok, D.SCENARIOS[1].opts.findIndex(o => o.good));
+  assert.equal(SC.riskLook(ok), 'normal');
+  const ctl = walk(L.newState(5)); L.verify(ctl); L.correct(ctl, D.SCENARIOS[5].opts.findIndex(o => o.good));
+  assert.equal(SC.riskLook(ctl), 'normal'); // คุมความเสี่ยงได้ ไม่ใช่การสูญเสีย
+  assert.equal(SC.riskLook(L.newState(0)), 'normal');
+});
+
+test('blinkOn ของสถานะ loss ไม่กระพริบ (boxPulse คืนค่าคงที่)', () => {
+  for (let t = 0; t < 2000; t += 111) assert.equal(SC.boxPulse('loss', t, false), true);
+  const seen = new Set();
+  for (let t = 0; t < 2000; t += 50) seen.add(SC.boxPulse('held', t, false));
+  assert.equal(seen.size, 2); // held กระพริบจริง
+  for (let t = 0; t < 2000; t += 111) assert.equal(SC.boxPulse('held', t, true), true); // reduced-motion
+});

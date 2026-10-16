@@ -975,6 +975,18 @@ var KoiScene = (function () {
     return Math.floor(timeMs / 500) % 2 === 0;
   }
 
+  // หน้าตาของกล่องปลาตามสถานะ: 'held' = ค้างที่ด่าน (แดงกระพริบ), 'loss' = จบแบบสูญเสีย (แดงนิ่ง), 'normal' = ปกติ
+  function riskLook(S) {
+    if (L.heldAtCheckpoint(S)) return 'held';
+    if (S.end === 'loss') return 'loss';
+    return 'normal';
+  }
+  // ตอนนี้กล่องแดงควร "สว่าง" หรือไม่: held กระพริบตาม blinkOn, loss สว่างค้าง (ไม่กระพริบ)
+  function boxPulse(look, timeMs, reducedMotion) {
+    if (look === 'loss') return true;
+    return blinkOn(timeMs, reducedMotion);
+  }
+
   /* ---------- (ข) ส่วนที่ต้องมี WebGL ---------- */
   var CAM_SCALE = [1, 1, 1.4, 1, 1, 1]; // ถอยกล้องเพิ่มของแต่ละสถานี (S3 เครื่องบินใหญ่)
   var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, box, ...
@@ -1367,8 +1379,8 @@ var KoiScene = (function () {
   }
   function place() { R.box.position.set(R.pos.x, R.boxY || 0, R.pos.z); }
 
-  // กล่องค้างที่ด่าน = แดง (กระพริบเฉพาะความสว่าง); ไม่ค้าง = ขาวปกติ
-  function setHeld(on) { if (R) R.held = !!on; }
+  // look = 'held' | 'loss' | 'normal' (หรือ true/false แบบเดิม: true = held)
+  function setHeld(look) { if (R) R.look = look === true ? 'held' : (look || 'normal'); }
 
   // วนวาดทุกเฟรม
   function loop(now) {
@@ -1381,9 +1393,9 @@ var KoiScene = (function () {
       place();
     }
     var mat = R.box.userData.body.material;
-    if (R.held) {
-      mat.color.setHex(0xd13b32);
-      mat.emissive.setHex(blinkOn(performance.now(), reduced) ? 0x7a0f0a : 0x2a0503);
+    if (R.look === 'held' || R.look === 'loss') {
+      mat.color.setHex(0xd13b32);   // แดงเสมอเมื่อมีความเสี่ยง (ไม่กลับเป็นขาวระหว่างกระพริบ)
+      mat.emissive.setHex(boxPulse(R.look, performance.now(), reduced) ? 0x7a0f0a : 0x2a0503);
     } else {
       mat.color.setHex(THEME[themeName()].box);
       mat.emissive.setHex(0x000000);
@@ -1421,13 +1433,13 @@ var KoiScene = (function () {
   function sync(S) {
     if (!R) return;
     R.lastS = S;
-    if (S.overview) { showOverview(S); setHeld(L.heldAtCheckpoint(S) || S.end === 'loss'); return; }
+    if (S.overview) { showOverview(S); setHeld(riskLook(S)); return; }
     if (R.overview) leaveOverview(S);
     var st = L.stationOf(S.idx);
     if (R.station !== st) { showStation(st); var t = boxTarget(S.idx); R.pos = t; R.move = null; place(); }
     else moveBoxTo(S.idx);
     R.curStep = S.idx; applyLabels();
-    setHeld(L.heldAtCheckpoint(S) || S.end === 'loss');
+    setHeld(riskLook(S));
   }
 
   function dispose() {
@@ -1441,7 +1453,7 @@ var KoiScene = (function () {
 
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, STATION_LABELS: STATION_LABELS,
-    overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
+    riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
     supported: supported, init: init, showStation: showStation, moveBoxTo: moveBoxTo,
     setHeld: setHeld, setTheme: setTheme, sync: sync, dispose: dispose
   };
