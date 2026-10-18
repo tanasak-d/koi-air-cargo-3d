@@ -5684,7 +5684,7 @@ var KoiUI = (function () {
    koi-scene : ส่วน 3 มิติ (Three.js)
    แบ่งเป็น 2 ส่วน
    (ก) ฟังก์ชันบริสุทธิ์ (boxTarget, easeInOut, lerpPose, blinkOn)  -> ทดสอบใน Node ได้
-   (ข) ส่วนที่ต้องมี WebGL (init, showStation, moveBoxTo, setHeld, ...) -> ตรวจด้วยตาในเบราว์เซอร์
+   (ข) ส่วนที่ต้องมี WebGL (init, sync, ACTIONS, kit, กล้องเลื่อนเอง ...) -> ตรวจด้วยตาในเบราว์เซอร์
    ถ้าเครื่องไม่รองรับ WebGL จะแสดงข้อความแทนภาพ 3 มิติ แต่ส่วนอื่นของหน้ายังใช้ได้
    ============================================================ */
 var KoiScene = (function () {
@@ -5832,9 +5832,45 @@ var KoiScene = (function () {
   };
   function placeholderSize(name) { return PLACEHOLDER[name] || { w: 1, h: 1, d: 1 }; }
 
+  /* ---------- กล้องเลื่อนเอง ----------
+     ทุกเฟรมกล้องขยับเข้าใกล้มุมของช็อตทีละนิด (สัดส่วน k) จึงดูนุ่ม
+     เริ่มจาก "ตำแหน่งที่กล้องอยู่จริงตอนนี้" เสมอ กดเปลี่ยนขั้นรัว ๆ ก็ไม่กระตุกย้อน */
+  function mix(a, b, k) { return v(a.x + (b.x - a.x) * k, a.y + (b.y - a.y) * k, a.z + (b.z - a.z) * k); }
+  function camGlide(cur, goal, k) {
+    var p = mix(cur.p, goal.p, k), t = mix(cur.t, goal.t, k);
+    var left = Math.hypot(goal.p.x - p.x, goal.p.y - p.y, goal.p.z - p.z) + Math.hypot(goal.t.x - t.x, goal.t.y - t.y, goal.t.z - t.z);
+    if (left < 0.05) return { p: v(goal.p.x, goal.p.y, goal.p.z), t: v(goal.t.x, goal.t.y, goal.t.z), done: true };
+    return { p: p, t: t, done: false };
+  }
+  // สัดส่วนที่ขยับในเฟรมนี้: ไม่ขึ้นกับความเร็วเครื่อง (เฟรมห่าง k มาก) · ลดการเคลื่อนไหว = กระโดดถึงทันที
+  function glideK(dtSec, reduced) { return reduced ? 1 : 1 - Math.exp(-dtSec * 3); }
+
+  // ผู้ชมหมุนกล้องเองแล้วปล่อยไว้ 8 วินาที → กล้องกลับไปมุมของช็อต (ตั้งเป็น 0 = ไม่กลับเอง)
+  var IDLE_RETURN_MS = 8000;
+  function idleReturnDue(lastInputMs, nowMs, gliding) {
+    if (!IDLE_RETURN_MS || lastInputMs == null || gliding) return false;
+    return nowMs - lastInputMs >= IDLE_RETURN_MS;
+  }
+
+  // คุณภาพอัตโนมัติ: เฟรมต่อวินาทีต่ำกว่า 28 → ปิดเงาก่อน ถ้ายังช้าค่อยลดความละเอียดเหลือ 1 เท่า
+  function nextQuality(q, fps) {
+    if (fps >= 28) return { ratio: q.ratio, shadows: q.shadows };
+    if (q.shadows) return { ratio: q.ratio, shadows: false };
+    return { ratio: Math.min(q.ratio, 1), shadows: false };
+  }
+
+  // ตำแหน่งการ์ดลอย (px,py = จุดของกล่องบนจอ, cw/ch = ขนาดการ์ด, sw/sh = ขนาดเวที)
+  // วางเหนือกล่อง 16 px ถ้าชนขอบบนให้ไปอยู่ใต้กล่อง และไม่ล้นขอบเวที (เว้นขอบ 8 px)
+  function cardPos(px, py, cw, ch, sw, sh) {
+    var left = Math.max(8, Math.min(sw - cw - 8, px - cw / 2));
+    var top = py - ch - 16;
+    if (top < 8) top = py + 16;
+    top = Math.max(8, Math.min(sh - ch - 8, top));
+    return { left: left, top: top };
+  }
+
   /* ---------- (ข) ส่วนที่ต้องมี WebGL ---------- */
-  var CAM_SCALE = [1, 1, 1.4, 1, 1, 1]; // ถอยกล้องเพิ่มของแต่ละสถานี (S3 เครื่องบินใหญ่)
-  var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, box, ...
+  var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, controls, cargo, ...
 
   // เครื่องนี้สร้าง WebGL ได้ไหม (ใน Node / เบราว์เซอร์ที่ปิด WebGL จะได้ false)
   function supported() {
@@ -5845,9 +5881,10 @@ var KoiScene = (function () {
     } catch (e) { return false; }
   }
 
+  // สีของฉากตามธีม (ท้องฟ้า หญ้า ลานจอด เส้นเหลือง)
   var THEME = {
-    light: { bg: 0xe8f0fa, ground: 0xd4e2f3, grid: 0xaac0de, box: 0xffffff },
-    dark: { bg: 0x0f1a2e, ground: 0x16233d, grid: 0x2a3a58, box: 0xdfe8f5 }
+    light: { sky: 0xa9d4f0, grass: 0x7fb069, tarmac: 0xa7afb9, line: 0xf2c230, dirt: 0xcdb88a },
+    dark: { sky: 0x0f1a2e, grass: 0x2f4c37, tarmac: 0x3b4451, line: 0xc9a227, dirt: 0x5a5040 }
   };
   function themeName() {
     var t = document.documentElement.getAttribute('data-theme');
@@ -5865,235 +5902,203 @@ var KoiScene = (function () {
     if (mq.addEventListener) mq.addEventListener('change', f); else if (mq.addListener) mq.addListener(f);
   }
 
-  // กล่องปลา: กล่องโฟมสีขาว + แถบป้ายฟ้า (ใช้ตัวเดียวซ้ำทุกสถานี)
-  function makeBox() {
-    var g = new THREE.Group();
-    var body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.1, 1.2),
-      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 }));
-    body.position.y = 0.55;
-    var label = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.5, 0.02),
-      new THREE.MeshStandardMaterial({ color: 0x1d62c4, roughness: 0.6 }));
-    label.position.set(0, 0.6, 0.61);
-    g.add(body); g.add(label);
-    g.userData.body = body;
-    return g;
-  }
-
-  /* ---------- ตัวช่วยสร้างวัตถุ 3 มิติ ---------- */
-  // วัสดุใช้ซ้ำตามสี (เก็บไว้ใน MATS) เพื่อไม่สร้างใหม่ซ้ำ ๆ — ตอนล้างฉากจึงห้าม dispose วัสดุที่แชร์
+  /* ---------- ตัวช่วยสร้างวัตถุแบบโลว์โพลี ----------
+     ทุกชิ้นใช้วัสดุผิวเรียบสีเดียว + flatShading (เห็นเหลี่ยม) = สไตล์โลว์โพลีเดียวกับโมเดลของ Kenney */
+  // วัสดุใช้ซ้ำตามสี (เก็บไว้ใน MATS) — ตอนล้างฉากจึงห้าม dispose วัสดุที่แชร์
   var MATS = {};
-  function mat(hex, rough) {
-    var k = hex + '|' + (rough || 0.8);
-    if (!MATS[k]) { MATS[k] = new THREE.MeshStandardMaterial({ color: hex, roughness: rough || 0.8 }); MATS[k].userData.shared = true; }
+  function lin(hex) { return new THREE.Color(hex).convertSRGBToLinear(); }
+  function mat(hex, opacity) {
+    var k = hex + '|' + (opacity || 1);
+    if (!MATS[k]) {
+      // แปลงสี: เราเลือกสีแบบที่ตาเห็น (sRGB) แต่ renderer คำนวณแสงแบบ linear จึงต้องแปลงก่อน ไม่งั้นสีซีด
+      MATS[k] = new THREE.MeshStandardMaterial({ color: lin(hex), roughness: 0.85, metalness: 0.05, flatShading: true,
+        transparent: !!opacity && opacity < 1, opacity: opacity || 1 });
+      MATS[k].userData.shared = true;
+    }
     return MATS[k];
   }
+  // ใส่ mesh ลงกลุ่ม พร้อมเปิดเงา
+  function put(g, geo, hex, x, y, z, opacity) {
+    var m = new THREE.Mesh(geo, mat(hex, opacity));
+    m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; m.receiveShadow = true;
+    g.add(m); return m;
+  }
   // กล่อง: y คือ "ฐานของกล่อง" (ไม่ใช่กึ่งกลาง) จะได้วางบนพื้นง่าย
-  function addBox(g, w, h, d, hex, x, y, z) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat(hex));
-    m.position.set(x, y + h / 2, z); g.add(m); return m;
+  function addBox(g, w, h, d, hex, x, y, z) { return put(g, new THREE.BoxGeometry(w, h, d), hex, x, (y || 0) + h / 2, z); }
+  // ทรงกระบอกแกนตั้ง (y = ฐาน) ใช้ 10 เหลี่ยมเป็นค่าเริ่มต้น = ดูโลว์โพลี
+  function addCyl(g, r, h, hex, x, y, z, seg) { return put(g, new THREE.CylinderGeometry(r, r, h, seg || 10), hex, x, (y || 0) + h / 2, z); }
+  // บ่อน้ำ (ใช้ทั้งในฉากและภาพรวม): ขอบ + น้ำ
+  function addPond(g, x, z, r, water) {
+    addCyl(g, r, 0.35, 0xb9c6d6, x, 0, z, 14);
+    return addCyl(g, r - 0.25, 0.38, water || 0x4aa3df, x, 0, z, 14);
   }
-  // ทรงกระบอก (แกนตั้ง) y = ฐาน
-  function addCyl(g, r, h, hex, x, y, z, seg) {
-    var m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 24), mat(hex));
-    m.position.set(x, y + h / 2, z); g.add(m); return m;
-  }
-  // ปลาโคอิตัวเล็ก (วงรี) ว่ายในบ่อ
-  function addKoi(g, x, y, z, rot, hex) {
-    var m = new THREE.Mesh(new THREE.SphereGeometry(0.35, 12, 8), mat(hex, 0.5));
-    m.scale.set(1.6, 0.5, 0.6); m.position.set(x, y, z); m.rotation.y = rot; g.add(m);
-  }
+  function group(parent, x, y, z) { var g = new THREE.Group(); g.position.set(x || 0, y || 0, z || 0); if (parent) parent.add(g); return g; }
+
+  // ชุดของในฉาก ทุกตัวคืน THREE.Group ที่ฐานอยู่ y=0 (ฉากแต่ละสถานีหยิบไปวาง)
+  var kit = {
+    // คน: ขา ลำตัว (สีเสื้อ) แขน หัว — userData.arms ใช้ทำท่ายก/ชี้
+    person: function (shirt) {
+      var g = group();
+      addBox(g, 0.22, 0.8, 0.22, 0x2e3a4d, -0.14, 0, 0); addBox(g, 0.22, 0.8, 0.22, 0x2e3a4d, 0.14, 0, 0);
+      addBox(g, 0.6, 0.7, 0.34, shirt, 0, 0.8, 0);
+      var armL = group(g, -0.38, 1.45, 0), armR = group(g, 0.38, 1.45, 0);
+      addBox(armL, 0.16, 0.62, 0.16, shirt, 0, -0.62, 0); addBox(armR, 0.16, 0.62, 0.16, shirt, 0, -0.62, 0);
+      put(g, new THREE.IcosahedronGeometry(0.22, 0), 0xf0c39a, 0, 1.75, 0);
+      g.userData.arms = [armL, armR];
+      return g;
+    },
+    // ปลาคาร์ฟ: ลำตัวทรงหยดน้ำ + หาง (หันหัวไป +x) — userData.tail ใช้ส่ายหาง
+    koi: function (hex) {
+      var g = group();
+      var body = put(g, new THREE.SphereGeometry(0.22, 7, 5), hex, 0, 0, 0); body.scale.set(1.8, 0.7, 0.8);
+      var tail = group(g, -0.38, 0, 0);
+      var fin = put(tail, new THREE.ConeGeometry(0.16, 0.3, 4), hex, -0.1, 0, 0); fin.rotation.z = Math.PI / 2;
+      put(g, new THREE.BoxGeometry(0.12, 0.08, 0.3), 0xffffff, 0.12, 0.1, 0);   // ลายขาว
+      g.userData.tail = tail;
+      return g;
+    },
+    // ถุงใส 3 ชั้น (ซ้อนกันเห็นทีละชั้น) — userData.layers
+    bag: function () {
+      var g = group(), layers = [];
+      for (var i = 0; i < 3; i++) {
+        var r = 0.42 - i * 0.06;
+        var b = put(g, new THREE.CylinderGeometry(r * 0.7, r, 0.9 - i * 0.08, 8), 0xcfe8ff, 0, (0.9 - i * 0.08) / 2, 0, 0.35);
+        b.castShadow = false; layers.push(b);
+      }
+      g.userData.layers = layers;
+      return g;
+    },
+    // กล่องโฟมใส่ปลา (ฟ้า เทปขาว ป้าย LIVE แดง) — วัสดุลำตัวเป็นของตัวเอง เพื่อเปลี่ยนสีตอนเกิดความเสี่ยง
+    fishBox: function () {
+      var g = group();
+      var body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.1, 1.1),
+        new THREE.MeshStandardMaterial({ color: lin(0x3fa0e0), roughness: 0.8, flatShading: true }));
+      body.position.y = 0.55; body.castShadow = true; g.add(body);
+      addBox(g, 1.65, 0.18, 1.15, 0xffffff, 0, 0.8, 0);
+      var live = addBox(g, 0.55, 0.32, 0.04, 0xd9423e, 0, 0.3, 0.56);
+      var arrow = addBox(g, 0.12, 0.4, 0.04, 0x1d2b3a, 0.55, 0.3, 0.56);
+      live.visible = false; arrow.visible = false;                       // ป้ายติดในขั้น 5
+      g.userData = { body: body, live: live, arrow: arrow };
+      return g;
+    },
+    // ถังพักปลา (ใช้ขั้น 1–3 ก่อนบรรจุกล่อง) มีปลาว่ายอยู่ข้างใน
+    tub: function () {
+      var g = group();
+      addCyl(g, 0.55, 0.5, 0xeaeef3, 0, 0, 0, 10); addCyl(g, 0.47, 0.06, 0x4aa3df, 0, 0.42, 0, 10);
+      var k = kit.koi(0xff7a33); k.position.y = 0.4; k.scale.setScalar(0.9); g.add(k);
+      g.userData.koi = k;
+      return g;
+    },
+    pond: function (r, water) { var g = group(); g.userData.water = addPond(g, 0, 0, r, water); return g; },
+    // อาคาร: ผนัง หลังคา ประตู (ประตูอยู่ด้าน +z)
+    building: function (w, h, d, roof) {
+      var g = group();
+      addBox(g, w, h, d, 0xeef0ea, 0, 0, 0); addBox(g, w + 0.6, 0.5, d + 0.6, roof, 0, h, 0);
+      g.userData.door = addBox(g, Math.min(4, w * 0.4), Math.min(3.2, h * 0.7), 0.12, 0x3a4660, 0, 0, d / 2 + 0.05);
+      addBox(g, Math.min(4.4, w * 0.44), 0.3, 0.3, 0xf2c230, 0, Math.min(3.2, h * 0.7), d / 2 + 0.1);
+      return g;
+    },
+    table: function (w, d) {
+      var g = group();
+      addBox(g, w, 0.1, d, 0xdfe6ee, 0, 0.8, 0);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (s) { addBox(g, 0.1, 0.8, 0.1, 0x7a8aa0, s[0] * (w / 2 - 0.1), 0, s[1] * (d / 2 - 0.1)); });
+      return g;
+    },
+    // สายพาน (ยาวตามแกน x) — ด้านบนสูง 0.9
+    conveyor: function (len) {
+      var g = group();
+      addBox(g, len, 0.75, 1.4, 0x6c7a8f, 0, 0, 0); addBox(g, len, 0.1, 1.2, 0x2b3445, 0, 0.75, 0);
+      for (var x = -len / 2 + 0.5; x < len / 2; x += 1.2) addBox(g, 0.12, 0.05, 1.3, 0x9aa8bb, x, 0.85, 0);
+      return g;
+    },
+    // อุโมงค์ X-ray — userData.light = แถบไฟสแกน (เปลี่ยนสีได้)
+    xray: function () {
+      var g = group();
+      addBox(g, 3.2, 2.2, 0.4, 0xdde4ee, 0, 0, -0.9); addBox(g, 3.2, 2.2, 0.4, 0xdde4ee, 0, 0, 0.9);
+      addBox(g, 3.2, 0.4, 2.2, 0xdde4ee, 0, 2.2, 0);
+      var light = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 1.4), new THREE.MeshBasicMaterial({ color: lin(0x45d16b) }));
+      light.position.set(0, 2.1, 0); g.add(light);
+      g.userData.light = light;
+      return g;
+    },
+    // ตู้ ULD (ตู้สินค้าขึ้นเครื่อง ชนิดที่สายการบินอนุมัติ)
+    uld: function () {
+      var g = group();
+      addBox(g, 2.4, 0.15, 2, 0x8c98aa, 0, 0, 0); addBox(g, 2.2, 1.6, 1.8, 0xc3ccd8, 0, 0.15, 0);
+      addBox(g, 2.2, 0.3, 1.2, 0xc3ccd8, 0, 1.75, -0.3);
+      return g;
+    },
+    // เอกสารแผ่นบาง (หน้ากระดาษขาว + แถบหัวกระดาษสี)
+    doc: function (hex) {
+      var g = group();
+      addBox(g, 0.7, 0.03, 0.95, 0xffffff, 0, 0, 0); addBox(g, 0.7, 0.04, 0.18, hex || 0x1d62c4, 0, 0, -0.38);
+      return g;
+    },
+    // ตราประทับ (ด้ามจับ + ฐานสีแดง)
+    stamp: function () {
+      var g = group();
+      addBox(g, 0.36, 0.12, 0.36, 0xd9423e, 0, 0, 0); addCyl(g, 0.08, 0.35, 0x3a4350, 0, 0.12, 0, 6);
+      return g;
+    },
+    // เครื่องบินลำตัวกว้าง (หัวไปทาง +x) ประตูห้องสินค้าอยู่ด้าน +z ที่ x=8 — userData.hold = ประตู
+    plane: function () {
+      var g = group(), R0 = 1.9, L = 15;
+      function add(geo, c, x, y, z, rot) { var m = put(g, geo, c, x, y, z); if (rot) m.rotation.set(rot[0], rot[1], rot[2]); return m; }
+      add(new THREE.CylinderGeometry(R0, R0, L, 12), 0xf4f6f8, 0, 3, 0, [0, 0, Math.PI / 2]);
+      add(new THREE.CylinderGeometry(R0 * 1.001, R0 * 1.001, L * 0.62, 12), 0x2f5fb5, 0, 2.35, 0, [0, 0, Math.PI / 2]).scale.set(0.62, 1, 1);
+      add(new THREE.ConeGeometry(R0, 5, 12), 0xf4f6f8, L / 2 + 2.5, 3, 0, [0, 0, -Math.PI / 2]);
+      add(new THREE.ConeGeometry(R0, 6, 12), 0xf4f6f8, -L / 2 - 3, 3.4, 0, [0, 0, Math.PI / 2]).scale.set(1, 1, 0.9);
+      add(new THREE.BoxGeometry(2.2, 0.9, 0.2), 0x1d2b3a, L / 2 + 2, 3.7, R0 * 0.62, [0, 0.35, 0]);
+      add(new THREE.BoxGeometry(2.2, 0.9, 0.2), 0x1d2b3a, L / 2 + 2, 3.7, -R0 * 0.62, [0, -0.35, 0]);
+      for (var i = 0; i < 8; i++) {
+        add(new THREE.BoxGeometry(0.7, 0.45, 0.05), 0x1d2b3a, 4 - i * 1.6, 3.9, R0 * 0.99);
+        add(new THREE.BoxGeometry(0.7, 0.45, 0.05), 0x1d2b3a, 4 - i * 1.6, 3.9, -R0 * 0.99);
+      }
+      [1, -1].forEach(function (s) {
+        add(new THREE.BoxGeometry(6.5, 0.35, 13), 0xf4f6f8, 1.5, 2.3, s * 8.2, [0, s * 0.38, 0]);
+        add(new THREE.BoxGeometry(1.2, 0.4, 1.4), 0x2f5fb5, -2, 2.3, s * 13.6);
+        add(new THREE.CylinderGeometry(1.05, 0.9, 3.6, 12), 0x8d96a3, 3, 1.2, s * 6.6, [0, 0, Math.PI / 2]);
+        add(new THREE.CylinderGeometry(0.6, 0.6, 0.1, 12), 0x1d2b3a, 4.85, 1.2, s * 6.6, [0, 0, Math.PI / 2]);
+        add(new THREE.BoxGeometry(3.4, 0.25, 5), 0xf4f6f8, -L / 2 - 3.2, 3.9, s * 2.9, [0, s * 0.4, 0]);
+      });
+      add(new THREE.BoxGeometry(4, 5.2, 0.35), 0xf4f6f8, -L / 2 - 2.6, 6.5, 0, [0, 0, -0.12]);
+      add(new THREE.BoxGeometry(2.2, 2.2, 0.38), 0xd9423e, -L / 2 - 2.2, 7.7, 0, [0, 0, -0.12]);
+      [[L / 2 - 1, 0], [-2, 1.1], [-2, -1.1]].forEach(function (p) {
+        add(new THREE.BoxGeometry(0.25, 1.4, 0.25), 0x8d96a3, p[0], 0.8, p[1]);
+        add(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 10), 0x1d2b3a, p[0], 0.55, p[1] - 0.35, [Math.PI / 2, 0, 0]);
+        add(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 10), 0x1d2b3a, p[0], 0.55, p[1] + 0.35, [Math.PI / 2, 0, 0]);
+      });
+      g.userData.hold = add(new THREE.BoxGeometry(2.6, 1.7, 0.08), 0x3a4660, 8, 2.2, R0 * 0.97);
+      return g;
+    },
+    // ยานพาหนะจากชุด Kenney (หันหน้าไป +x) ถ้าโมเดลโหลดไม่ได้จะเป็นกล่องสีเทาแทน
+    truck: function () { return vehicle('delivery', 7.5); },
+    van: function () { return vehicle('van', 4.6); },
+    tug: function () { return vehicle('tractor', 3.6); },
+    cone: function () { return cloneModel('cone', 1); }
+  };
+  function vehicle(name, len) { var g = group(), m = cloneModel(name, len); m.rotation.y = Math.PI / 2; g.add(m); return g; }
+
   // ป้ายลอยเป็น sprite (วาดข้อความลง canvas) อ่านได้ทั้งธีมสว่าง/มืด
   function makeLabel(text) {
     var dark = themeName() === 'dark';
     var FONT = '"Noto Sans Thai","Sarabun","Segoe UI",sans-serif';
-    var c = document.createElement('canvas'); c.width = 640; c.height = 112;
+    var c = document.createElement('canvas'); c.width = 720; c.height = 120;
     var x = c.getContext('2d');
-    // ถ้าข้อความยาวและมีเว้นวรรค แบ่งเป็น 2 บรรทัดตรงช่องว่างที่ใกล้กลางที่สุด (ตัวอักษรจะได้ไม่เล็กเกินอ่าน)
-    var lines = [text];
-    x.font = '700 40px ' + FONT;
-    if (x.measureText(text).width > 600 && text.indexOf(' ') > 0) {
-      var mid = text.length / 2, best = -1, i;
-      for (i = 0; i < text.length; i++) if (text[i] === ' ' && (best < 0 || Math.abs(i - mid) < Math.abs(best - mid))) best = i;
-      lines = [text.slice(0, best), text.slice(best + 1)];
-      c.height = 168;
-    }
-    var bg = dark ? 'rgba(20,30,51,0.94)' : 'rgba(255,255,255,0.95)';
-    x.fillStyle = bg; x.strokeStyle = dark ? '#7db0ff' : '#1d62c4'; x.lineWidth = 4;
-    x.beginPath(); x.rect(4, 4, 632, c.height - 8); x.fill(); x.stroke();
+    var bg = dark ? 'rgba(20,30,51,0.92)' : 'rgba(255,255,255,0.94)';
+    x.fillStyle = bg; x.strokeStyle = dark ? '#7db0ff' : '#1d62c4'; x.lineWidth = 5;
+    x.beginPath(); x.rect(4, 4, 712, 112); x.fill(); x.stroke();
     x.fillStyle = dark ? '#e8eef8' : '#0f1c2e'; x.textAlign = 'center'; x.textBaseline = 'middle';
-    var size = 44;
-    do {
-      x.font = '700 ' + size + 'px ' + FONT; size -= 2;
-      var w = Math.max.apply(null, lines.map(function (t) { return x.measureText(t).width; }));
-    } while (w > 600 && size > 16);
-    lines.forEach(function (t, k) { x.fillText(t, 320, (c.height / lines.length) * (k + 0.5) + 2); });
+    var size = 48, w;
+    do { x.font = '700 ' + size + 'px ' + FONT; w = x.measureText(text).width; size -= 2; } while (w > 680 && size > 18);
+    x.fillText(text, 360, 62);
     var tex = new THREE.CanvasTexture(c);
     var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
-    s.scale.set(5, 0.88 * c.height / 112, 1); s.renderOrder = 10;
+    s.scale.set(7.2, 1.2, 1); s.renderOrder = 10;
     return s;
   }
   function addLabels(g, i) {
-    SCENE_NOTES[i].forEach(function (l) {
-      var s = makeLabel(l.text); s.position.set(l.x, l.y, l.z); g.add(s);
-    });
-  }
-
-  /* ---------- ฉากแต่ละสถานี (โมเดลง่าย ๆ จากกล่อง/ทรงกระบอก) ---------- */
-  // S1 ผู้ส่ง: บ่อ → โต๊ะตรวจ → บ่อพัก → โต๊ะบรรจุ → โต๊ะติดป้าย → รถควบคุมอุณหภูมิ
-  function buildS1(g) {
-    addCyl(g, 2.2, 0.35, 0xb9c6d6, -8, 0, 1.6);              // ขอบบ่อ
-    addCyl(g, 2.0, 0.38, 0x4aa3df, -8, 0, 1.6);              // น้ำ
-    addKoi(g, -8.5, 0.45, 1.2, 0.3, 0xff7a33); addKoi(g, -7.4, 0.45, 2.0, 2.2, 0xffffff); addKoi(g, -8.2, 0.45, 2.3, 4.0, 0xd13b32);
-    addBox(g, 2.6, 0.9, 1.4, 0xdfe6ee, -5, 0, 0.6);          // โต๊ะตรวจ
-    addBox(g, 1.0, 0.12, 0.7, 0x4aa3df, -5.4, 0.9, 0.6); addBox(g, 0.5, 0.35, 0.4, 0x7a8aa0, -4.4, 0.9, 0.6);
-    addCyl(g, 1.6, 0.35, 0xb9c6d6, -2, 0, -1.8); addCyl(g, 1.45, 0.38, 0x7cc4ee, -2, 0, -1.8); // บ่อพักงดอาหาร
-    addBox(g, 3.0, 0.9, 1.6, 0xdfe6ee, 1, 0, -2);            // โต๊ะบรรจุ
-    addBox(g, 1.1, 0.22, 0.9, 0xcfe8ff, 0.4, 0.9, -2); addBox(g, 1.0, 0.22, 0.8, 0xbddcf7, 0.4, 1.12, -2); addBox(g, 0.9, 0.22, 0.7, 0xa8cdee, 0.4, 1.34, -2); // ถุง 3 ชั้น
-    addBox(g, 2.0, 0.9, 1.4, 0xdfe6ee, 4, 0, -2); addBox(g, 0.8, 0.05, 0.6, 0xff9a2e, 4, 0.9, -2); // โต๊ะติดป้าย
-    addBox(g, 3.6, 1.9, 2.1, 0xf5f7fa, 8, 0.5, -5); addBox(g, 3.6, 0.35, 2.12, 0x1d62c4, 8, 1.2, -5);   // ตู้รถ
-    addBox(g, 1.5, 1.4, 2.1, 0xe3e9f1, 5.9, 0.5, -5);                                                 // หัวรถ
-    [[6.2, -3.95], [9, -3.95], [6.2, -6.05], [9, -6.05]].forEach(function (w) {
-      var m = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16), mat(0x2b3445));
-      m.rotation.x = Math.PI / 2; m.position.set(w[0], 0.5, w[1]); g.add(m);
-    });
-  }
-  // S2 นาริตะ: อาคาร AVI → ทางสายพาน + อุโมงค์ X-ray + ULD
-  function buildS2(g) {
-    addBox(g, 7, 3.2, 4, 0xe3e9f1, -5, 0, -4);                // อาคารคลังสัตว์มีชีวิต
-    addBox(g, 2.4, 2.2, 0.1, 0x3a4660, -5, 0, -1.95);         // ประตู
-    addBox(g, 7, 0.4, 4.2, 0x1d62c4, -5, 3.2, -4);            // หลังคาสีฟ้า
-    addBox(g, 12, 0.05, 1.6, 0x39455c, 2, 0, 0);              // สายพาน
-    addBox(g, 3.2, 0.3, 3.2, 0xdde4ee, 5, 2.1, 0);            // เพดานอุโมงค์ X-ray
-    addBox(g, 3.2, 2.1, 0.4, 0xdde4ee, 5, 0, -1.4); addBox(g, 3.2, 2.1, 0.4, 0xdde4ee, 5, 0, 1.4); // ผนังอุโมงค์
-    addBox(g, 0.5, 0.5, 0.5, 0xd13b32, 5, 2.4, 0);            // ไฟเตือนรังสี
-    addBox(g, 3, 1.8, 2, 0xb8c2d0, 1.5, 0.2, -5); addBox(g, 3.2, 0.2, 2.2, 0x8c98aa, 1.5, 0, -5); // ULD บนแท่น
-  }
-  // S3 บนเครื่อง: ลำตัวผ่าครึ่ง (มองเห็นห้องสัมภาระ) + ปีก + เครื่องยนต์ + ห้องโดยสาร
-  function buildS3(g) {
-    var fus = new THREE.Mesh(
-      new THREE.CylinderGeometry(3.2, 3.2, 19, 32, 1, true, Math.PI, Math.PI),   // ครึ่งทรงกระบอก
-      new THREE.MeshStandardMaterial({ color: 0xf3f6fa, roughness: 0.7, side: THREE.BackSide })); // BackSide = เห็นเฉพาะผนังด้านใน (ผนังฝั่งใกล้กล้องหายไป เหมือนผ่าครึ่ง)
-    fus.rotation.z = Math.PI / 2; fus.position.set(0, 3.2, 0); g.add(fus);
-    addBox(g, 3, 0.2, 5.2, 0xdfe6ee, 1, 1.5, -5.7); addBox(g, 3, 0.2, 5.2, 0xdfe6ee, 1, 1.5, 5.7); // ปีก
-    addCyl(g, 0.7, 2.2, 0x9aa8bb, 0.5, 0.2, -5.8, 20).rotation.z = Math.PI / 2;                    // เครื่องยนต์
-    addCyl(g, 0.7, 2.2, 0x9aa8bb, 0.5, 0.2, 5.8, 20).rotation.z = Math.PI / 2;
-    addBox(g, 2.2, 1.4, 1.6, 0xb8c2d0, -6, 0.5, -1.4); addBox(g, 2.2, 1.4, 1.6, 0xb8c2d0, -3, 0.5, -1.4); // ULD ในห้องสัมภาระ
-    addBox(g, 2.2, 1.4, 1.6, 0xb8c2d0, 3.5, 0.5, 1.4);
-    addBox(g, 4.2, 0.15, 6.2, 0xe3e9f1, 8.6, 3.2, 0);                                              // พื้นห้องโดยสาร
-    for (var s = 0; s < 6; s++) addBox(g, 0.7, 0.8, 0.7, 0x1d62c4, 7.2 + (s % 3) * 1.3, 3.35, -1.2 + Math.floor(s / 3) * 2.4);
-  }
-  // คนตัวเล็ก (ตัว + หัว) ใช้เป็นเจ้าหน้าที่/ผู้ดูแลในฉาก
-  function addPerson(g, x, z, hex) {
-    addCyl(g, 0.3, 1.0, hex, x, 0, z, 12);
-    var h = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), mat(0xf2c9a0));
-    h.position.set(x, 1.28, z); g.add(h);
-  }
-  // บ่อน้ำ: ขอบ + น้ำ
-  function addPond(g, x, z, r, water) {
-    addCyl(g, r, 0.35, 0xb9c6d6, x, 0, z, 28); addCyl(g, r - 0.2, 0.38, water || 0x4aa3df, x, 0, z, 28);
-  }
-  // เครื่องบินลำเล็กมองจากข้าง (ลำตัว + ปีก + หาง) หันหัวไปทาง -x
-  function addMiniPlane(g, x, z, s) {
-    var f = new THREE.Mesh(new THREE.CylinderGeometry(1.1 * s, 1.1 * s, 8 * s, 20), mat(0xf5f7fa));
-    f.rotation.z = Math.PI / 2; f.position.set(x, 1.4 * s, z); g.add(f);
-    var nose = new THREE.Mesh(new THREE.SphereGeometry(1.1 * s, 20, 12), mat(0xf5f7fa));
-    nose.position.set(x - 4 * s, 1.4 * s, z); g.add(nose);
-    addBox(g, 2 * s, 0.15 * s, 6.5 * s, 0xdfe6ee, x + 0.5 * s, 1.0 * s, z);
-    addBox(g, 1.2 * s, 1.8 * s, 0.15 * s, 0x1d62c4, x + 4 * s, 1.6 * s, z);
-  }
-  // S4 สุวรรณภูมิ: เครื่องลงจอด + คลังสินค้า (AVI) + รถลากแท่น ULD
-  function buildS4(g) {
-    addMiniPlane(g, -5.5, 4.5, 0.95);
-    addBox(g, 8, 3, 4, 0xe3e9f1, 4, 0, -4.5);                  // อาคารคลังสินค้า
-    addBox(g, 2.4, 2.2, 0.1, 0x3a4660, 4, 0, -2.45);
-    addBox(g, 8.2, 0.4, 4.2, 0x1d62c4, 4, 3, -4.5);
-    addBox(g, 2.8, 1.6, 1.8, 0xb8c2d0, -2.6, 0.25, -2.4); addBox(g, 3, 0.25, 2, 0x8c98aa, -2.6, 0, -2.4); // ULD บนแท่น
-    addBox(g, 1.4, 0.8, 1.2, 0xe3e9f1, -2.6, 0.2, -4.2);        // รถลากแท่น
-    addPerson(g, 1.8, -1.8, 0x1d62c4);                          // เจ้าหน้าที่ภาคพื้น
-  }
-  // S5 ด่านกรมประมง (DOF) และกักกัน: เคาน์เตอร์ตรวจ → เอกสารคำสั่ง → บ่อกักกัน → ประตูอนุญาตปล่อย
-  function buildS5(g) {
-    addBox(g, 3, 0.9, 1.2, 0xdfe6ee, -7, 0, -2.4); addBox(g, 0.9, 0.5, 0.1, 0x39455c, -7.4, 1.0, -2.4);   // เคาน์เตอร์ + จอคอม
-    addPerson(g, -7, -3.6, 0x1d62c4);                                                                  // เจ้าหน้าที่ DOF
-    addBox(g, 2.4, 0.9, 1.4, 0xdfe6ee, -2, 0, -2.4);                                                    // โต๊ะคำสั่ง
-    addBox(g, 1.1, 0.05, 0.8, 0xffffff, -2, 0.9, -2.4); addBox(g, 0.5, 0.06, 0.2, 0xd13b32, -1.8, 0.95, -2.2); // เอกสาร + ตราประทับ
-    [[2, -2.4], [3.4, -2.4], [4.8, -2.4]].forEach(function (p) { addPond(g, p[0], p[1], 1.0, 0x6fb8e6); });   // บ่อกักกัน 3 บ่อ
-    addBox(g, 4.4, 0.5, 0.1, 0xc5d0de, 3.4, 0, -0.9); addBox(g, 4.4, 0.5, 0.1, 0xc5d0de, 3.4, 0, -3.9);     // รั้วกั้น
-    addBox(g, 0.3, 2.4, 0.3, 0x3a4660, 6.6, 0, -2.4); addBox(g, 0.3, 2.4, 0.3, 0x3a4660, 9.4, 0, -2.4);     // ประตูอนุญาตปล่อย
-    addBox(g, 3.1, 0.3, 0.4, 0x11743a, 8, 2.4, -2.4);
-  }
-  // S6 ผู้รับ (ฟาร์มบริษัท): รถขนส่ง → บ่อพักฟื้น → บ่อเพาะพันธุ์ + โรงเรือน
-  function buildS6(g) {
-    addBox(g, 3.4, 1.8, 2, 0xf5f7fa, -6, 0.5, -3.2); addBox(g, 3.4, 0.3, 2.02, 0x1d62c4, -6, 1.2, -3.2);
-    addBox(g, 1.4, 1.4, 2, 0xe3e9f1, -3.9, 0.5, -3.2);
-    addPond(g, -0.6, -2.4, 1.3, 0x7cc4ee); addPond(g, 1.4, -2.4, 1.3, 0x7cc4ee);                           // บ่อพักฟื้น
-    addKoi(g, -0.6, 0.45, -2.4, 0.5, 0xff7a33); addKoi(g, 1.4, 0.45, -2.5, 2.4, 0xffffff);
-    addPond(g, 6, -2.4, 1.8, 0x4aa3df); addPond(g, 8.8, -2.4, 0.9, 0x6fb8e6);                              // บ่อเพาะ + บ่อลูกปลา
-    addKoi(g, 6.2, 0.45, -2.2, 1.0, 0xd13b32); addKoi(g, 5.5, 0.45, -2.8, 3.5, 0xff7a33);
-    addBox(g, 5, 2.4, 3, 0xe3e9f1, 3.5, 0, -7); addBox(g, 5.4, 0.4, 3.4, 0x1d62c4, 3.5, 2.4, -7);         // โรงเรือนฟาร์ม
-  }
-  var BUILDERS = [buildS1, buildS2, buildS3, buildS4, buildS5, buildS6];
-
-  /* ---------- ดูทั้งเส้นทาง (overview) ---------- */
-  // ตำแหน่งกระเบื้องของสถานี i ในภาพรวม: เรียงซ้ายไปขวา ห่างกัน 4 หน่วย
-  var OV_BOX_Z = 0.95;   // กล่องปลาในภาพรวมวางด้านหน้าอาคารของกระเบื้อง จะได้ไม่ถูกบัง
-  function overviewTile(i) { return { x: -10 + 4 * i, z: 0 }; }
-
-  // สร้างภาพรวม: กระเบื้อง 6 แผ่นต่อกัน (ผ่านแล้ว=ฟ้า ตรงนี้=ชมพู ยังไม่ถึง=เทา) + ไอคอนง่าย ๆ + ป้ายชื่อ
-  function buildOverview(S) {
-    var g = new THREE.Group(), cur = L.stationOf(S.idx), th = THEME[themeName()];
-    var ground = new THREE.Mesh(new THREE.BoxGeometry(24, 0.2, 10), new THREE.MeshStandardMaterial({ color: th.ground, roughness: 1 }));
-    ground.position.y = -0.1; g.add(ground);
-    D.STATIONS.forEach(function (st, i) {
-      var p = overviewTile(i);
-      var col = i < cur ? 0x1d62c4 : i === cur ? 0xc71f73 : 0x9aa8bb;   // ฟ้า / ชมพู / เทา (ตามกติกาสี)
-      addBox(g, 3.2, 0.3, 3.2, col, p.x, 0, p.z);
-      if (i < 5) addBox(g, 0.8, 0.08, 0.3, 0x7a8aa0, p.x + 2, 0.1, p.z);                       // เส้นเชื่อมสถานี
-      if (i === 0 || i === 5) addPond(g, p.x, p.z - 0.5, 0.9, 0x4aa3df);                          // ฟาร์ม
-      else if (i === 2) { var f = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 2.6, 16), mat(0xf5f7fa)); f.rotation.z = Math.PI / 2; f.position.set(p.x, 1, p.z - 0.5); g.add(f); addBox(g, 0.5, 0.1, 2.8, 0xdfe6ee, p.x, 0.9, p.z - 0.5); }
-      else addBox(g, 2, 1.2, 1.3, 0xe3e9f1, p.x, 0.3, p.z - 0.6);                                    // อาคาร
-      var s = makeLabel((i + 1) + ' ' + st.short); s.position.set(p.x, 2.6, p.z + 1.9); s.scale.set(3.8, 0.7, 1); g.add(s);
-    });
-    return g;
-  }
-
-
-  // ฉากของสถานี i: พื้น + จุดวางกล่อง + โมเดลของสถานีนั้น (ถ้ามี) + ป้ายชื่อ
-  function buildStation(i) {
-    var g = new THREE.Group();
-    var th = THEME[themeName()];
-    var ground = new THREE.Mesh(new THREE.BoxGeometry(24, 0.2, 16),
-      new THREE.MeshStandardMaterial({ color: th.ground, roughness: 1 }));
-    ground.position.y = -0.1;
-    g.add(ground);
-    SHOTS.filter(function (sh) { return sh.st === i; }).map(function (sh, k) { return boxTarget(SHOTS.indexOf(sh)); }).forEach(function (p) {
-      var pad = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.05, 24),
-        new THREE.MeshStandardMaterial({ color: th.grid, roughness: 1 }));
-      pad.position.set(p.x, 0.03, p.z);
-      g.add(pad);
-    });
-    if (BUILDERS[i]) BUILDERS[i](g);
-    addLabels(g, i);
-    return g;
-  }
-
-  // ปล่อยหน่วยความจำของกลุ่มวัตถุ (เรียกตอนเปลี่ยนสถานี กัน leak) — ข้ามวัสดุที่แชร์ใช้ซ้ำ
-  function disposeGroup(g) {
-    g.traverse(function (o) {
-      if (o.geometry) o.geometry.dispose();
-      if (o.material) {
-        (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
-          if (m.userData && m.userData.shared) return;
-          if (m.map) m.map.dispose();
-          m.dispose();
-        });
-      }
-    });
-  }
-
-  function showFallback(canvas) {
-    var stage = canvas.parentNode;
-    stage.innerHTML = '<div class="stage-note" role="status">' + NO_WEBGL_MESSAGE + '</div>';
+    SCENE_NOTES[i].forEach(function (l) { var s = makeLabel(l.text); s.position.set(l.x, l.y, l.z); g.add(s); });
   }
 
   // โหลดโมเดลทั้งหมดครั้งเดียว แล้วจำไว้ (เรียกซ้ำได้ผลเดิม ไม่ถอดรหัสซ้ำ)
@@ -6128,153 +6133,286 @@ var KoiScene = (function () {
       m = new THREE.Mesh(new THREE.BoxGeometry(p.w * k, p.h * k, p.d * k), mat(0x9aa8bb));
       m.position.y = p.h * k / 2;
     }
-    m.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    // geometry/วัสดุของโมเดลที่ clone ใช้ร่วมกับต้นฉบับ: ทำเครื่องหมาย keep ไว้ ตอนล้างฉากจะได้ไม่ทำลายต้นฉบับ
+    m.traverse(function (o) {
+      if (!o.isMesh) return;
+      o.castShadow = true; o.receiveShadow = true;
+      if (src) { o.geometry.userData.keep = true; (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (x) { x.userData.keep = true; }); }
+    });
     g.add(m);
     return g;
   }
 
-  // เริ่มระบบ: สร้าง renderer/กล้อง/แสง/กล่องปลา แล้วเริ่มวนวาด
+  /* ---------- พื้นของแต่ละสถานี ---------- */
+  // ชนิดพื้น: farm = ฟาร์ม (หญ้า+ทางดิน), airport = ลานจอด (คอนกรีต+เส้นเหลือง)
+  var GROUND = ['farm', 'airport', 'airport', 'airport', 'airport', 'farm'];
+  function buildGround(g, kind) {
+    var th = THEME[themeName()];
+    var grass = new THREE.Mesh(new THREE.PlaneGeometry(260, 200), mat(th.grass));
+    grass.rotation.x = -Math.PI / 2; grass.position.y = -0.02; grass.receiveShadow = true; g.add(grass);
+    if (kind === 'airport') {
+      var apron = new THREE.Mesh(new THREE.PlaneGeometry(72, 52), mat(th.tarmac));
+      apron.rotation.x = -Math.PI / 2; apron.receiveShadow = true; g.add(apron);
+      addBox(g, 70, 0.02, 0.3, th.line, 0, 0.01, 17); addBox(g, 0.3, 0.02, 40, th.line, -20, 0.01, 0);
+    } else {
+      var dirt = new THREE.Mesh(new THREE.PlaneGeometry(60, 5), mat(th.dirt));
+      dirt.rotation.x = -Math.PI / 2; dirt.position.set(0, 0.005, 2); dirt.receiveShadow = true; g.add(dirt);
+    }
+  }
+
+  /* ---------- ฉากของแต่ละสถานี + อนิเมชันของแต่ละขั้น ----------
+     BUILDERS[i](g, props) สร้างของในฉาก แล้วตั้งชื่อของที่ต้องขยับไว้ใน props (เช่น props.truck)
+     ACTIONS[ชื่อ act](ctx) ขยับของตามความคืบหน้า ctx.u (0..1) — ขึ้นกับ u เท่านั้น กดขั้นเดิมซ้ำได้ภาพเดิม
+     ctx = { g: กลุ่มฉาก, props, cargo: ของที่ผู้ชมตามดู, u: ความคืบหน้า, t: วินาทีตั้งแต่เริ่มขั้น } */
+  var BUILDERS = [null, null, null, null, null, null];
+  var ACTIONS = {};
+
+  function buildStation(i) {
+    var g = new THREE.Group(), props = {};
+    buildGround(g, GROUND[i]);
+    if (BUILDERS[i]) BUILDERS[i](g, props);
+    addLabels(g, i);
+    g.userData.props = props;
+    return g;
+  }
+
+  /* ---------- ดูทั้งเส้นทาง (overview) ---------- */
+  // ตำแหน่งกระเบื้องของสถานี i ในภาพรวม: เรียงซ้ายไปขวา ห่างกัน 4 หน่วย
+  var OV_BOX_Z = 0.95;   // กล่องปลาในภาพรวมวางด้านหน้าอาคารของกระเบื้อง จะได้ไม่ถูกบัง
+  function overviewTile(i) { return { x: -10 + 4 * i, z: 0 }; }
+  var OV_CAM = { p: v(0, 15, 17), t: v(0, 0, 0) };
+
+  // สร้างภาพรวม: กระเบื้อง 6 แผ่นต่อกัน (ผ่านแล้ว=ฟ้า ตรงนี้=ชมพู ยังไม่ถึง=เทา) + ไอคอนโลว์โพลี + ป้ายชื่อ
+  function buildOverview(S) {
+    var g = new THREE.Group(), cur = L.stationOf(S.idx), th = THEME[themeName()];
+    var ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 200), mat(th.grass));
+    ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; g.add(ground);
+    D.STATIONS.forEach(function (st, i) {
+      var p = overviewTile(i);
+      var col = i < cur ? 0x1d62c4 : i === cur ? 0xc71f73 : 0x9aa8bb;   // ฟ้า / ชมพู / เทา (ตามกติกาสี)
+      addBox(g, 3.2, 0.3, 3.2, col, p.x, 0, p.z);
+      if (i < 5) addBox(g, 0.8, 0.08, 0.3, 0x7a8aa0, p.x + 2, 0.1, p.z);                       // เส้นเชื่อมสถานี
+      if (i === 0 || i === 5) addPond(g, p.x, p.z - 0.5, 0.9, 0x4aa3df);                          // ฟาร์ม
+      else if (i === 2) { var pl = kit.plane(); pl.scale.setScalar(0.11); pl.position.set(p.x, 0.3, p.z - 0.4); g.add(pl); }
+      else addBox(g, 2, 1.2, 1.3, 0xeef0ea, p.x, 0.3, p.z - 0.6);                                    // อาคาร
+      var s = makeLabel((i + 1) + ' ' + st.short); s.position.set(p.x, 2.6, p.z + 1.9); s.scale.set(3.6, 0.6, 1); g.add(s);
+    });
+    return g;
+  }
+
+  // ปล่อยหน่วยความจำของกลุ่มวัตถุ (เรียกตอนเปลี่ยนสถานี กัน leak) — ข้ามวัสดุที่แชร์ใช้ซ้ำ
+  // โมเดล Kenney ที่ clone มาใช้ geometry ร่วมกับต้นฉบับ จึงไม่ dispose geometry ของมัน (ข้ามด้วย userData.keep)
+  function disposeGroup(g) {
+    g.traverse(function (o) {
+      if (o.userData && o.userData.keep) return;
+      if (o.geometry && !o.geometry.userData.keep) o.geometry.dispose();
+      if (o.material) {
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) {
+          if (m.userData && (m.userData.shared || m.userData.keep)) return;
+          if (m.map) m.map.dispose();
+          m.dispose();
+        });
+      }
+    });
+  }
+
+  function showFallback(canvas) {
+    var stage = canvas.parentNode;
+    var note = document.createElement('div');
+    note.className = 'stage-note'; note.setAttribute('role', 'status'); note.textContent = NO_WEBGL_MESSAGE;
+    canvas.remove();
+    stage.insertBefore(note, stage.firstChild);
+  }
+
+  // ของที่ผู้ชมตามดู: ขั้น 1–3 เป็นถังปลา ตั้งแต่ขั้น 4 เป็นกล่องปลา
+  function makeCargo() {
+    var g = group(), tub = kit.tub(), box = kit.fishBox();
+    g.add(tub); g.add(box);
+    g.userData = { tub: tub, box: box, body: box.userData.body };
+    return g;
+  }
+
+  // เริ่มระบบ: สร้าง renderer/กล้อง/แสง/ตัวควบคุมกล้อง แล้วโหลดโมเดลและเริ่มวนวาด
   function init(canvas) {
     watchReducedMotion();
-    if (!supported()) { R = null; showFallback(canvas); return false; }
+    if (!supported() || !THREE.OrbitControls || !THREE.GLTFLoader) { R = null; showFallback(canvas); return false; }
     var renderer;
     try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true }); }
     catch (e) { R = null; showFallback(canvas); return false; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    var quality = { ratio: Math.min(window.devicePixelRatio || 1, 2), shadows: true };
+    renderer.setPixelRatio(quality.ratio);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     var scene = new THREE.Scene();
-    var camera = new THREE.PerspectiveCamera(35, 16 / 9, 0.1, 200);
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.5));
-    var sun = new THREE.DirectionalLight(0xffffff, 0.45);
-    sun.position.set(8, 14, 6);
+    var camera = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 400);
+    camera.position.set(0, 20, 30);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8aa07a, 0.75));
+    var sun = new THREE.DirectionalLight(0xfff3dd, 1.0);
+    sun.position.set(-25, 45, 25); sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -45, right: 45, top: 40, bottom: -40, near: 1, far: 140 });
     scene.add(sun);
-    var box = makeBox();
-    box.scale.setScalar(1.25); // ขยายกล่องปลาให้เห็นชัด
-    scene.add(box);
+    var controls = new THREE.OrbitControls(camera, canvas);
+    controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.48;
+    controls.minDistance = 6; controls.maxDistance = 70;
+    var cargo = makeCargo(); scene.add(cargo);
     R = {
-      canvas: canvas, renderer: renderer, scene: scene, camera: camera, box: box,
-      station: -1, stationGroup: null, held: false, raf: 0,
-      move: null,                       // กำลังเคลื่อนอยู่หรือไม่: {from, to, t0, ms}
-      pos: { x: 0, z: 0 }
+      canvas: canvas, renderer: renderer, scene: scene, camera: camera, controls: controls, sun: sun, cargo: cargo,
+      station: -1, stationGroup: null, overviewGroup: null, overview: false, ovKey: null,
+      anim: { i: 0, t0: performance.now() }, camGoal: SHOTS[0].cam, gliding: true, lastInput: null,
+      look: 'normal', quality: quality, frames: 0, fpsT0: performance.now(), last: performance.now(),
+      ready: false, card: null, lastS: null, clockOffset: 0
     };
+    // ผู้ชมลากหมุน/ซูมเอง: หยุดเลื่อนกล้องอัตโนมัติ แล้วจำเวลาไว้ (ไว้กลับมุมช็อตเมื่อไม่แตะครบ 8 วินาที)
+    controls.addEventListener('start', function () { R.gliding = false; R.lastInput = clock(); });
+    controls.addEventListener('end', function () { R.lastInput = clock(); });
     resize();
     setTheme(themeName());
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(canvas.parentNode);
     else window.addEventListener('resize', resize);
-    loop(0);
+    loadModels().then(function () {
+      if (!R) return;
+      R.ready = true;
+      if (R.lastS) { var S = R.lastS; R.lastS = null; R.station = -1; sync(S); }
+    });
+    R.raf = requestAnimationFrame(loop);
     return true;
   }
 
-  // ปรับขนาดให้พอดีกรอบ #stage; จอแคบ (แนวตั้ง) ถอยกล้องออกให้เห็นครบ
+  // ปรับขนาดให้พอดีกรอบ #stage
   function resize() {
     if (!R) return;
     var p = R.canvas.parentNode, w = p.clientWidth || 640, h = p.clientHeight || 360;
     R.renderer.setSize(w, h, false);
     R.camera.aspect = w / h;
-    var k = (R.camera.aspect < 1.4 ? 1.45 : 1) * (R.overview ? 1.5 : (CAM_SCALE[R.station] || 1)); // จอแคบ/ฉากใหญ่ -> ถอยกล้อง
-    // ภาพรวม: มองตรงด้านหน้าให้กระเบื้องเรียงซ้าย→ขวา; ฉากสถานี: มองเฉียงแบบไอโซเมตริก
-    if (R.overview) R.camera.position.set(0, 13 * k, 12 * k); else R.camera.position.set(14.5 * k, 12 * k, 14.5 * k);
-    R.camera.lookAt(0, 0, 0);
     R.camera.updateProjectionMatrix();
   }
 
   function setTheme(name) {
     if (!R) return;
     var th = THEME[name] || THEME.light;
-    R.scene.background = new THREE.Color(th.bg);
-    // สร้างฉากใหม่เพื่อให้สีพื้นตรงกับธีม
+    R.scene.background = lin(th.sky);
+    R.scene.fog = new THREE.Fog(lin(th.sky), 80, 200);
+    // สร้างฉากใหม่ให้สีพื้นตรงกับธีม โดยคงขั้นและท่าเดิม (R.anim ไม่เปลี่ยน)
     if (R.station >= 0) { var s = R.station; R.station = -1; showStation(s); if (R.overview && R.stationGroup) R.stationGroup.visible = false; }
     if (R.overview && R.lastS) { R.ovKey = null; showOverview(R.lastS); }
   }
 
   // แสดงฉากของสถานี i (ถ้าเป็นสถานีเดิมไม่ทำอะไร)
-  // โชว์เฉพาะป้ายของขั้นปัจจุบัน (ป้ายอธิบายของในฉากโชว์เสมอ)
-  function applyLabels() {
-    if (!R || !R.stationGroup) return;
-    R.stationGroup.traverse(function (o) {
-      if (o.userData && o.userData.stepIdx != null) o.visible = o.userData.stepIdx === R.curStep;
-    });
-  }
   function showStation(i) {
     if (!R || R.station === i) return;
     if (R.stationGroup) { R.scene.remove(R.stationGroup); disposeGroup(R.stationGroup); }
     R.stationGroup = buildStation(i);
     R.scene.add(R.stationGroup);
     R.station = i;
-    resize();
-    applyLabels();
   }
 
-  // เคลื่อนกล่องไปยังตำแหน่งของขั้นนี้ ใช้เวลา ~600 ms
-  // ถ้าสั่งซ้ำระหว่างทาง จะเริ่มจาก "ตำแหน่งที่กล่องอยู่จริงตอนนี้" ไม่กระโดด
-  function moveBoxTo(stepIdx) {
-    if (!R) return;
-    var to = boxTarget(stepIdx);
-    if (reduced) { R.pos = to; R.move = null; place(); return; }
-    R.move = { from: { x: R.pos.x, z: R.pos.z }, to: to, t0: performance.now(), ms: 600 };
-  }
-  function place() { R.box.position.set(R.pos.x, R.boxY || 0, R.pos.z); }
-
-  // look = 'held' | 'loss' | 'normal' (หรือ true/false แบบเดิม: true = held)
+  // look = 'held' | 'loss' | 'normal'
   function setHeld(look) { if (R) R.look = look === true ? 'held' : (look || 'normal'); }
 
-  // วนวาดทุกเฟรม
-  function loop(now) {
-    if (!R) return;
-    R.raf = requestAnimationFrame(loop);
-    if (R.move) {
-      var t = (performance.now() - R.move.t0) / R.move.ms;
-      R.pos = lerpPose(R.move.from, R.move.to, easeInOut(t));
-      if (t >= 1) { R.pos = R.move.to; R.move = null; }
-      place();
-    }
-    var mat = R.box.userData.body.material;
-    if (R.look === 'held' || R.look === 'loss') {
-      mat.color.setHex(0xd13b32);   // แดงเสมอเมื่อมีความเสี่ยง (ไม่กลับเป็นขาวระหว่างกระพริบ)
-      mat.emissive.setHex(boxPulse(R.look, performance.now(), reduced) ? 0x7a0f0a : 0x2a0503);
-    } else {
-      mat.color.setHex(THEME[themeName()].box);
-      mat.emissive.setHex(0x000000);
-    }
-    R.renderer.render(R.scene, R.camera);
+  function attachCard(el) {
+    if (!el) return;
+    if (!R) { el.hidden = true; return; }
+    R.card = el;
   }
 
-  // ซิงก์ฉากให้ตรงกับ state ของตรรกะ (เรียกทุกครั้งที่หน้าวาดใหม่)
-  // ภาพรวม: แสดงกระเบื้อง 6 สถานี กล่องปลาเดินไปอยู่ที่สถานีปัจจุบัน
+  // ภาพรวม: แสดงกระเบื้อง 6 สถานี กล่องปลาไปอยู่ที่สถานีปัจจุบัน กล้องถอยมามุมภาพรวม
   function showOverview(S) {
     var cur = L.stationOf(S.idx), key = cur + '|' + themeName();
     if (!R.overview) {
-      R.overview = true; R.boxY = 0.3;
+      R.overview = true;
       if (R.stationGroup) R.stationGroup.visible = false;
-      R.pos = { x: overviewTile(cur).x, z: OV_BOX_Z }; R.move = null; place();
-      resize();
+      R.camGoal = OV_CAM; R.gliding = true;
     }
-    if (R.ovKey !== key) {                          // สร้างใหม่เมื่อสถานีหรือธีมเปลี่ยนเท่านั้น
+    if (R.ovKey !== key) {
       if (R.overviewGroup) { R.scene.remove(R.overviewGroup); disposeGroup(R.overviewGroup); }
       R.overviewGroup = buildOverview(S); R.scene.add(R.overviewGroup); R.ovKey = key;
     }
-    var to = { x: overviewTile(cur).x, z: OV_BOX_Z };
-    if (reduced) { R.pos = to; R.move = null; place(); }
-    else R.move = { from: { x: R.pos.x, z: R.pos.z }, to: to, t0: performance.now(), ms: 600 };
+    var t = overviewTile(cur);
+    R.cargo.position.set(t.x, 0.3, OV_BOX_Z); R.cargo.scale.setScalar(0.6);
   }
-  // ออกจากภาพรวม: เก็บกลุ่มภาพรวม คืนฉากสถานี และวางกล่องที่จุดของขั้นปัจจุบัน
-  function leaveOverview(S) {
+  function leaveOverview() {
     if (R.overviewGroup) { R.scene.remove(R.overviewGroup); disposeGroup(R.overviewGroup); R.overviewGroup = null; }
-    R.overview = false; R.ovKey = null; R.boxY = 0;
+    R.overview = false; R.ovKey = null; R.cargo.scale.setScalar(1);
     if (R.stationGroup) R.stationGroup.visible = true;
-    R.pos = boxTarget(S.idx); R.move = null; place();
-    resize();
+    R.camGoal = SHOTS[R.anim.i].cam; R.gliding = true;
   }
 
+  // ซิงก์ฉากให้ตรงกับ state ของตรรกะ (เรียกทุกครั้งที่หน้าวาดใหม่)
+  // เริ่มอนิเมชันของขั้นใหม่ก็ต่อเมื่อขั้นเปลี่ยนจริง (กดแท็บหรือเปลี่ยนธีมไม่ทำให้อนิเมชันเริ่มใหม่)
   function sync(S) {
     if (!R) return;
+    var prevS = R.lastS;
     R.lastS = S;
-    if (S.overview) { showOverview(S); setHeld(riskLook(S)); return; }
-    if (R.overview) leaveOverview(S);
-    var st = L.stationOf(S.idx);
-    if (R.station !== st) { showStation(st); var t = boxTarget(S.idx); R.pos = t; R.move = null; place(); }
-    else moveBoxTo(S.idx);
-    R.curStep = S.idx; applyLabels();
+    if (!R.ready) return;                       // รอโมเดลโหลดเสร็จ แล้ว init จะเรียก sync ให้อีกครั้ง
     setHeld(riskLook(S));
+    if (S.overview) { showOverview(S); return; }
+    if (R.overview) leaveOverview();
+    var st = L.stationOf(S.idx);
+    var changed = R.station !== st || R.anim.i !== S.idx || prevS !== S;
+    showStation(st);
+    if (changed) {
+      R.anim = { i: S.idx, t0: clock() };
+      R.camGoal = SHOTS[S.idx].cam; R.gliding = true; R.lastInput = null;
+    }
+  }
+
+  // วนวาดทุกเฟรม: ขยับของตามช็อต เลื่อนกล้อง ลดคุณภาพถ้าเครื่องช้า วางการ์ดลอย
+  // นาฬิกาของฉาก (เลื่อนเวลาได้ด้วย debugAdvance ตอนตรวจในเบราว์เซอร์ที่ถูกซ่อน ซึ่งไม่วาดเฟรมเอง)
+  function clock() { return performance.now() + (R ? R.clockOffset : 0); }
+  function loop() {
+    if (!R) return;
+    R.raf = requestAnimationFrame(loop);
+    frame(clock());
+  }
+  function frame(now) {
+    var gap = now - R.last, dt = Math.min(0.1, gap / 1000); R.last = now;
+    // วัดเฟรมต่อวินาทีทุก 2 วินาที (ไม่นับช่วงโหลดโมเดล และช่วงที่แท็บถูกพักไว้ ไม่งั้นจะลดคุณภาพทั้งที่เครื่องไม่ได้ช้า)
+    if (!R.ready || gap > 500) { R.frames = 0; R.fpsT0 = now; }
+    R.frames++;
+    if (now - R.fpsT0 >= 2000) {
+      var fps = R.frames * 1000 / (now - R.fpsT0), q = nextQuality(R.quality, fps);
+      if (q.shadows !== R.quality.shadows) { R.renderer.shadowMap.enabled = q.shadows; R.sun.castShadow = q.shadows; }
+      if (q.ratio !== R.quality.ratio) { R.renderer.setPixelRatio(q.ratio); resize(); }
+      R.quality = q; R.frames = 0; R.fpsT0 = now;
+    }
+    if (R.ready && !R.overview && R.stationGroup) {
+      var i = R.anim.i, sh = SHOTS[i];
+      var sec = (now - R.anim.t0) / 1000, u = Math.min(1, sec / sh.dur);
+      var p = shotPose(i, u, reduced);
+      R.cargo.position.set(p.x, p.y, p.z);
+      R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
+      var act = ACTIONS[sh.act];
+      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: reduced ? 1 : u, t: sec, reduced: reduced });
+    }
+    // กล้อง: เลื่อนเข้าหามุมของช็อต / กลับมุมช็อตเมื่อผู้ชมปล่อยไว้นาน
+    if (!R.gliding && idleReturnDue(R.lastInput, now, false)) { R.gliding = true; R.lastInput = null; }
+    if (R.gliding) {
+      var cur = { p: R.camera.position, t: R.controls.target };
+      var nx = camGlide(cur, R.camGoal, glideK(dt, reduced));
+      R.camera.position.set(nx.p.x, nx.p.y, nx.p.z); R.controls.target.set(nx.t.x, nx.t.y, nx.t.z);
+      if (nx.done) R.gliding = false;
+    }
+    R.controls.update();
+    // กล่องเป็นสีแดงเมื่อมีความเสี่ยง (กระพริบช้าเมื่อค้างที่ด่าน)
+    var m = R.cargo.userData.body.material;
+    if (R.look === 'held' || R.look === 'loss') {
+      m.color.copy(lin(0xd13b32));
+      m.emissive.copy(lin(boxPulse(R.look, now, reduced) ? 0x7a0f0a : 0x2a0503));
+    } else { m.color.copy(lin(0x3fa0e0)); m.emissive.setHex(0x000000); }
+    // การ์ดลอยเหนือของที่ผู้ชมตามดู
+    if (R.card) {
+      var show = !R.overview && R.ready;
+      R.card.hidden = !show;
+      if (show) {
+        var w = R.canvas.clientWidth, h = R.canvas.clientHeight;
+        var pr = R.cargo.position.clone(); pr.y += 1.6; pr.project(R.camera);
+        var pos = cardPos((pr.x * 0.5 + 0.5) * w, (-pr.y * 0.5 + 0.5) * h, R.card.offsetWidth, R.card.offsetHeight, w, h);
+        R.card.style.transform = 'translate(' + Math.round(pos.left) + 'px,' + Math.round(pos.top) + 'px)';
+      }
+    }
+    R.renderer.render(R.scene, R.camera);
   }
 
   function dispose() {
@@ -6282,16 +6420,23 @@ var KoiScene = (function () {
     cancelAnimationFrame(R.raf);
     if (R.stationGroup) disposeGroup(R.stationGroup);
     if (R.overviewGroup) disposeGroup(R.overviewGroup);
+    R.controls.dispose();
     R.renderer.dispose();
     R = null;
   }
 
   return {
-    NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES, pathPoint: pathPoint, shotPose: shotPose,
+    NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, camGlide: camGlide, glideK: glideK, IDLE_RETURN_MS: IDLE_RETURN_MS,
+    idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
+    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
     loadModels: loadModels, cloneModel: cloneModel,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
-    supported: supported, init: init, showStation: showStation, moveBoxTo: moveBoxTo,
+    supported: supported, init: init, showStation: showStation, attachCard: attachCard,
+    // ใช้ตรวจในเบราว์เซอร์ (DevTools): ดูว่ากล้อง/อนิเมชันอยู่ตรงไหน
+    // เลื่อนเวลาฉากไปข้างหน้า sec วินาที (วาดทีละ 1/30 วินาที) ใช้ตรวจตอนเบราว์เซอร์ไม่วาดเฟรมเอง
+    debugAdvance: function (sec) { if (!R) return; for (var k = 0; k < sec * 30; k++) { R.clockOffset += 1000 / 30; frame(clock()); } },
+    debugState: function () { return R && { cam: R.camera.position.toArray(), target: R.controls.target.toArray(), anim: R.anim, gliding: R.gliding, ready: R.ready, quality: R.quality, station: R.station }; },
     setHeld: setHeld, setTheme: setTheme, sync: sync, dispose: dispose
   };
 })();

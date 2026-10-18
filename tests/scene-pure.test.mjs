@@ -184,3 +184,48 @@ test('SCENE_NOTES: 6 สถานี; สถานี 3 บอกว่าผู
   assert.match(s5, /จนกว่า DOF จะตรวจและอนุญาตให้ปล่อย/);
   assert.doesNotMatch(s5, /\d+\s*วัน/);
 });
+
+// ---- รุ่น 2 Task 4: กล้องเลื่อนเอง คุณภาพอัตโนมัติ การ์ดลอย ----
+test('camGlide: k=1 ถึงเป้าทันที done=true; k=0.5 อยู่ครึ่งทาง; เริ่มจากตำแหน่งปัจจุบันเสมอ', () => {
+  const cur = { p: { x: 0, y: 10, z: 0 }, t: { x: 0, y: 0, z: 0 } };
+  const goal = { p: { x: 10, y: 10, z: 0 }, t: { x: 4, y: 0, z: 0 } };
+  const a = SC.camGlide(cur, goal, 1);
+  assert.deepEqual(plain(a), { p: goal.p, t: goal.t, done: true });
+  const b = SC.camGlide(cur, goal, 0.5);
+  assert.deepEqual(plain(b.p), { x: 5, y: 10, z: 0 });
+  assert.deepEqual(plain(b.t), { x: 2, y: 0, z: 0 });
+  assert.equal(b.done, false);
+  const c = SC.camGlide(b, goal, 0.5);          // ก้าวต่อจากจุดที่อยู่จริง ไม่เริ่มใหม่จากต้นทาง
+  assert.deepEqual(plain(c.p), { x: 7.5, y: 10, z: 0 });
+  assert.equal(SC.camGlide({ p: goal.p, t: goal.t }, goal, 0.1).done, true);
+});
+
+test('glideK: reduced = 1 (กระโดด), ปกติ 0<k<1 และ dt มากขึ้น k มากขึ้น', () => {
+  assert.equal(SC.glideK(0.016, true), 1);
+  const a = SC.glideK(0.016, false), b = SC.glideK(0.05, false);
+  assert.ok(a > 0 && a < 1 && b > a);
+});
+
+test('idleReturnDue: กลับมุมช็อตเมื่อไม่แตะครบ 8 วินาทีและไม่ได้กำลังเลื่อนอยู่', () => {
+  assert.equal(SC.IDLE_RETURN_MS, 8000);
+  assert.equal(SC.idleReturnDue(0, 7999, false), false);
+  assert.equal(SC.idleReturnDue(0, 8000, false), true);
+  assert.equal(SC.idleReturnDue(0, 9000, true), false);
+  assert.equal(SC.idleReturnDue(null, 9000, false), false); // ผู้ชมยังไม่เคยแตะ ไม่ต้องกลับ
+});
+
+test('nextQuality: เฟรมตกปิดเงาก่อน แล้วลดความละเอียด เฟรมดีคงเดิม', () => {
+  assert.deepEqual(plain(SC.nextQuality({ ratio: 2, shadows: true }, 20)), { ratio: 2, shadows: false });
+  assert.deepEqual(plain(SC.nextQuality({ ratio: 2, shadows: false }, 20)), { ratio: 1, shadows: false });
+  assert.deepEqual(plain(SC.nextQuality({ ratio: 1, shadows: false }, 20)), { ratio: 1, shadows: false });
+  assert.deepEqual(plain(SC.nextQuality({ ratio: 2, shadows: true }, 60)), { ratio: 2, shadows: true });
+});
+
+test('cardPos: อยู่ในกรอบเวทีเสมอ และพลิกไปใต้จุดเมื่อชนขอบบน', () => {
+  const a = SC.cardPos(5, 5, 200, 60, 400, 300);
+  assert.ok(a.left >= 8 && a.top > 5, JSON.stringify(a));
+  const b = SC.cardPos(395, 200, 200, 60, 400, 300);
+  assert.ok(b.left + 200 <= 392 && b.top + 60 <= 200, JSON.stringify(b));
+  const c = SC.cardPos(200, 295, 200, 60, 400, 300);
+  assert.ok(c.top + 60 <= 300, JSON.stringify(c));
+});
