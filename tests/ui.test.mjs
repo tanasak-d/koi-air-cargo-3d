@@ -27,7 +27,7 @@ test('renderTimeline: 17 ปุ่มขั้น จัดกลุ่ม 6 ส
 test('renderTimeline: ตอน hold ขั้นปัจจุบันมี ✕ และปุ่มขั้นอื่นกดไม่ได้', () => {
   const S = walk(L.newState(1));
   const h = UI.renderTimeline(S);
-  assert.match(h, new RegExp('data-step="' + S.idx + '"[^>]*>✕'));
+  assert.match(h, new RegExp('data-step="' + S.idx + '"[^>]*><span class="dot"[^>]*>✕'));
   assert.equal(count(h, /disabled/g), 17);
 });
 
@@ -231,4 +231,32 @@ test('playDelayMs: รอจนช็อตของขั้นจบแล้�
   assert.equal(UI.playDelayMs(6, false), 6800);
   assert.equal(UI.playDelayMs(6, true), 8500);
   assert.equal(UI.playDelayMs(undefined, false), UI.playIntervalMs(false));   // ไม่รู้ความยาวช็อต ใช้ค่าเดิม
+});
+
+// ---- V4 หน้าตาแบบ "ติดตามการขนส่ง" (มาร์ชอนุมัติร่าง 2026-10-18) ----
+test('renderTimeline V4: แต่ละขั้นมีชื่อขั้นและเวลาสั้น ๆ (เหมือนหน้าติดตามพัสดุ)', () => {
+  const h = UI.renderTimeline(L.newState(0));
+  assert.match(h, /data-step="0"[\s\S]*?ฟาร์มโคอิพรีเมียม[\s\S]*?ก่อนวันส่ง/);
+  assert.match(h, /data-step="8"[\s\S]*?บิน NRT → BKK[\s\S]*?16:20 JST/);
+  assert.match(h, /data-step="10"[\s\S]*?ประมาณ 04:00/);
+});
+
+test('renderStatus: แถบบนบอกสถานะการขนส่ง ปกติ ✓ / HOLD ✕ / สูญเสีย ✕ / ถึงผู้รับ ✓ (ไม่พึ่งสีอย่างเดียว)', () => {
+  assert.match(UI.renderStatus(L.newState(0)), /✓ สถานะปกติ/);
+  const held = walk(L.newState(2));
+  assert.match(UI.renderStatus(held), /✕ HOLD · ขั้น 7/);
+  L.verify(held); L.correct(held, D.SCENARIOS[2].opts.findIndex(o => !o.good));
+  assert.match(UI.renderStatus(held), /✕ สูญเสีย/);
+  assert.match(UI.renderStatus(walk(L.newState(0))), /✓ ถึงมือผู้รับ/);
+});
+
+test('renderStationBadge: ป้ายบนภาพบอก "สถานี k / 6" และชื่อสถานี', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderStationBadge(S);
+  assert.match(h, /สถานี 3 \/ 6/);
+  assert.match(h, /บนเที่ยวบิน JL707/);
+});
+
+test('renderStageControls V4: มีแถบความคืบหน้าของขั้น (ฉาก 3 มิติเติมความยาวเอง)', () => {
+  assert.match(UI.renderStageControls(L.newState(0), false, false), /id="step-progress"/);
 });

@@ -114,3 +114,8 @@ test('ฝังแผนที่: KoiAssets.map มีประเทศญี�
   const a3 = ctx.KoiAssets.map.countries.map(c => c.a3);
   assert.ok(a3.includes('JPN') && a3.includes('THA'));
 });
+
+test('V4: มีแถบบน (สถานะการขนส่ง) แผงติดตามด้านข้าง และป้ายสถานีบนภาพ', () => {
+  const html = readHtml();
+  for (const id of ['topbar', 'status', 'panel', 'station-badge']) assert.match(html, new RegExp('id="' + id + '"'), id);
+});

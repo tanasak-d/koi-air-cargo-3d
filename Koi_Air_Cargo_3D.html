@@ -74,12 +74,18 @@ body{margin:0;background:var(--bg);color:var(--text);
 /* ข้อความไทยยาว ๆ ต้องตัดบรรทัดได้ ไม่ดันหน้าจอให้เลื่อนแนวนอน */
 body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 
-#app{max-width:1280px;margin:0 auto;padding:12px 16px 32px;display:grid;gap:12px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.top h1{margin:0;font-size:1.25rem}
-.top small{color:var(--muted)}
-
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+/* ==== V4 หน้าตาแบบ "ติดตามการขนส่ง": แถบบน + ภาพ 3 มิติ (ซ้าย) + แผงติดตาม (ขวา) ==== */
+#app{max-width:1360px;margin:0 auto;padding:12px 16px 32px;display:grid;gap:12px}
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
+  border-radius:16px;padding:10px 14px;box-shadow:0 6px 20px rgba(15,28,46,.07)}
+.brandmark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px;
+  background:linear-gradient(135deg,#0bb4d9,#0a73a8);flex:0 0 auto}
+.brand h1{margin:0;font-size:1.15rem;line-height:1.2}
+.brand small{color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.chip,.status{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.85rem;background:var(--surface);white-space:nowrap}
+.chip.route{font-weight:700}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
 button:hover{border-color:var(--blue)}
@@ -87,27 +93,36 @@ button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 button.primary{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
 button[disabled]{opacity:.55;cursor:not-allowed}
 
-/* ---- เลย์เอาต์ B: เวที 3 มิติเต็มความกว้าง + ของที่ลอยบนเวที ---- */
-.layout{display:grid;gap:8px;min-width:0}
-#stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:14px;
-  aspect-ratio:16/9;min-height:260px;overflow:hidden}
+/* ---- V4 เลย์เอาต์: ภาพ 3 มิติ (ซ้าย) + แผงติดตามการขนส่ง (ขวา) · จอแคบซ้อนลงมา ---- */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;min-width:0;align-items:stretch}
+#stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:18px;
+  aspect-ratio:16/10;min-height:300px;overflow:hidden;box-shadow:0 8px 24px rgba(15,28,46,.08)}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none;transition:opacity .35s ease}
 #stage canvas.switching{opacity:0;transition:none}
 @media (prefers-reduced-motion: reduce){#stage canvas{transition:none}}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
+/* ป้ายสถานีมุมซ้ายบนของภาพ */
+.station-badge{position:absolute;left:12px;top:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  padding:6px 12px;box-shadow:0 4px 14px rgba(15,28,46,.12);pointer-events:none;max-width:calc(100% - 200px)}
+.station-badge small{display:block;color:var(--muted);font-size:.78rem}
+.station-badge b{font-size:.98rem}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
-#card{position:absolute;left:0;top:0;max-width:280px;background:var(--surface);color:var(--text);
-  border:2px solid var(--pink);border-radius:12px;padding:8px 12px;font-size:.92rem;line-height:1.4;
+#card{position:absolute;left:0;top:0;max-width:300px;background:var(--surface);color:var(--text);
+  border:2px solid var(--pink);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
   pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);will-change:transform}
 #card b{color:var(--pink)}
 #card small{color:var(--muted)}
 /* ไม่มี WebGL: การ์ดอยู่คงที่ด้านบนของเวที (ข้อความแจ้งเตือนอยู่กลางเวที) */
 #card.static{position:absolute;left:8px;right:8px;top:8px;transform:none;max-width:none}
-/* ปุ่มบนเวที: ซ้ายล่าง = เล่น/ก่อน/ถัดไป, ขวาบน = เหตุการณ์เสี่ยง */
-.stage-ctrl{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;pointer-events:none}
-.stage-ctrl>*{pointer-events:auto}
-.stage-ctrl .count{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px}
-.risk{position:absolute;right:8px;top:8px;max-width:min(320px,calc(100% - 16px))}
+/* แถบเล่นด้านล่างของภาพ: ปุ่มกลม ก่อน/เล่น/ถัดไป + แถบความคืบหน้าของขั้น */
+.stage-ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 10px;box-shadow:0 4px 14px rgba(15,28,46,.12)}
+.stage-ctrl .round{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;display:grid;place-items:center}
+.stage-ctrl .round.primary{width:48px;height:48px}
+.progress{flex:1 1 120px;height:6px;border-radius:99px;background:var(--tint);overflow:hidden;min-width:80px}
+.progress i{display:block;height:100%;width:0;background:var(--pink);border-radius:99px}
+.stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
+.risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
 .risk-menu summary{list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--bad);color:var(--bad);
   border-radius:999px;padding:6px 14px;font-weight:600}
 .risk-menu summary::-webkit-details-marker{display:none}
@@ -115,36 +130,64 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .risk-list{display:grid;gap:6px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
 .risk-list button{border-radius:10px;text-align:left}
 .risk-list button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
-/* เส้นเวลา 17 ขั้น จัดกลุ่ม 6 สถานี: เลื่อนแนวนอนในกรอบของตัวเอง หน้าไม่เลื่อนตาม */
-#timeline{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;min-width:0}
-.tl-group{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
-.tl-st{font-size:.8rem;color:var(--muted);white-space:nowrap}
-.tl-steps{display:flex;gap:4px}
-.tl-step{min-width:40px;padding:6px 10px;white-space:nowrap}
-.tl-step.passed{background:var(--tint);border-color:var(--blue);color:var(--blue)}
-.tl-step.here{background:var(--pink);border-color:var(--pink);color:var(--on-pink);font-weight:700}
-#tabs{min-width:0}
+/* แผงติดตามด้านขวา: สูงเท่าภาพ เลื่อนอ่านภายในแผง */
+.panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;min-width:0;
+  box-shadow:0 8px 24px rgba(15,28,46,.08)}
+.panel-inner{position:absolute;inset:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+/* จอกว้าง: ข้อมูลขั้นอยู่บนสุดของแผงเสมอ เลื่อนเฉพาะเส้นเวลา (ไม่งั้นพอเลื่อนหาขั้นปัจจุบัน ข้อมูลจะหลุดจากจอ) */
+.panel-inner #tabs{flex:0 1 auto;max-height:60%;overflow:auto}
+.panel-inner #timeline{flex:1 1 0;min-height:120px;overflow:auto}
+.panel-title{margin:0;font-size:.9rem;color:var(--muted);font-weight:600}
+#tabs{min-width:0;border:1px solid var(--pink);border-radius:14px;padding:10px 12px;background:var(--tint)}
+.step-title{margin:0 0 6px;font-size:1rem}
 .tabbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tabbar button{min-height:32px;padding:4px 12px;font-size:.88rem}
 .tabbar button[aria-selected="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+/* เส้นเวลาแนวตั้ง 17 ขั้น (แบบหน้าติดตามพัสดุ): จุด ✓ ผ่านแล้ว · ชมพู = ตอนนี้ */
+#timeline{display:grid;gap:2px;min-width:0}
+.tl-group{display:grid;gap:2px}
+.tl-st{font-size:.8rem;color:var(--muted);margin:6px 0 2px}
+.tl-steps{display:grid;gap:2px}
+.tl-step{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;text-align:left;border-radius:10px;
+  border-color:transparent;background:transparent;padding:6px 8px;min-height:36px;width:100%}
+.tl-step .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1}
+.tl-step .nm{font-size:.92rem}
+.tl-step .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.tl-step.passed .dot{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.tl-step.passed .nm{color:var(--muted)}
+.tl-step.here{background:var(--pink);border-color:var(--pink);color:var(--on-pink);font-weight:700}
+.tl-step.here .tm{color:var(--on-pink)}
+.tl-step.here .dot{border-color:var(--on-pink);color:var(--on-pink)}
 
 /* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
 .st-ok{color:var(--ok);font-weight:600}
 .st-warn{color:var(--warn);font-weight:600}
 .st-bad{color:var(--bad);font-weight:600}
 
-@media (max-width:480px){
+/* จอกลาง/เล็ก: แผงติดตามลงไปอยู่ใต้ภาพ (อ่านต่อเนื่องได้) */
+@media (max-width:1000px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .panel-inner{position:static;display:grid}
+  .panel-inner #tabs,.panel-inner #timeline{max-height:none;overflow:visible}
+}
+@media (max-width:560px){
   #app{padding:8px 16px 24px}
-  /* จอมือถือ: ปุ่มย้ายไปอยู่ใต้ภาพ ไม่บังฉาก (ภาพยังเป็น 4:3) */
+  .chips .flight{display:none}
+  /* จอมือถือ: แถบเล่นอยู่ใต้ภาพ ไม่บังฉาก (ภาพยังเป็น 4:3) */
   #stage{aspect-ratio:auto;min-height:0}
   #stage canvas{aspect-ratio:4/3;height:auto}
-  .stage-ctrl{position:static;padding:8px;background:var(--surface);border-top:1px solid var(--line)}
+  .stage-ctrl{position:static;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
+  /* จอมือถือ: ป้ายสถานีย่อเหลือ "สถานี k / 6" (ชื่อสถานีมีในเส้นเวลาใต้ภาพแล้ว) ไม่ชนปุ่มเหตุการณ์ */
+  .station-badge{left:8px;top:8px;padding:4px 10px}
+  .station-badge b{display:none}
+  .risk{right:8px;top:8px}
+  .risk-menu summary{padding:4px 10px;font-size:.85rem}
   #card{max-width:200px;font-size:.82rem}
-  .stage-ctrl button{min-height:36px;padding:4px 10px}
 }
-/* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ฉากสูงขึ้น ---- */
-#app.present{max-width:none;font-size:1.2rem}
-#app.present .risk,#app.present .top small{display:none}
-#app.present #stage{aspect-ratio:21/9}
+/* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
+#app.present{max-width:none;font-size:1.15rem}
+#app.present .risk,#app.present .brand small,#app.present .howto{display:none}
+#app.present .layout{grid-template-columns:minmax(0,1fr) 420px}
 .keys{margin:6px 0 0;font-size:.85rem}
 .howto summary{cursor:pointer;font-weight:600}
 .howto ul{margin:8px 0 0;padding-left:20px}
@@ -167,19 +210,25 @@ abbr[title]{text-decoration:underline dotted var(--blue);cursor:help}
 </head>
 <body>
 <div id="app">
-  <header class="top">
-    <div>
+  <header id="topbar" class="topbar">
+    <div class="brandmark" aria-hidden="true">✈</div>
+    <div class="brand">
       <h1>Koi Air Cargo 3D</h1>
       <small>ส่งปลาคาร์ฟพรีเมียม ญี่ปุ่น → ไทย ทางอากาศ · รุ่น <span id="app-version">dev</span></small>
     </div>
-    <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด">ธีม</button>
+    <div class="chips">
+      <span class="chip route">NRT 🇯🇵 → BKK 🇹🇭</span>
+      <span class="chip flight">JL707 · 18:25 JST → 23:00 ICT</span>
+      <span id="status" class="status" role="status"></span>
+      <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด">ธีม</button>
+    </div>
   </header>
   <details class="card howto">
     <summary>❓ วิธีใช้</summary>
     <ul>
-      <li>กด <b>ถัดไป ▶</b> หรือ <b>▶ เล่น</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
+      <li>กด <b>▶ เล่น</b> หรือ <b>ถัดไป ▶</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
       <li>ลากเมาส์หรือนิ้วบนภาพเพื่อหมุนดูรอบ ๆ · ล้อเมาส์หรือสองนิ้วเพื่อซูม (ปล่อยไว้สักพักกล้องจะกลับมุมเดิม)</li>
-      <li>กดหมายเลขขั้นบนเส้นเวลาใต้ภาพเพื่อข้ามไปดู · กด <b>ดูทั้งเส้นทาง</b> เพื่อดูภาพรวม</li>
+      <li>แผง <b>ติดตามการขนส่ง</b> ด้านขวา (บนมือถืออยู่ใต้ภาพ): อ่านว่าใครทำอะไร เอกสาร ความเสี่ยง และกดชื่อขั้นเพื่อข้ามไปดู</li>
       <li>เลือก <b>⚠ เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างเป็นสีแดงที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
       <li>กด <b>โหมดนำเสนอ</b> เมื่อฉายหน้าห้อง · สลับธีมสว่าง/มืดที่ปุ่มมุมขวาบน</li>
     </ul>
@@ -188,13 +237,19 @@ abbr[title]{text-decoration:underline dotted var(--blue);cursor:help}
   <main class="layout">
     <section id="stage" aria-label="ฉาก 3 มิติของขั้นปัจจุบัน">
       <canvas id="c" aria-label="ภาพ 3 มิติ"></canvas>
+      <div id="station-badge" class="station-badge"></div>
       <div id="card" aria-live="polite"></div>
       <div id="stage-ctrl" class="stage-ctrl"></div>
       <div id="risk" class="risk"></div>
     </section>
-    <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
+    <aside id="panel" class="panel" aria-label="ติดตามการขนส่ง">
+      <div class="panel-inner">
+        <h2 class="panel-title">ติดตามการขนส่ง</h2>
+        <section id="tabs" aria-live="polite"></section>
+        <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
+      </div>
+    </aside>
   </main>
-  <section id="tabs" class="card" aria-live="polite"></section>
 </div>
 <script id="three">/**
  * @license
@@ -5459,7 +5514,16 @@ var KoiUI = (function () {
     });
   }
 
-  // เส้นเวลา 17 ขั้น จัดกลุ่มตาม 6 สถานี: ผ่านแล้ว = ฟ้า ✓, ตรงนี้ = ชมพู, ค้างที่ด่าน = ✕
+  // เวลาสั้น ๆ ของขั้นสำหรับเส้นเวลา: ไม่มีเวลา = ข้อความ tl, เวลาสมมติ = "ประมาณ HH:MM", ปกติ = "HH:MM JST"
+  function shortTime(S, i) {
+    var st = D.STEPS[i];
+    if (!st.t) return st.tl || '';
+    var hm = L.fmtTime(L.stepStart(S, i), 'JST').slice(0, 5);
+    return st.approx ? 'ประมาณ ' + hm : hm + ' JST';
+  }
+
+  // เส้นเวลา 17 ขั้นแนวตั้ง (แบบหน้าติดตามพัสดุ) จัดกลุ่มตาม 6 สถานี
+  // แต่ละแถว: จุดสถานะ (✓ ผ่านแล้ว / ✕ ค้าง) + ชื่อขั้น + เวลาสั้น ๆ · ตรงนี้ = ชมพู
   // ระหว่างค้าง (hold) หรือจบแล้ว (end) ห้ามข้ามขั้น ปุ่มทุกปุ่มจึงกดไม่ได้
   function renderTimeline(S) {
     var locked = S.mode === 'hold' || S.mode === 'end';
@@ -5469,14 +5533,33 @@ var KoiUI = (function () {
         var s = D.STEPS[i], here = i === S.idx, passed = i < S.idx;
         var bad = here && (S.mode === 'hold' || S.end === 'loss');
         var cls = 'tl-step' + (here ? ' here' : passed ? ' passed' : '');
-        var mark = bad ? '✕ ' : passed ? '✓ ' : '';
+        var mark = bad ? '✕' : passed ? '✓' : '';
         btns.push('<button type="button" data-step="' + i + '" class="' + cls + '"' +
           (here && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') +
-          ' aria-label="ขั้น ' + s.n + ' ' + esc(s.name) + '" title="' + esc(s.name) + '">' + mark + s.n + '</button>');
+          ' aria-label="ขั้น ' + s.n + ' ' + esc(s.name) + '">' +
+          '<span class="dot" aria-hidden="true">' + mark + '</span>' +
+          '<span class="nm">' + s.n + '. ' + esc(s.name) + '</span>' +
+          '<span class="tm">' + esc(shortTime(S, i)) + '</span></button>');
       }
-      return '<div class="tl-group"><span class="tl-st">' + (k + 1) + ' ' + esc(st.short) + '</span>' +
+      return '<div class="tl-group"><span class="tl-st">' + (k + 1) + ' ' + esc(st.name) + '</span>' +
         '<div class="tl-steps">' + btns.join('') + '</div></div>';
     }).join('');
+  }
+
+  // สถานะการขนส่งบนแถบบน: ใช้ ✓ ✕ คู่กับข้อความเสมอ (ไม่พึ่งสีอย่างเดียว)
+  function renderStatus(S) {
+    if (S.mode === 'hold') return '<span class="st-bad">✕ HOLD · ขั้น ' + D.STEPS[S.idx].n + '</span>';
+    if (S.end === 'loss') return '<span class="st-bad">✕ สูญเสีย</span>';
+    if (S.end === 'ctl') return '<span class="st-ok">✓ ควบคุมความเสี่ยงได้</span>';
+    if (S.mode === 'done' || S.mode === 'end') return '<span class="st-ok">✓ ถึงมือผู้รับ</span>';
+    return '<span class="st-ok">✓ สถานะปกติ</span>';
+  }
+
+  // ป้ายสถานีมุมซ้ายบนของภาพ: "สถานี k / 6" + ชื่อสถานี
+  function renderStationBadge(S) {
+    var k = L.stationOf(S.idx), st = D.STATIONS[k];
+    if (S.overview) return '<small>ภาพรวม</small><b>ทั้งเส้นทาง ญี่ปุ่น → ไทย</b>';
+    return '<small>สถานี ' + (k + 1) + ' / ' + D.STATIONS.length + '</small><b>' + esc(st.name) + '</b>';
   }
 
   // การ์ดลอยบนภาพ 3 มิติ: ขั้นอะไร ใครทำ (ค้างที่ด่าน = ✕ HOLD)
@@ -5570,9 +5653,11 @@ var KoiUI = (function () {
   // ปุ่มบนเวที: ก่อน/เล่น/ถัดไป + "ขั้น n/17" + ดูทั้งเส้นทาง + โหมดนำเสนอ
   function renderStageControls(S, playing, present) {
     var dis = L.canAdvance(S) ? '' : ' disabled';
-    return '<button type="button" data-act="prev"' + ((S.mode === 'hold' || S.mode === 'end' || S.idx === 0) ? ' disabled' : '') + '>◀ ก่อนหน้า</button>' +
-      '<button type="button" class="primary" data-act="play"' + dis + '>' + (playing ? '⏸ หยุด' : '▶ เล่น') + '</button>' +
-      '<button type="button" data-act="next"' + dis + '>ถัดไป ▶</button>' +
+    return '<button type="button" class="round" data-act="prev" aria-label="ขั้นก่อนหน้า" title="ขั้นก่อนหน้า"' + ((S.mode === 'hold' || S.mode === 'end' || S.idx === 0) ? ' disabled' : '') + '>◀</button>' +
+      '<button type="button" class="round primary" data-act="play" aria-label="' + (playing ? 'หยุด' : 'เล่น') + '" title="' + (playing ? 'หยุด' : 'เล่น') + '"' + dis + '>' + (playing ? '⏸' : '▶') + '</button>' +
+      '<button type="button" class="round" data-act="next" aria-label="ขั้นถัดไป" title="ขั้นถัดไป"' + dis + '>▶▶</button>' +
+      // แถบความคืบหน้าของอนิเมชันในขั้นนี้ (ฉาก 3 มิติปรับความกว้างของ <i> เองทุกเฟรม)
+      '<div class="progress" aria-hidden="true"><i id="step-progress"></i></div>' +
       '<b class="count">ขั้น ' + (S.idx + 1) + '/' + D.STEPS.length + '</b>' +
       '<button type="button" data-act="overview">' + (S.overview ? '↩ กลับสู่สถานี' : 'ดูทั้งเส้นทาง') + '</button>' +
       '<button type="button" data-act="present">' + (present ? 'ออกจากโหมดนำเสนอ' : '📽 โหมดนำเสนอ') + '</button>';
@@ -5624,6 +5709,9 @@ var KoiUI = (function () {
     function render() {
       var ae = document.activeElement, fsel = ae && root.contains(ae) ? focusSelector(ae.dataset) : null;
       $('#timeline').innerHTML = renderTimeline(S);
+      var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
+      if (stEl) stEl.innerHTML = renderStatus(S);
+      $('#station-badge').innerHTML = renderStationBadge(S);
       $('#card').innerHTML = renderCard(S);
       $('#stage-ctrl').innerHTML = renderStageControls(S, !!timer, present);
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
@@ -5632,7 +5720,13 @@ var KoiUI = (function () {
       root.classList.toggle('present', present);
       if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
       var here = $('#timeline').querySelector('.here'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
-      if (here && here.scrollIntoView) here.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+      // เลื่อนเฉพาะกล่องเส้นเวลา (ไม่ใช้ scrollIntoView เพราะบนมือถือจะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ)
+      var tl = $('#timeline');
+      if (here && tl.scrollHeight > tl.clientHeight) {
+        var top = here.offsetTop - tl.offsetTop, bot = top + here.offsetHeight;
+        if (top < tl.scrollTop) tl.scrollTop = top - 24;
+        else if (bot > tl.scrollTop + tl.clientHeight) tl.scrollTop = bot - tl.clientHeight + 8;
+      }
       if (hooks.onRender) hooks.onRender(S);
     }
     // จำสถานะเปิด/ปิดของเมนูเหตุการณ์ (event toggle ไม่ bubble จึงฟังแบบ capture)
@@ -5703,6 +5797,7 @@ var KoiUI = (function () {
   return {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
     esc: esc, renderGlossary: renderGlossary, renderTimeline: renderTimeline, renderCard: renderCard,
+    renderStatus: renderStatus, renderStationBadge: renderStationBadge,
     renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
     renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
@@ -5877,7 +5972,7 @@ var KoiScene = (function () {
      r = รัศมีของชิ้นนั้น (ใช้ตรวจว่าไม่ขวางเส้นทางของกล่อง/รถ) · bg = ฉากหลังไกล ๆ · s = ขนาด · ry = หมุน */
   function deco(model, node, x, z, r, o) { o = o || {}; return { model: model, node: node, x: x, z: z, r: r, s: o.s || 1, ry: o.ry || 0, bg: !!o.bg }; }
   var DECOR = [
-    [deco('japan', 'JP_Fuji', 10, -135, 45, { bg: true }), deco('japan', 'JP_Torii', -6, 9.5, 1.8), deco('japan', 'JP_Lantern', -11, -3.8, 0.5),
+    [deco('japan', 'JP_Fuji', 10, -135, 45, { bg: true }), deco('japan', 'JP_Torii', -22, -12, 1.8), deco('japan', 'JP_Lantern', -11, -3.8, 0.5),
      deco('japan', 'JP_Lantern', -21, 3, 0.5), deco('japan', 'JP_Sakura', -24, -7, 1.4), deco('japan', 'JP_Sakura', -27, 8, 1.4),
      deco('japan', 'JP_Sakura', 18, -9, 1.4), deco('japan', 'JP_Pine', 12, -11, 1.2), deco('japan', 'JP_Bamboo', 1, -6.5, 2.1)],
     [deco('japan', 'JP_Fuji', 30, -140, 45, { bg: true }), deco('japan', 'JP_Sakura', -26, -14, 1.4), deco('japan', 'JP_Sakura', 22, -14, 1.4),
@@ -7108,6 +7203,9 @@ var KoiScene = (function () {
       var i = R.anim.i, sh = SHOTS[i];
       var sec = (now - R.anim.t0) / 1000;
       var u = R.lastS ? animU(R.lastS, i, sec, sh.dur, reduced) : Math.min(1, sec / sh.dur);   // ค้าง/จบที่ด่าน = หยุดที่จังหวะของด่าน
+      // แถบความคืบหน้าของขั้นบนแถบเล่น (หน้าเว็บวาดปุ่มใหม่บ่อย จึงหาแถบใหม่ทุกเฟรม)
+      var bar = document.getElementById('step-progress');
+      if (bar) bar.style.width = Math.round(u * 100) + '%';
       // ช็อตที่มีมุมกล้องที่สอง (ขั้น 9: แผนที่เส้นทางบิน) — สลับเป้ากล้องตามจังหวะ
       var want = sh.cam2 && u >= sh.camAt ? sh.cam2 : sh.cam;
       if (R.camGoal !== want) { R.camGoal = want; if (R.dragging) R.pendingGlide = true; else { R.gliding = true; R.lastInput = null; } }
