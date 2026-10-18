@@ -10,26 +10,25 @@ const { UI, L, D } = fresh();
 const walk = (S, n = 50) => { for (let i = 0; i < n && L.canAdvance(S); i++) L.next(S); return S; };
 const count = (s, re) => (s.match(re) || []).length;
 
-test('renderStrip: 6 ปุ่มสถานี และสถานีปัจจุบันมี aria-current="step"', () => {
-  const S = L.newState(0);
-  const h = UI.renderStrip(S);
-  assert.equal(count(h, /data-station="/g), 6);
-  assert.equal(count(h, /aria-current="step"/g), 1);
+// ---- รุ่น 2 Task 5: เส้นเวลา 17 ขั้น (จัดกลุ่ม 6 สถานี) ----
+test('renderTimeline: 17 ปุ่มขั้น จัดกลุ่ม 6 สถานี ขั้นปัจจุบัน aria-current, ผ่านแล้ว ✓', () => {
+  const S = L.newState(0); L.goTo(S, 7);
+  const h = UI.renderTimeline(S);
+  assert.equal(count(h, /data-step="/g), 17);
+  assert.equal(count(h, /class="tl-st"/g), 6);
   assert.match(h, /ผู้ส่ง/);
-  // เดินไปสถานี NRT (ขั้น 7 = index 6)
-  L.goTo(S, 6);
-  const h2 = UI.renderStrip(S);
-  assert.match(h2, /data-station="1"[^>]*aria-current="step"/);
-  assert.match(h2, /data-station="0"[^>]*class="pill passed"/);
+  assert.match(h, /data-step="7"[^>]*aria-current="step"/);
+  assert.equal(count(h, /aria-current="step"/g), 1);
+  assert.equal(count(h, /✓/g), 7);
+  assert.match(h, /data-step="0"[^>]*class="tl-step passed"/);
+  assert.match(h, /data-step="7"[^>]*class="tl-step here"/);
 });
 
-test('renderStepList: แสดงเฉพาะขั้นของสถานีปัจจุบัน ขั้นที่ผ่านมีเครื่องหมาย ✓', () => {
-  const S = L.newState(0);
-  L.goTo(S, 2);
-  const h = UI.renderStepList(S);
-  assert.equal(count(h, /data-step="/g), 6); // สถานี 1 มี 6 ขั้น
-  assert.equal(count(h, /✓/g), 2);            // ผ่านขั้น 1,2
-  assert.equal(count(h, /aria-current="step"/g), 1);
+test('renderTimeline: ตอน hold ขั้นปัจจุบันมี ✕ และปุ่มขั้นอื่นกดไม่ได้', () => {
+  const S = walk(L.newState(1));
+  const h = UI.renderTimeline(S);
+  assert.match(h, new RegExp('data-step="' + S.idx + '"[^>]*>✕'));
+  assert.equal(count(h, /disabled/g), 17);
 });
 
 test('renderHold: ใน hold มีคำ HOLD, ✕ และปุ่ม VERIFY; ไม่พึ่งสีอย่างเดียว', () => {
@@ -85,7 +84,7 @@ test('ข้อมูลที่มี HTML ถูก escape', () => {
   const f = fresh();
   f.D.STEPS[0].name = '<script>alert(1)</script>';
   const S = f.L.newState(0);
-  const h = f.UI.renderStepList(S) + f.UI.renderTab('what', S) + f.UI.renderStrip(S);
+  const h = f.UI.renderTimeline(S) + f.UI.renderTab('what', S) + f.UI.renderCard(S);
   assert.doesNotMatch(h, /<script>alert/);
   assert.match(h, /&lt;script&gt;/);
 });
@@ -118,32 +117,47 @@ test('renderGlossary: ห่อศัพท์ครั้งแรกด้ว�
   assert.equal(UI.renderGlossary('สวัสดี'), 'สวัสดี');
 });
 
-test('renderControls: ปุ่มถัดไปปิดเมื่อค้าง hold และมีเหตุการณ์ให้เลือกครบ 6 แบบ', () => {
+test('renderStageControls: ปุ่มถัดไปปิดเมื่อค้าง hold และเปิดตอนปกติ', () => {
   const S = walk(L.newState(1));
-  const h = UI.renderControls(S, false);
-  assert.match(h, /data-act="next"[^>]*disabled/);
-  assert.equal(count(h, /data-sc="/g), 6);
-  assert.doesNotMatch(UI.renderControls(L.newState(0), false), /data-act="next"[^>]*disabled/);
+  assert.match(UI.renderStageControls(S, false, false), /data-act="next"[^>]*disabled/);
+  assert.doesNotMatch(UI.renderStageControls(L.newState(0), false, false), /data-act="next"[^>]*disabled/);
 });
 
 test('บอกสถานะขั้นปัจจุบัน "ขั้น n/17"', () => {
   const S = L.newState(0); L.goTo(S, 4);
-  assert.match(UI.renderControls(S, false), /ขั้น 5\/17/);
+  assert.match(UI.renderStageControls(S, false, false), /ขั้น 5\/17/);
+});
+
+test('renderScenarioMenu: เหตุการณ์ครบ 6 แบบ aria-pressed ถูกตัว และหัวเมนูบอกชื่อเหตุการณ์ที่เลือก', () => {
+  const h = UI.renderScenarioMenu(L.newState(2));
+  assert.equal(count(h, /data-sc="/g), 6);
+  assert.match(h, /data-sc="2" aria-pressed="true"/);
+  assert.equal(count(h, /aria-pressed="true"/g), 1);
+  assert.match(h, /<summary[^>]*>[^<]*พลาด cut-off/);
+});
+
+test('renderCard: บอก "ขั้น n" ชื่อขั้น และ "ใครทำ" ของขั้นปัจจุบัน; ตอน hold มี ✕ HOLD', () => {
+  const S = L.newState(0); L.goTo(S, 3);
+  const h = UI.renderCard(S);
+  assert.match(h, /ขั้น 4/);
+  assert.match(h, /บรรจุถุง 3 ชั้น/);
+  assert.match(h, /ใครทำ/);
+  assert.match(h, /ฟาร์มผู้ขาย/);
+  assert.doesNotMatch(h, /HOLD/);
+  assert.match(UI.renderCard(walk(L.newState(1))), /✕ HOLD/);
 });
 
 // ---- Task 9: ดูทั้งเส้นทาง ----
-test('renderStrip ตอน overview: มีปุ่ม "กลับสู่สถานี" และไม่มีสถานีใดเป็น aria-current', () => {
+test('renderTimeline ตอน overview: ไม่มีขั้นใดเป็น aria-current', () => {
   const S = L.newState(0); S.overview = true;
-  const h = UI.renderStrip(S);
-  assert.match(h, /กลับสู่สถานี/);
-  assert.equal(count(h, /aria-current="step"/g), 0);
+  assert.equal(count(UI.renderTimeline(S), /aria-current="step"/g), 0);
 });
 
-test('renderControls: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
+test('renderStageControls: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
   const S = L.newState(0);
-  assert.match(UI.renderControls(S, false), /ดูทั้งเส้นทาง/);
+  assert.match(UI.renderStageControls(S, false, false), /ดูทั้งเส้นทาง/);
   S.overview = true;
-  assert.match(UI.renderControls(S, false), /กลับสู่สถานี/);
+  assert.match(UI.renderStageControls(S, false, false), /กลับสู่สถานี/);
 });
 
 // ---- Task 10: ภาพความเสี่ยง ----
@@ -195,12 +209,10 @@ test('runAction: ใน hold คำสั่ง next/prev จากคีย์�
   assert.equal(T.idx, 0);
 });
 
-test('renderControls: มีปุ่มโหมดนำเสนอ (เปลี่ยนข้อความตามโหมด) และข้อความบอกคีย์ลัด', () => {
+test('renderStageControls: มีปุ่มโหมดนำเสนอ (เปลี่ยนข้อความตามโหมด)', () => {
   const S = L.newState(0);
-  const a = UI.renderControls(S, false, false);
-  assert.match(a, /data-act="present"[^>]*>[^<]*โหมดนำเสนอ/);
-  assert.match(a, /Space/);
-  assert.match(UI.renderControls(S, false, true), /ออกจากโหมดนำเสนอ/);
+  assert.match(UI.renderStageControls(S, false, false), /data-act="present"[^>]*>[^<]*โหมดนำเสนอ/);
+  assert.match(UI.renderStageControls(S, false, true), /ออกจากโหมดนำเสนอ/);
 });
 
 // ---- Final review fix: คงโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ ----

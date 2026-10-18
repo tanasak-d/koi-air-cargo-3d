@@ -86,3 +86,16 @@ test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวท�
   }
   assert.match(ctx.KoiAssets.textures.colormap, /^data:image\/png;base64,/);
 });
+
+// ---- รุ่น 2 Task 5: เลย์เอาต์ B ----
+test('เลย์เอาต์ B: มีเวที (การ์ดลอย ปุ่มบนโมเดล เมนูเหตุการณ์) และเส้นเวลา; ไม่เหลือแถบสถานี/แผงขั้นตอนเดิม', () => {
+  const html = readHtml();
+  for (const id of ['stage', 'card', 'stage-ctrl', 'risk', 'timeline', 'tabs']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const id of ['strip', 'steps', 'controls']) assert.doesNotMatch(html, new RegExp('id="' + id + '"'), id);
+});
+
+test('เลย์เอาต์ B: วิธีใช้บอกคีย์ลัดครบ (← → Space P T O)', () => {
+  const how = /<details class="card howto">([\s\S]*?)<\/details>/.exec(readHtml())[1];
+  assert.match(how, /คีย์ลัด/);
+  for (const k of ['←', '→', 'Space', 'P', 'T', 'O']) assert.ok(how.includes(k), k);
+});
