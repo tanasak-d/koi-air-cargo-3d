@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadBlocks } from './helpers/load.mjs';
 
-const ctx = loadBlocks(['koi-data', 'koi-logic', 'koi-scene']);
+const ctx = loadBlocks(['koi-assets', 'koi-data', 'koi-logic', 'koi-scene']);
 const SC = ctx.KoiScene;
 const D = ctx.KoiData;
 const L = ctx.KoiLogic;
@@ -141,4 +141,22 @@ test('blinkOn ของสถานะ loss ไม่กระพริบ (boxP
   for (let t = 0; t < 2000; t += 50) seen.add(SC.boxPulse('held', t, false));
   assert.equal(seen.size, 2); // held กระพริบจริง
   for (let t = 0; t < 2000; t += 111) assert.equal(SC.boxPulse('held', t, true), true); // reduced-motion
+});
+
+// ---- รุ่น 2 Task 2: ตัวโหลดโมเดลที่ฝังไว้ ----
+test('assetUrl: แปลงที่อยู่สีของ Kenney เป็น data URI ที่ฝังไว้ ที่อยู่อื่นคงเดิม', () => {
+  assert.match(SC.assetUrl('Textures/colormap.png'), /^data:image\/png;base64,/);
+  assert.match(SC.assetUrl('./models/Textures/colormap.png'), /^data:image\/png;base64,/);
+  assert.equal(SC.assetUrl('data:foo'), 'data:foo');
+});
+
+test('base64ToBuffer: ถอดรหัสโมเดลได้ ขึ้นต้นด้วย glTF และขนาดตรงกับไฟล์จริง', () => {
+  const buf = SC.base64ToBuffer(ctx.KoiAssets.models.cone);
+  assert.equal(new TextDecoder('latin1').decode(new Uint8Array(buf, 0, 4)), 'glTF');
+  assert.equal(buf.byteLength, Buffer.from(ctx.KoiAssets.models.cone, 'base64').length);
+});
+
+test('placeholderSize: มีขนาดสำรองของทุกโมเดล (กว้าง/สูง/ยาว > 0)', () => {
+  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone']);
+  for (const n of SC.MODEL_NAMES) { const s = SC.placeholderSize(n); assert.ok(s.w > 0 && s.h > 0 && s.d > 0, n); }
 });

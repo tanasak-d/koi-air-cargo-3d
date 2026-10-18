@@ -5739,6 +5739,30 @@ var KoiScene = (function () {
     return blinkOn(timeMs, reducedMotion);
   }
 
+  /* ---------- โมเดลสำเร็จรูปที่ฝังไว้ (Kenney Car Kit, CC0) ----------
+     โมเดลถูกเก็บเป็นข้อความ base64 ใน KoiAssets (บล็อก koi-assets) เพื่อให้ไฟล์เดียวเปิดได้ด้วยดับเบิลคลิก */
+  var MODEL_NAMES = ['delivery', 'van', 'tractor', 'cone'];
+
+  // โมเดลของ Kenney อ้างไฟล์สี "Textures/colormap.png" แยกไว้ เราเปลี่ยนที่อยู่นั้นเป็นรูปที่ฝังไว้แทน
+  function assetUrl(url) {
+    if (/(^|\/)colormap\.png$/.test(url) && typeof KoiAssets !== 'undefined') return KoiAssets.textures.colormap;
+    return url;
+  }
+
+  // แปลงข้อความ base64 กลับเป็นข้อมูลไบต์ (ArrayBuffer) ที่ตัวโหลดโมเดลอ่านได้
+  function base64ToBuffer(b64) {
+    var bin = atob(b64), n = bin.length, bytes = new Uint8Array(n);
+    for (var i = 0; i < n; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  // ขนาดกล่องสำรอง (กว้าง x สูง x ยาว) ใช้แทนโมเดลที่โหลดไม่ได้ ฉากจะยังเล่นต่อได้
+  var PLACEHOLDER = {
+    delivery: { w: 2.6, h: 3, d: 7.5 }, van: { w: 2, h: 2.2, d: 4.6 },
+    tractor: { w: 1.8, h: 1.8, d: 3.6 }, cone: { w: 0.6, h: 1, d: 0.6 }
+  };
+  function placeholderSize(name) { return PLACEHOLDER[name] || { w: 1, h: 1, d: 1 }; }
+
   /* ---------- (ข) ส่วนที่ต้องมี WebGL ---------- */
   var CAM_SCALE = [1, 1, 1.4, 1, 1, 1]; // ถอยกล้องเพิ่มของแต่ละสถานี (S3 เครื่องบินใหญ่)
   var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, box, ...
@@ -6050,6 +6074,43 @@ var KoiScene = (function () {
     stage.innerHTML = '<div class="stage-note" role="status">' + NO_WEBGL_MESSAGE + '</div>';
   }
 
+  // โหลดโมเดลทั้งหมดครั้งเดียว แล้วจำไว้ (เรียกซ้ำได้ผลเดิม ไม่ถอดรหัสซ้ำ)
+  // โมเดลไหนถอดรหัสไม่ได้ จะเก็บเป็น null และ cloneModel จะใช้กล่องสำรองแทน
+  var modelsPromise = null, MODELS = {};
+  function loadModels() {
+    if (modelsPromise) return modelsPromise;
+    var manager = new THREE.LoadingManager();
+    manager.setURLModifier(assetUrl);
+    var loader = new THREE.GLTFLoader(manager);
+    modelsPromise = Promise.all(MODEL_NAMES.map(function (name) {
+      return new Promise(function (done) {
+        try {
+          loader.parse(base64ToBuffer(KoiAssets.models[name]), '', function (gltf) { MODELS[name] = gltf.scene; done(); },
+            function (err) { console.warn('โหลดโมเดลไม่ได้:', name, err); MODELS[name] = null; done(); });
+        } catch (err) { console.warn('โหลดโมเดลไม่ได้:', name, err); MODELS[name] = null; done(); }
+      });
+    })).then(function () { return MODELS; });
+    return modelsPromise;
+  }
+
+  // สำเนาโมเดลพร้อมใช้: ขยายให้ด้านยาวสุด = targetLen วางฐานที่ y=0 และให้มีเงา
+  function cloneModel(name, targetLen) {
+    var g = new THREE.Group(), src = MODELS[name];
+    var m;
+    if (src) {
+      m = src.clone(true);
+      var size = new THREE.Box3().setFromObject(m).getSize(new THREE.Vector3());
+      m.scale.setScalar(targetLen / Math.max(size.x, size.z));
+    } else {
+      var p = placeholderSize(name), k = targetLen / p.d;
+      m = new THREE.Mesh(new THREE.BoxGeometry(p.w * k, p.h * k, p.d * k), mat(0x9aa8bb));
+      m.position.y = p.h * k / 2;
+    }
+    m.traverse(function (o) { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    g.add(m);
+    return g;
+  }
+
   // เริ่มระบบ: สร้าง renderer/กล้อง/แสง/กล่องปลา แล้วเริ่มวนวาด
   function init(canvas) {
     watchReducedMotion();
@@ -6205,6 +6266,8 @@ var KoiScene = (function () {
 
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, STATION_LABELS: STATION_LABELS,
+    MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
+    loadModels: loadModels, cloneModel: cloneModel,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
     supported: supported, init: init, showStation: showStation, moveBoxTo: moveBoxTo,
     setHeld: setHeld, setTheme: setTheme, sync: sync, dispose: dispose

@@ -25,7 +25,7 @@ export function blockSource(html, id) {
 /** รันบล็อกตามลำดับ id ใน context เดียว แล้วคืน context (อ่าน ctx.KoiData / ctx.KoiLogic ได้) */
 export function loadBlocks(ids) {
   const html = readHtml();
-  const ctx = vm.createContext({ console });
+  const ctx = vm.createContext({ console, atob, TextDecoder }); // atob ใช้ถอดรหัสโมเดลที่ฝังเป็น base64
   for (const id of ids) vm.runInContext(blockSource(html, id), ctx, { filename: id });
   return ctx;
 }
