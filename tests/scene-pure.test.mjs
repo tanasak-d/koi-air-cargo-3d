@@ -118,7 +118,7 @@ test('SHOTS: 17 ช็อต สถานีตรงกับ stationOf, act �
   assert.equal(new Set(SC.SHOTS.map(s => s.act)).size, 17);
   SC.SHOTS.forEach((s, i) => {
     assert.equal(s.st, L.stationOf(i), 'ขั้น ' + (i + 1));
-    assert.ok(s.dur >= 3 && s.dur <= 10, 'ขั้น ' + (i + 1));
+    assert.ok(s.dur >= 3 && s.dur <= 18, 'ขั้น ' + (i + 1));
     assert.ok(s.path.length >= 2, 'ขั้น ' + (i + 1));
   });
 });
@@ -264,13 +264,13 @@ const heldAt = (sc) => { const S = L.newState(sc); while (L.canAdvance(S)) L.nex
 test('animU: ค้างที่ด่าน → หยุดที่จังหวะของด่าน; reduced-motion ไปที่จังหวะนั้นทันที', () => {
   const S = heldAt(3), dur = SC.SHOTS[S.idx].dur;
   assert.equal(SC.animU(S, S.idx, 1, dur, false), 1 / dur);
-  assert.equal(SC.animU(S, S.idx, 100, dur, false), 0.55);
-  assert.equal(SC.animU(S, S.idx, 0, dur, true), 0.55);
+  assert.equal(SC.animU(S, S.idx, 100, dur, false), 0.245);
+  assert.equal(SC.animU(S, S.idx, 0, dur, true), 0.245);
 });
 test('animU: ตอบผิด (สูญเสีย) อนิเมชันยังหยุดที่ด่าน ไม่เล่นต่อเหมือนส่งสำเร็จ', () => {
   const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => !o.good));
   assert.equal(S.end, 'loss');
-  assert.equal(SC.animU(S, S.idx, 100, SC.SHOTS[S.idx].dur, false), 0.55);
+  assert.equal(SC.animU(S, S.idx, 100, SC.SHOTS[S.idx].dur, false), 0.245);
 });
 test('animU: แก้ถูกแล้วเล่นต่อจนจบ; reduced-motion = 1; ขั้นอื่นไม่ถูกจำกัด', () => {
   const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => o.good));
@@ -325,7 +325,7 @@ test('loadPhases: เครื่องบินเริ่มเคลื่�
 
 test('loadPhases: เหตุการณ์ NOTOC ค้างที่ด่านก่อนกล่องเข้าห้องสินค้า (กล่องยังมองเห็นอยู่ที่ประตู)', () => {
   const S = L.newState(3); while (L.canAdvance(S)) L.next(S);
-  const p = SC.loadPhases(SC.holdU(S));
+  const p = SC.flightPhases(SC.holdU(S)).ground;          // ขั้น 9 ช่วงแรก = ขนของที่สนามบิน
   assert.equal(p.inHold, false);
   assert.ok(p.e > 0.9);
 });
@@ -373,4 +373,38 @@ test('bkkPhases: ประตูเปิดสุดก่อนรถลาก
     if (p.z < FRONT_Z + 2.5) assert.equal(ph.door, 1, 'รถถึงประตูแต่ประตูยังไม่เปิดสุด u=' + u.toFixed(2));
   }
   assert.equal(SC.bkkPhases(0).door, 0);
+});
+
+// ---- เส้นทางบินบนแผนที่ (ขั้น 9 → 10) ----
+test('mapXZ: แปลงลองจิจูด/ละติจูดเป็นตำแหน่งบนแผนที่ อยู่ในกรอบ ±30 · ญี่ปุ่นอยู่ขวาบน ไทยอยู่ซ้ายล่าง', () => {
+  const n = SC.mapXZ(SC.AIRPORTS.NRT.lon, SC.AIRPORTS.NRT.lat), b = SC.mapXZ(SC.AIRPORTS.BKK.lon, SC.AIRPORTS.BKK.lat);
+  for (const p of [n, b, SC.mapXZ(86, -2), SC.mapXZ(150, 48)]) assert.ok(Math.abs(p.x) <= 30 && Math.abs(p.z) <= 30);
+  assert.ok(n.x > b.x, 'ญี่ปุ่นอยู่ทางตะวันออก (x มากกว่า)');
+  assert.ok(n.z < b.z, 'ญี่ปุ่นอยู่เหนือ (z น้อยกว่า = ไกลกล้อง)');
+});
+
+test('greatCircle: เส้นทางบินจริงโค้งตามผิวโลก — ปลายตรงสนามบิน และกลางทางโค้งขึ้นเหนือกว่าเส้นตรง', () => {
+  const A = SC.AIRPORTS.NRT, B = SC.AIRPORTS.BKK, pts = SC.greatCircle(A, B, 40);
+  assert.equal(pts.length, 41);
+  assert.ok(Math.abs(pts[0].lon - A.lon) < 1e-6 && Math.abs(pts[0].lat - A.lat) < 1e-6);
+  assert.ok(Math.abs(pts[40].lon - B.lon) < 1e-6 && Math.abs(pts[40].lat - B.lat) < 1e-6);
+  assert.ok(pts[20].lat > (A.lat + B.lat) / 2, 'กลางทางต้องอยู่เหนือกว่าค่าเฉลี่ยละติจูด');
+});
+
+test('flightPhases: ขนของ+วิ่งขึ้นที่สนามบินก่อน แล้วจึงเปลี่ยนเป็นแผนที่ และเครื่องบินเริ่มบินบนแผนที่หลังจากนั้น', () => {
+  for (let u = 0; u <= 1.0001; u += 0.01) {
+    const f = SC.flightPhases(u);
+    if (f.mapView) assert.equal(f.ground.fly, 1, 'เปลี่ยนเป็นแผนที่ก่อนเครื่องวิ่งขึ้นเสร็จ u=' + u.toFixed(2));
+    if (f.route > 0) assert.equal(f.mapView, true, 'เครื่องบินบนแผนที่เริ่มก่อนเปลี่ยนภาพ u=' + u.toFixed(2));
+  }
+  assert.equal(SC.flightPhases(0).route, 0);
+  assert.equal(SC.flightPhases(1).route, 1);
+});
+
+test('SHOTS ขั้น 9: มีมุมกล้องที่สอง (มองแผนที่) และจังหวะสลับกล้องตรงกับตอนเปลี่ยนเป็นแผนที่', () => {
+  const s = SC.SHOTS[8];
+  assert.ok(s.cam2 && s.cam2.p.y > SC.MAP_Y, 'กล้องต้องอยู่เหนือแผนที่');
+  assert.ok(Math.abs(s.cam2.t.y - SC.MAP_Y) < 2, 'กล้องต้องมองที่แผนที่');
+  assert.equal(SC.flightPhases(s.camAt).mapView, true);
+  assert.equal(SC.flightPhases(s.camAt - 0.02).mapView, false);
 });

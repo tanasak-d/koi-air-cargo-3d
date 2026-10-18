@@ -108,3 +108,9 @@ test('ไม่มี WebGL: การ์ดชื่อขั้นยังแ
 test('เปลี่ยนสถานีแบบนุ่ม: ภาพจาง-ขึ้น (มี transition ของ opacity ที่ canvas)', () => {
   assert.match(readHtml(), /#stage canvas\{[^}]*transition:opacity/);
 });
+
+test('ฝังแผนที่: KoiAssets.map มีประเทศญี่ปุ่นและไทย (ข้อมูล Natural Earth)', () => {
+  const ctx = loadBlocks(['koi-assets']);
+  const a3 = ctx.KoiAssets.map.countries.map(c => c.a3);
+  assert.ok(a3.includes('JPN') && a3.includes('THA'));
+});

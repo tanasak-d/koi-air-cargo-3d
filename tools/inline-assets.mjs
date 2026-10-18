@@ -31,8 +31,10 @@ const models = {};
 for (const n of MODELS) models[n] = fs.readFileSync(path.join(root, 'assets/models', n + '.glb')).toString('base64');
 const colormap = 'data:image/png;base64,' +
   fs.readFileSync(path.join(root, 'assets/models/Textures/colormap.png')).toString('base64');
-const assets = '\n// โมเดล Kenney Car Kit (CC0) แบบ base64 — สร้างโดย tools/inline-assets.mjs ห้ามแก้ด้วยมือ\n' +
-  'var KoiAssets = ' + JSON.stringify({ models, textures: { colormap } }) + ';\n';
+// แผนที่เอเชียสำหรับฉากเส้นทางบิน (สร้างด้วย tools/build-map.mjs จาก Natural Earth)
+const map = JSON.parse(fs.readFileSync(path.join(root, 'assets/map/asia.json'), 'utf8'));
+const assets = '\n// โมเดล 3 มิติ (Kenney CC0 + Blender) แบบ base64 + แผนที่ — สร้างโดย tools/inline-assets.mjs ห้ามแก้ด้วยมือ\n' +
+  'var KoiAssets = ' + JSON.stringify({ models, textures: { colormap }, map }) + ';\n';
 
 let html = fs.readFileSync(htmlPath, 'utf8');
 html = put(html, 'three-addons', '<!--ADDONS-->', addons);
