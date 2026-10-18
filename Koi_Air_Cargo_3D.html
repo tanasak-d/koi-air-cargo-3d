@@ -5739,9 +5739,9 @@ var KoiScene = (function () {
     shot(0, 'pondSelect', 5, [[-16, 0.4, 0], [-12, 0.9, 1]], [-8, 9, 16], [-14, 0.5, 0]),
     shot(0, 'healthCheck', 5, [[-12, 0.9, 1], [-8, 0.95, -1]], [-2, 7, 12], [-8, 1, -1]),
     shot(0, 'fasting', 5, [[-8, 0.95, -1], [-2, 0.6, -3]], [4, 8, 10], [-2, 0.8, -3]),
-    shot(0, 'bagging', 8, [[-2, 0.6, -3], [4, 0.95, -1]], [9, 6, 9], [4, 1, -1]),
-    shot(0, 'labeling', 5, [[4, 0.95, -1], [6, 0.95, -1]], [10, 5, 7], [6, 1, -1]),
-    shot(0, 'truckToNRT', 8, [[6, 0.95, -1], [10, 1.6, 2], [28, 1.6, 2]], [14, 9, 20], [16, 1, 2]),
+    shot(0, 'bagging', 8, [[-2, 0.6, -3], [4, 0.95, -1]], [0, 6, 9], [4, 1, -1]),
+    shot(0, 'labeling', 5, [[4, 0.95, -1], [6, 0.95, -1]], [2, 5, 8], [6, 1, -1]),
+    shot(0, 'truckToNRT', 8, [[6, 0.95, -1], [10, 1.6, 2], [28, 1.6, 2]], [10, 9, 20], [17, 1.5, 2]),
     // สถานี 2 นาริตะ: รถเข้ามาที่คลัง AVI (-12,-8) → สายพานและ X-ray (2,-2.5)
     shot(1, 'aviReceive', 6, [[-28, 1.6, 0], [-13, 1.6, 0], [-10, 1, -2.5]], [-4, 8, 14], [-12, 1, -1]),
     shot(1, 'xrayCheck', 7, [[-10, 1, -2.5], [-6, 1, -2.5], [10, 1, -2.5]], [4, 7, 10], [2, 1, -2.5]),
@@ -6183,6 +6183,105 @@ var KoiScene = (function () {
   var BUILDERS = [null, null, null, null, null, null];
   var ACTIONS = {};
 
+  /* ---------- ตัวช่วยของอนิเมชัน ---------- */
+  // ช่วง: ค่า 0..1 ระหว่าง u = a ถึง u = b (ก่อน a = 0, หลัง b = 1) ใช้แบ่งจังหวะในขั้นเดียว
+  function span(u, a, b) { return Math.max(0, Math.min(1, (u - a) / (b - a))); }
+  // วางของลงกลุ่มที่ตำแหน่ง (x,z) หมุนรอบแกนตั้ง ry
+  function place(g, obj, x, z, ry, y) { obj.position.set(x, y || 0, z); if (ry) obj.rotation.y = ry; g.add(obj); return obj; }
+  // ต้นไม้โลว์โพลี (ลำต้น + พุ่มทรงกรวย) ไว้ตกแต่งฉากฟาร์ม
+  function tree(g, x, z, s) {
+    var t = group(g, x, 0, z); s = s || 1;
+    addCyl(t, 0.18 * s, 1.2 * s, 0x7a5a3a, 0, 0, 0, 6);
+    put(t, new THREE.ConeGeometry(1.1 * s, 2.4 * s, 7), 0x4f8f4a, 0, 2.3 * s, 0);
+    return t;
+  }
+  // ป้ายข้อความลอย (sprite) ขนาดย่อ
+  function sign(g, text, x, y, z, w) { var s = makeLabel(text); s.position.set(x, y, z); s.scale.set(w || 4, (w || 4) / 6, 1); g.add(s); return s; }
+  // ปลาว่ายเป็นวงในบ่อ (cx,cz) รัศมี r ตามเวลา t — ใช้กับปลาหลายตัว
+  function swim(fish, cx, cz, y, r, t, phase, speed) {
+    var a = t * (speed || 0.8) + phase;
+    fish.position.set(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r);
+    fish.rotation.y = -a - Math.PI / 2;
+    if (fish.userData.tail) fish.userData.tail.rotation.y = Math.sin(t * 8 + phase) * 0.5;
+  }
+
+  /* ---------- สถานี 1 ผู้ส่ง (ฟาร์มในญี่ปุ่น) ขั้น 1–6 ---------- */
+  BUILDERS[0] = function (g, props) {
+    // บ้านฟาร์ม รั้ว ต้นไม้
+    place(g, kit.building(9, 4, 6, 0xb5473a), -17, -11);
+    for (var x = -26; x <= 20; x += 2.5) addBox(g, 0.15, 0.9, 0.15, 0x9c7a55, x, 0, -15);
+    addBox(g, 47, 0.12, 0.08, 0x9c7a55, -3, 0.75, -15);
+    [[-26, -6], [-24, 8], [18, -10], [25, -4], [-24, -9], [-28, 2]].forEach(function (p, k) { tree(g, p[0], p[1], 0.9 + (k % 3) * 0.2); });
+    // ขั้น 1: บ่อเลี้ยง มีปลาคาร์ฟหลายสีว่าย + คนเลี้ยงถือกระชอน
+    place(g, kit.pond(4, 0x3f8fd0), -16, 0);
+    props.koi = [0xff7a33, 0xffffff, 0xd13b32, 0xf5c242].map(function (c) { return place(g, kit.koi(c), -16, 0, 0, 0.45); });
+    props.farmer = place(g, kit.person(0x3c6e47), -12.5, 2.6, -0.8);
+    // ขั้น 2: โต๊ะตรวจ + ผู้ตรวจ (เสื้อขาว) + ใบรับรองและตราประทับ
+    place(g, kit.table(3, 1.6), -8, -1);
+    props.vet = place(g, kit.person(0xf4f6f8), -8, -2.7);
+    props.cert = place(g, kit.doc(0x11743a), -6.9, -1.2, 0, 0.9);
+    props.stamp1 = place(g, kit.stamp(), -6.9, -1.2, 0, 2.2);
+    // ขั้น 3: บ่อพักงดอาหาร + ป้ายนับวัน + ถุงอาหารที่ถูกงด (✕)
+    place(g, kit.pond(2.2, 0x6fb8e6), -2, -3);
+    props.restKoi = [place(g, kit.koi(0xff7a33), -2, -3, 0, 0.45), place(g, kit.koi(0xffffff), -2, -3, 0, 0.45)];
+    addBox(g, 0.7, 0.9, 0.5, 0xc8a46a, 0.9, 0, -5.3);
+    sign(g, '✕ งดอาหาร', 0.9, 1.6, -5.3, 2.4);
+    props.dayLabel = sign(g, 'งดอาหาร วันที่ 3', -5.5, 2.2, -3.5, 4);
+    props.dayText = 'งดอาหาร วันที่ 3';
+    // ขั้น 4–5: โต๊ะบรรจุ + คนบรรจุ + ถุงใส 3 ชั้น + ถังออกซิเจน
+    place(g, kit.table(4.6, 1.8), 5, -1);
+    props.packer = place(g, kit.person(0x2f5fb5), 5, -2.7);
+    props.bag = place(g, kit.bag(), 4, -1, 0, 0.9);
+    addCyl(g, 0.25, 1.4, 0x3aa564, 7.6, 0, -2.2, 8); addCyl(g, 0.1, 0.2, 0x8d96a3, 7.6, 1.4, -2.2, 6); // ถังออกซิเจน (เขียว)
+    // ขั้น 6: รถควบคุมอุณหภูมิ จอดรอหน้าโต๊ะ หันหัวไปทางสนามบิน (+x)
+    props.truck = place(g, kit.truck(), 14, 2);
+  };
+
+  // ขั้น 1: ปลาว่ายในบ่อ คนเลี้ยงยกกระชอนคัดปลาใส่ถัง
+  ACTIONS.pondSelect = function (c) {
+    c.props.koi.forEach(function (f, k) { swim(f, -16, 0, 0.45, 1.2 + k * 0.6, c.t, k * 1.7, 0.6 + k * 0.1); });
+    var lift = Math.sin(span(c.u, 0, 0.6) * Math.PI);
+    c.props.farmer.userData.arms[1].rotation.x = -lift * 1.6;
+  };
+  // ขั้น 2: ผู้ตรวจตรวจปลาในถัง แล้วใบรับรองลอยขึ้นมาให้ประทับตรา
+  ACTIONS.healthCheck = function (c) {
+    var look = span(c.u, 0.35, 0.6), rise = span(c.u, 0.55, 0.75), stamp = span(c.u, 0.78, 0.95);
+    c.props.vet.userData.arms[0].rotation.x = -Math.sin(c.t * 5) * 0.5 * (1 - look) - 0.6;
+    c.props.cert.position.y = 0.9 + rise * 1.2; c.props.cert.rotation.x = rise * 0.9;
+    c.props.stamp1.position.y = 0.9 + rise * 1.2 + 1.2 - stamp * 1.05 + (stamp >= 1 ? 0.25 : 0);
+  };
+  // ขั้น 3: ปลาอยู่ในบ่อพัก ตัวนับวันเดินจากวันที่ 3 ถึงวันที่ 7 (ไม่มีอาหารตกลงน้ำ)
+  ACTIONS.fasting = function (c) {
+    c.props.restKoi.forEach(function (f, k) { swim(f, -2, -3, 0.45, 0.8 + k * 0.5, c.t, k * 2.4, 0.5); });
+    var text = 'งดอาหาร วันที่ ' + Math.min(7, 3 + Math.floor(c.u * 5));
+    if (text !== c.props.dayText) {
+      var old = c.props.dayLabel; c.props.dayLabel = sign(c.g, text, old.position.x, old.position.y, old.position.z, 4);
+      c.g.remove(old); old.material.map.dispose(); old.material.dispose(); c.props.dayText = text;
+    }
+  };
+  // ขั้น 4: ถุงซ้อน 3 ชั้นปรากฏทีละชั้น → เติมออกซิเจน (ถุงพอง) → มัดปาก → ลงกล่องโฟม
+  ACTIONS.bagging = function (c) {
+    var L3 = c.props.bag.userData.layers;
+    L3.forEach(function (b, k) { b.visible = c.u >= 0.08 + k * 0.12; });
+    var puff = span(c.u, 0.45, 0.62), into = span(c.u, 0.72, 0.88);
+    c.props.bag.scale.set(1 + puff * 0.25, 0.8 + puff * 0.35 - into * 0.6, 1 + puff * 0.25);
+    c.props.bag.visible = into < 1;
+    c.props.packer.userData.arms.forEach(function (a, k) { a.rotation.x = -0.9 - Math.sin(c.t * 4 + k) * 0.3 * (1 - into); });
+    c.cargo.userData.box.visible = c.u >= 0.7;   // กล่องโฟมโผล่มารับถุงตอนท้าย
+  };
+  // ขั้น 5: ติดป้าย LIVE ANIMALS แล้วลูกศร THIS WAY UP บนกล่อง
+  ACTIONS.labeling = function (c) {
+    var ud = c.cargo.userData.box.userData;
+    ud.live.visible = c.u >= 0.35; ud.arrow.visible = c.u >= 0.65;
+    c.props.packer.userData.arms[1].rotation.x = -1.2 - Math.sin(c.t * 6) * 0.3;
+  };
+  // ขั้น 6: กล่องขึ้นท้ายรถควบคุมอุณหภูมิ แล้วรถวิ่งออกไปทางสนามบิน
+  ACTIONS.truckToNRT = function (c) {
+    var x = c.cargo.position.x;
+    c.props.truck.position.x = Math.max(14, x + 4);
+    c.cargo.visible = x < 10.6;                   // อยู่ในตู้รถแล้วมองไม่เห็น (การ์ดยังตามอยู่)
+  };
+
   function buildStation(i) {
     var g = new THREE.Group(), props = {};
     buildGround(g, GROUND[i]);
@@ -6398,7 +6497,8 @@ var KoiScene = (function () {
       var sec = (now - R.anim.t0) / 1000, u = Math.min(1, sec / sh.dur);
       var p = shotPose(i, u, reduced);
       R.cargo.position.set(p.x, p.y, p.z);
-      R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
+      R.cargo.visible = true; R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
+      var tags = R.cargo.userData.box.userData; tags.live.visible = tags.arrow.visible = i >= 5;   // ป้ายติดแล้วตั้งแต่ขั้น 6
       var act = ACTIONS[sh.act];
       if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: reduced ? 1 : u, t: sec, reduced: reduced });
     }

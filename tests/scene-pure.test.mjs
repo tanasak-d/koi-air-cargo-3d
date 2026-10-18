@@ -229,3 +229,7 @@ test('cardPos: อยู่ในกรอบเวทีเสมอ และ�
   const c = SC.cardPos(200, 295, 200, 60, 400, 300);
   assert.ok(c.top + 60 <= 300, JSON.stringify(c));
 });
+
+// ---- รุ่น 2 Task 6–9: ทุกช็อตมีอนิเมชันของตัวเอง ----
+const actionsFor = (from, to) => { for (let i = from; i <= to; i++) assert.equal(typeof SC.ACTIONS[SC.SHOTS[i].act], 'function', SC.SHOTS[i].act); };
+test('ACTIONS: ทุกช็อตของสถานี 1 (ขั้น 1–6) มีฟังก์ชันอนิเมชัน', () => actionsFor(0, 5));
