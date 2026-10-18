@@ -10,7 +10,7 @@
 
 CC0 = ใช้ได้ทั้งงานเรียน งานส่วนตัว และงานเชิงพาณิชย์ ไม่ต้องขออนุญาตหรือให้เครดิต (Kenney ขอให้ให้เครดิตถ้าทำได้ จึงบันทึกไว้ที่นี่)
 
-ของอื่นในฉาก (อาคารฟาร์ม/ด่าน บ่อ โต๊ะ สายพาน) สร้างด้วยโค้ดในไฟล์ `Koi_Air_Cargo_3D.html` บล็อก `koi-scene` ส่วนเครื่องบิน ปลา คน กล่องปลา ถุง คลังสินค้า และ X-ray สร้างใน Blender (ด้านล่าง)
+ของอื่นในฉาก (โต๊ะ สายพาน เอกสาร ตราประทับ อาคารผู้โดยสาร) สร้างด้วยโค้ดในไฟล์ `Koi_Air_Cargo_3D.html` บล็อก `koi-scene` ส่วนเครื่องบิน ปลา คน กล่องปลา ถุง คลังสินค้า X-ray บ่อ แท่นลาก บ้านฟาร์ม อาคาร DOF และต้นไม้ สร้างใน Blender (ด้านล่าง)
 
 ## โมเดลที่สร้างเองใน Blender 5.2 (ของงานนี้เอง ไม่มีลิขสิทธิ์บุคคลอื่น)
 
@@ -23,6 +23,11 @@ CC0 = ใช้ได้ทั้งงานเรียน งานส่ว�
 | `models/bag.glb` | `tools/blender/make_props.py` | ถุงใส 3 ชั้น + น้ำ + ยางรัด |
 | `models/warehouse.glb` | `tools/blender/make_props.py` | คลังสินค้าสัตว์มีชีวิต (ใช้ทั้ง NRT และ BKK) |
 | `models/xray.glb` | `tools/blender/make_props.py` | เครื่อง X-ray สายพาน |
+| `models/pond.glb` | `tools/blender/make_scenery.py` | บ่อปลาขอบหิน |
+| `models/dolly.glb` | `tools/blender/make_scenery.py` | แท่นลากสินค้าในสนามบิน |
+| `models/farmhouse.glb` | `tools/blender/make_scenery.py` | บ้านฟาร์มแบบญี่ปุ่น (ฟาร์มผู้ส่งและฟาร์มบริษัท) |
+| `models/dof.glb` | `tools/blender/make_scenery.py` | อาคารด่านตรวจและกักกัน (ป้ายภาษาอังกฤษทั่วไป ไม่ใช่ตราหน่วยงานจริง) |
+| `models/trees.glb` | `tools/blender/make_scenery.py` | ต้นไม้ 2 แบบ |
 
 ภาพตัวอย่างของแต่ละโมเดลอยู่ใน `previews/` สร้างใหม่ได้ด้วยคำสั่ง (แล้วรัน `npm run inline` เพื่อฝังลงไฟล์เว็บ):
 

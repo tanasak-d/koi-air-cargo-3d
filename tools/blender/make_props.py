@@ -6,37 +6,7 @@
 # แกน: Blender -Y = ด้าน +z ในเว็บ (ด้านหน้าที่หันเข้ากล้อง) · ฐานของทุกชิ้นอยู่ที่ z = 0
 import bpy, bmesh, math, sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from common import reset, mat, hexrgb, obj_from_bmesh, prim, root, export_glb, render_preview
-
-
-def text(body, size, material, loc, rot, parent, extrude=0.004, name='Text'):
-    """ตัวอักษรภาษาอังกฤษ (ฟอนต์ในตัวของ Blender) แปลงเป็นเมช"""
-    bpy.ops.object.text_add(location=loc, rotation=rot)
-    t = bpy.context.active_object
-    t.data.body = body; t.data.size = size; t.data.extrude = extrude
-    t.data.align_x = 'CENTER'; t.data.align_y = 'CENTER'
-    t.data.resolution_u = 2          # เส้นโค้งของตัวอักษรหยาบลงหน่อย ไฟล์จะเล็กลงมาก (มองไม่ออกในฉาก)
-    bpy.ops.object.convert(target='MESH')
-    t = bpy.context.active_object; t.name = name
-    t.data.materials.clear(); t.data.materials.append(material)
-    if parent is not None:
-        t.parent = parent            # ตำแหน่ง loc นับจากตัวแม่ (เหมือนชิ้นอื่น ๆ)
-    return t
-
-
-def bevel_box(name, size, loc, material, parent, width=0.04):
-    """กล่องขอบมน (bevel) — ให้ดูเป็นของจริงกว่ากล่องเหลี่ยมคม"""
-    ob = prim('cube', name, material, loc=loc, scale=(size[0] / 2, size[1] / 2, size[2] / 2), parent=parent)
-    bpy.context.view_layer.objects.active = ob
-    bpy.ops.object.transform_apply(scale=True)
-    m = ob.modifiers.new('bevel', 'BEVEL'); m.width = width; m.segments = 2
-    return ob
-
-
-def empty(name, parent, loc=(0, 0, 0)):
-    e = bpy.data.objects.new(name, None); bpy.context.scene.collection.objects.link(e)
-    e.parent = parent; e.location = loc
-    return e
+from common import reset, mat, hexrgb, obj_from_bmesh, prim, root, export_glb, render_preview, text, bevel_box, empty, lathe
 
 
 # ---------------- กล่องโฟม ----------------
@@ -71,18 +41,6 @@ def fishbox(ox=0):
 
 
 # ---------------- ถุง 3 ชั้น ----------------
-def lathe(name, profile, material, parent, seg=20, loc=(0, 0, 0)):
-    """หมุนเส้นโปรไฟล์ (รัศมี, ความสูง) รอบแกนตั้ง ได้รูปทรงกลมแบบถุง/ขวด"""
-    bm = bmesh.new(); rings = []
-    for r_, z in profile:
-        rings.append([bm.verts.new((loc[0] + math.cos(2 * math.pi * j / seg) * r_, loc[1] + math.sin(2 * math.pi * j / seg) * r_, loc[2] + z)) for j in range(seg)])
-    for a, b in zip(rings, rings[1:]):
-        for j in range(seg):
-            bm.faces.new((a[j], a[(j + 1) % seg], b[(j + 1) % seg], b[j]))
-    bm.normal_update()
-    return obj_from_bmesh(name, bm, material, smooth=True, parent=parent)
-
-
 def bag(ox=0):
     FILM = mat('BagFilm', hexrgb(0xe6f2ff), 0.15, alpha=0.22)
     WATER = mat('Water', hexrgb(0x3f8fd0), 0.05, alpha=0.5)

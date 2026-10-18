@@ -30,8 +30,9 @@ test('ส่งออก: ไม่มี URL ภายนอกในโค้�
   assert.doesNotMatch(ours, /https?:\/\//);
 });
 
-test('ส่งออก: ขนาดไฟล์ไม่เกิน 3 MB', () => {
-  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 3 * 1024 * 1024);
+// มาร์ชขยายเพดานจาก 3 MB เป็น 5 MB (2026-10-18) เพื่อให้ใส่โมเดลจาก Blender ได้มากขึ้น
+test('ส่งออก: ขนาดไฟล์ไม่เกิน 5 MB', () => {
+  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 5 * 1024 * 1024);
 });
 
 test('ส่งออก: มี lang="th" และ <title> 2–4 คำ', () => {
@@ -80,7 +81,7 @@ test('ฝัง addons: GLTFLoader และ OrbitControls อยู่ในบ
 
 test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวที่ถอดรหัสแล้วขึ้นต้นด้วย glTF และมี colormap', () => {
   const ctx = loadBlocks(['koi-assets']);
-  for (const n of ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray']) {
+  for (const n of ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees']) {
     const head = Buffer.from(ctx.KoiAssets.models[n], 'base64').subarray(0, 4).toString('latin1');
     assert.equal(head, 'glTF', n);
   }
