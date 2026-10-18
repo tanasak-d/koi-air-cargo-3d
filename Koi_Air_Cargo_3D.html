@@ -99,6 +99,8 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);will-change:transform}
 #card b{color:var(--pink)}
 #card small{color:var(--muted)}
+/* ไม่มี WebGL: การ์ดอยู่คงที่ด้านบนของเวที (ข้อความแจ้งเตือนอยู่กลางเวที) */
+#card.static{position:absolute;left:8px;right:8px;top:8px;transform:none;max-width:none}
 /* ปุ่มบนเวที: ซ้ายล่าง = เล่น/ก่อน/ถัดไป, ขวาบน = เหตุการณ์เสี่ยง */
 .stage-ctrl{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;pointer-events:none}
 .stage-ctrl>*{pointer-events:auto}
@@ -5873,8 +5875,9 @@ var KoiScene = (function () {
 
   // ผู้ชมหมุนกล้องเองแล้วปล่อยไว้ 8 วินาที → กล้องกลับไปมุมของช็อต (ตั้งเป็น 0 = ไม่กลับเอง)
   var IDLE_RETURN_MS = 8000;
-  function idleReturnDue(lastInputMs, nowMs, gliding) {
-    if (!IDLE_RETURN_MS || lastInputMs == null || gliding) return false;
+  // dragging = ผู้ชมกำลังกดลากค้างอยู่ (ห้ามดึงกล้องกลับระหว่างนั้น)
+  function idleReturnDue(lastInputMs, nowMs, gliding, dragging) {
+    if (!IDLE_RETURN_MS || lastInputMs == null || gliding || dragging) return false;
     return nowMs - lastInputMs >= IDLE_RETURN_MS;
   }
 
@@ -5901,6 +5904,23 @@ var KoiScene = (function () {
   var HOLD_U = [null, 0.75, 1, 0.65, 0.6, 0.95];
   function riskCue(S) { return L.heldAtCheckpoint(S) ? CUES[S.sc] : null; }
   function holdU(S) { return L.heldAtCheckpoint(S) ? HOLD_U[S.sc] : null; }
+  // จังหวะที่อนิเมชันต้องหยุด: ค้างที่ด่าน หรือจบที่ด่าน (ตอบผิด = สูญเสีย / คุมได้) → หยุดที่จังหวะของด่าน
+  // จะได้ไม่เล่นต่อเหมือนส่งสำเร็จ ทั้งที่ผลคือสูญเสีย
+  function stopU(S) {
+    if (holdU(S) != null) return holdU(S);
+    if (S.sc > 0 && S.mode === 'end' && S.idx === D.SCENARIOS[S.sc].step) return HOLD_U[S.sc];
+    return null;
+  }
+  // ความคืบหน้าที่ใช้จริงของขั้น i (sec = วินาทีตั้งแต่เริ่มขั้น, dur = ความยาวช็อต)
+  // ลดการเคลื่อนไหว: ไปที่จุดหยุด (หรือจุดจบ) ทันที ไม่เลื่อน
+  function animU(S, i, sec, dur, reduced) {
+    var stop = S.idx === i ? stopU(S) : null;
+    if (reduced) return stop != null ? stop : 1;
+    var u = Math.min(1, sec / dur);
+    return stop != null ? Math.min(u, stop) : u;
+  }
+  // ปล่อยจากด่าน (แก้ถูก): ตั้งเวลาเริ่มขั้นใหม่ให้อนิเมชันเล่นต่อจากจังหวะที่หยุดไว้
+  function resumeT0(now, stop, dur) { return now - stop * dur * 1000; }
 
   /* ---------- (ข) ส่วนที่ต้องมี WebGL ---------- */
   var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, controls, cargo, ...
@@ -6633,8 +6653,11 @@ var KoiScene = (function () {
       ready: false, card: null, lastS: null, clockOffset: 0
     };
     // ผู้ชมลากหมุน/ซูมเอง: หยุดเลื่อนกล้องอัตโนมัติ แล้วจำเวลาไว้ (ไว้กลับมุมช็อตเมื่อไม่แตะครบ 8 วินาที)
-    controls.addEventListener('start', function () { R.gliding = false; R.lastInput = clock(); });
-    controls.addEventListener('end', function () { R.lastInput = clock(); });
+    controls.addEventListener('start', function () { R.gliding = false; R.dragging = true; R.lastInput = clock(); });
+    controls.addEventListener('end', function () {
+      R.dragging = false; R.lastInput = clock();
+      if (R.pendingGlide) { R.pendingGlide = false; R.gliding = true; R.lastInput = null; }   // ขั้นเปลี่ยนระหว่างลาก: เลื่อนกล้องหลังปล่อยเมาส์
+    });
     resize();
     setTheme(themeName());
     if (typeof ResizeObserver !== 'undefined') new ResizeObserver(resize).observe(canvas.parentNode);
@@ -6682,7 +6705,7 @@ var KoiScene = (function () {
 
   function attachCard(el) {
     if (!el) return;
-    if (!R) { el.hidden = true; return; }
+    if (!R) { el.classList.add('static'); return; }   // ไม่มีภาพ 3 มิติ: การ์ดชื่อขั้นแสดงคงที่บนกรอบเวที
     R.card = el;
   }
 
@@ -6723,8 +6746,12 @@ var KoiScene = (function () {
     showStation(st);
     if (changed) {
       R.anim = { i: S.idx, t0: clock() };
-      R.camGoal = SHOTS[S.idx].cam; R.gliding = true; R.lastInput = null;
+      R.camGoal = SHOTS[S.idx].cam;
+      if (R.dragging) R.pendingGlide = true; else { R.gliding = true; R.lastInput = null; }
+    } else if (R.stopAt != null && stopU(S) == null) {
+      R.anim.t0 = resumeT0(clock(), R.stopAt, SHOTS[S.idx].dur);   // แก้ถูกแล้ว: เล่นต่อจากจุดที่ค้าง ไม่กระโดด
     }
+    R.stopAt = stopU(S);
   }
 
   // วนวาดทุกเฟรม: ขยับของตามช็อต เลื่อนกล้อง ลดคุณภาพถ้าเครื่องช้า วางการ์ดลอย
@@ -6748,15 +6775,15 @@ var KoiScene = (function () {
     }
     if (R.ready && !R.overview && R.stationGroup) {
       var i = R.anim.i, sh = SHOTS[i];
-      var sec = (now - R.anim.t0) / 1000, u = Math.min(1, sec / sh.dur);
-      var hu = R.lastS ? holdU(R.lastS) : null;
-      if (hu != null && R.lastS.idx === i) u = Math.min(u, hu);          // ค้างที่ด่าน: อนิเมชันหยุดที่จังหวะของด่าน
-      var p = shotPose(i, u, reduced && hu == null);
+      var sec = (now - R.anim.t0) / 1000;
+      var u = R.lastS ? animU(R.lastS, i, sec, sh.dur, reduced) : Math.min(1, sec / sh.dur);   // ค้าง/จบที่ด่าน = หยุดที่จังหวะของด่าน
+      var p = pathPoint(sh.path, easeInOut(u));
       R.cargo.position.set(p.x, p.y, p.z);
       R.cargo.visible = true; R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
       var tags = R.cargo.userData.box.userData; tags.live.visible = tags.arrow.visible = i >= 5;   // ป้ายติดแล้วตั้งแต่ขั้น 6
       var act = ACTIONS[sh.act];
-      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: reduced && hu == null ? 1 : u, t: sec, reduced: reduced });
+      // ลดการเคลื่อนไหว: เวลา t ถูกตรึง (ปลาไม่ว่าย มือไม่โบก ไฟไม่วิ่ง)
+      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: u, t: reduced ? 0 : sec, reduced: reduced });
       // ภาพของเหตุการณ์เสี่ยง: สร้างใหม่เมื่อชนิดเปลี่ยน วางที่กล่อง
       var cue = R.lastS ? riskCue(R.lastS) : null;
       if (cue !== R.cueName) {
@@ -6767,12 +6794,12 @@ var KoiScene = (function () {
       if (R.cue) {
         if (R.cue.parent !== R.stationGroup) R.stationGroup.add(R.cue);
         R.cue.position.set(R.cargo.position.x, 0, R.cargo.position.z);
-        if (R.cue.userData.hand) R.cue.userData.hand.rotation.z = -now / 400;
+        if (R.cue.userData.hand) R.cue.userData.hand.rotation.z = reduced ? -2.4 : -now / 400;
         R.cargo.visible = true;                                         // กล่องที่ค้างต้องมองเห็นเสมอ
       }
     }
     // กล้อง: เลื่อนเข้าหามุมของช็อต / กลับมุมช็อตเมื่อผู้ชมปล่อยไว้นาน
-    if (!R.gliding && idleReturnDue(R.lastInput, now, false)) { R.gliding = true; R.lastInput = null; }
+    if (!R.gliding && idleReturnDue(R.lastInput, now, false, R.dragging)) { R.gliding = true; R.lastInput = null; }
     if (R.gliding) {
       var cur = { p: R.camera.position, t: R.controls.target };
       var nx = camGlide(cur, R.camGoal, glideK(dt, reduced));
@@ -6813,7 +6840,7 @@ var KoiScene = (function () {
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, camGlide: camGlide, glideK: glideK, IDLE_RETURN_MS: IDLE_RETURN_MS,
     idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
-    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU,
+    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU, animU: animU, resumeT0: resumeT0,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
     loadModels: loadModels, cloneModel: cloneModel,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,

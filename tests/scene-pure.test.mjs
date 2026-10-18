@@ -258,3 +258,31 @@ test('holdU: ค้างที่ด่านแล้วอนิเมชั�
   }
   assert.equal(SC.holdU(L.newState(0)), null);
 });
+
+// ---- Final review fixes ----
+const heldAt = (sc) => { const S = L.newState(sc); while (L.canAdvance(S)) L.next(S); return S; };
+test('animU: ค้างที่ด่าน → หยุดที่จังหวะของด่าน; reduced-motion ไปที่จังหวะนั้นทันที', () => {
+  const S = heldAt(3), dur = SC.SHOTS[S.idx].dur;
+  assert.equal(SC.animU(S, S.idx, 1, dur, false), 1 / dur);
+  assert.equal(SC.animU(S, S.idx, 100, dur, false), 0.65);
+  assert.equal(SC.animU(S, S.idx, 0, dur, true), 0.65);
+});
+test('animU: ตอบผิด (สูญเสีย) อนิเมชันยังหยุดที่ด่าน ไม่เล่นต่อเหมือนส่งสำเร็จ', () => {
+  const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => !o.good));
+  assert.equal(S.end, 'loss');
+  assert.equal(SC.animU(S, S.idx, 100, SC.SHOTS[S.idx].dur, false), 0.65);
+});
+test('animU: แก้ถูกแล้วเล่นต่อจนจบ; reduced-motion = 1; ขั้นอื่นไม่ถูกจำกัด', () => {
+  const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => o.good));
+  const dur = SC.SHOTS[S.idx].dur;
+  assert.equal(SC.animU(S, S.idx, 100, dur, false), 1);
+  assert.equal(SC.animU(S, S.idx, 0, dur, true), 1);
+  assert.equal(SC.animU(heldAt(3), 2, 100, 5, false), 1);
+});
+test('resumeT0: ปล่อยจากด่านแล้วเล่นต่อจากจังหวะเดิม (ไม่กระโดดไปท้ายขั้น)', () => {
+  assert.equal(SC.resumeT0(20000, 0.65, 10), 13500);
+});
+test('idleReturnDue: ระหว่างผู้ชมกำลังลากกล้องค้างไว้ ไม่ดึงกล้องกลับ', () => {
+  assert.equal(SC.idleReturnDue(0, 20000, false, true), false);
+  assert.equal(SC.idleReturnDue(0, 20000, false, false), true);
+});

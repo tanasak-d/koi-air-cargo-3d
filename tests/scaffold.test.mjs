@@ -99,3 +99,7 @@ test('เลย์เอาต์ B: วิธีใช้บอกคีย์�
   assert.match(how, /คีย์ลัด/);
   for (const k of ['←', '→', 'Space', 'P', 'T', 'O']) assert.ok(how.includes(k), k);
 });
+
+test('ไม่มี WebGL: การ์ดชื่อขั้นยังแสดงแบบคงที่ (มีสไตล์ #card.static)', () => {
+  assert.match(readHtml(), /#card\.static\{[^}]*position:/);
+});
