@@ -9,12 +9,15 @@ MODELS = os.path.join(ROOT, 'assets', 'models')
 PREVIEWS = os.path.join(ROOT, 'assets', 'previews')
 
 
+_mats = {}
+
+
 def reset():
     """ล้างฉากให้ว่าง (ไม่เหลือกล้อง ไฟ ลูกบาศก์เริ่มต้น)"""
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    _mats.clear()   # วัสดุเก่าถูกลบไปพร้อมฉากแล้ว ต้องล้างที่จำไว้ด้วย
 
 
-_mats = {}
 def mat(name, rgb, rough=0.6, metal=0.0, alpha=1.0):
     """วัสดุสีเดียว (rgb เป็นค่า 0..1 แบบที่ตาเห็น) ใช้ซ้ำตามชื่อ"""
     if name in _mats:

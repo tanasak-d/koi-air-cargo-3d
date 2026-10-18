@@ -10,7 +10,7 @@
 
 CC0 = ใช้ได้ทั้งงานเรียน งานส่วนตัว และงานเชิงพาณิชย์ ไม่ต้องขออนุญาตหรือให้เครดิต (Kenney ขอให้ให้เครดิตถ้าทำได้ จึงบันทึกไว้ที่นี่)
 
-ของอื่นในฉาก (ถุง กล่องปลา อาคาร บ่อ โต๊ะ สายพาน X-ray) สร้างด้วยโค้ดในไฟล์ `Koi_Air_Cargo_3D.html` บล็อก `koi-scene` ส่วนเครื่องบิน ปลา และคน สร้างใน Blender (ด้านล่าง)
+ของอื่นในฉาก (อาคารฟาร์ม/ด่าน บ่อ โต๊ะ สายพาน) สร้างด้วยโค้ดในไฟล์ `Koi_Air_Cargo_3D.html` บล็อก `koi-scene` ส่วนเครื่องบิน ปลา คน กล่องปลา ถุง คลังสินค้า และ X-ray สร้างใน Blender (ด้านล่าง)
 
 ## โมเดลที่สร้างเองใน Blender 5.2 (ของงานนี้เอง ไม่มีลิขสิทธิ์บุคคลอื่น)
 
@@ -19,6 +19,10 @@ CC0 = ใช้ได้ทั้งงานเรียน งานส่ว�
 | `models/airliner.glb` | `tools/blender/make_airliner.py` | เครื่องบินลำตัวกว้างแบบ 787-8 ย่อส่วน ×0.45 ไม่มีโลโก้สายการบินจริง |
 | `models/koi.glb` | `tools/blender/make_koi.py` | ปลาคาร์ฟ 3 สายพันธุ์ (โคฮากุ ซันเก้ โอกอน) ลวดลายเป็นสีที่จุดยอด |
 | `models/person.glb` | `tools/blender/make_person.py` | คนทำงาน สีเสื้อเปลี่ยนตามบทบาทในเว็บ |
+| `models/fishbox.glb` | `tools/blender/make_props.py` | กล่องโฟมใส่ปลา ฝา สายรัด ป้าย LIVE ANIMALS / THIS WAY UP |
+| `models/bag.glb` | `tools/blender/make_props.py` | ถุงใส 3 ชั้น + น้ำ + ยางรัด |
+| `models/warehouse.glb` | `tools/blender/make_props.py` | คลังสินค้าสัตว์มีชีวิต (ใช้ทั้ง NRT และ BKK) |
+| `models/xray.glb` | `tools/blender/make_props.py` | เครื่อง X-ray สายพาน |
 
 ภาพตัวอย่างของแต่ละโมเดลอยู่ใน `previews/` สร้างใหม่ได้ด้วยคำสั่ง (แล้วรัน `npm run inline` เพื่อฝังลงไฟล์เว็บ):
 
