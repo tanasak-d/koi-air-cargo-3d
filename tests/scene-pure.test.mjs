@@ -105,7 +105,7 @@ test('base64ToBuffer: ถอดรหัสโมเดลได้ ขึ้น
 });
 
 test('placeholderSize: มีขนาดสำรองของทุกโมเดล (กว้าง/สูง/ยาว > 0)', () => {
-  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone']);
+  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person']);
   for (const n of SC.MODEL_NAMES) { const s = SC.placeholderSize(n); assert.ok(s.w > 0 && s.h > 0 && s.d > 0, n); }
 });
 
@@ -285,4 +285,12 @@ test('resumeT0: ปล่อยจากด่านแล้วเล่นต�
 test('idleReturnDue: ระหว่างผู้ชมกำลังลากกล้องค้างไว้ ไม่ดึงกล้องกลับ', () => {
   assert.equal(SC.idleReturnDue(0, 20000, false, true), false);
   assert.equal(SC.idleReturnDue(0, 20000, false, false), true);
+});
+
+// ---- โมเดลจาก Blender: ปลาคาร์ฟ 3 สายพันธุ์ ----
+test('koiBreed: เลือกสายพันธุ์ตามสี (ขาว = ซันเก้, ส้ม/แดง = โคฮากุ, ทอง = โอกอน)', () => {
+  assert.equal(SC.koiBreed(0xffffff), 'Koi_Sanke');
+  assert.equal(SC.koiBreed(0xff7a33), 'Koi_Kohaku');
+  assert.equal(SC.koiBreed(0xd13b32), 'Koi_Kohaku');
+  assert.equal(SC.koiBreed(0xf5c242), 'Koi_Ogon');
 });
