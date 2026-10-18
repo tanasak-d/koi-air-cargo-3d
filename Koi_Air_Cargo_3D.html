@@ -6323,6 +6323,77 @@ var KoiScene = (function () {
     c.props.ready.visible = c.u >= 0.85;
   };
 
+  /* ---------- รถลาก + แท่นวางกล่อง (ใช้ที่ลานจอดทั้ง NRT และ BKK) ---------- */
+  // แท่นอยู่ที่จุดกำเนิดของกลุ่ม (ด้านบนสูง 1.35) รถลากอยู่หน้าแท่น (+x)
+  function makeCart() {
+    var g = group();
+    addBox(g, 3.2, 0.35, 2, 0x4b5360, 0, 1, 0);
+    [[-1.2, -0.9], [-1.2, 0.9], [1.2, -0.9], [1.2, 0.9]].forEach(function (p) {
+      put(g, new THREE.CylinderGeometry(0.4, 0.4, 0.3, 10), 0x1d2b3a, p[0], 0.4, p[1]).rotation.x = Math.PI / 2;
+    });
+    addBox(g, 1.2, 0.1, 0.12, 0x1d2b3a, 2.1, 0.55, 0);           // คานพ่วง
+    place(g, kit.tug(), 4, 0);
+    return g;
+  }
+  // ให้แท่นอยู่ใต้กล่อง หันไปตามทิศทางที่กำลังวิ่ง (e = ความคืบหน้าบนเส้นทางหลังคิดความนุ่มแล้ว)
+  function followCart(cart, path, e) {
+    var a = pathPoint(path, Math.max(0, e - 0.01)), b = pathPoint(path, Math.min(1, e + 0.01));
+    var p = pathPoint(path, e);
+    cart.position.set(p.x, 0, p.z);
+    if (Math.hypot(b.x - a.x, b.z - a.z) > 1e-4) cart.rotation.y = Math.atan2(-(b.z - a.z), b.x - a.x);
+  }
+  // อาคารผู้โดยสารยาว ๆ เป็นฉากหลังของสนามบิน
+  function terminal(g, x, z, w) {
+    var t = group(g, x, 0, z);
+    addBox(t, w, 5, 6, 0xdfe4ea, 0, 0, 0); addBox(t, w, 1.4, 6.2, 0x5b8fd6, 0, 3.2, 0.05);
+    addBox(t, w + 0.6, 0.4, 6.6, 0x8d96a3, 0, 5, 0);
+    return t;
+  }
+
+  /* ---------- สถานี 3 ขึ้นเครื่อง JL707 (ขั้น 9) ---------- */
+  BUILDERS[2] = function (g, props) {
+    terminal(g, -8, -20, 40);
+    props.plane = place(g, kit.plane(), 2, 6);
+    props.cart = place(g, makeCart(), -16, 24);
+    [[14, 9.5], [18, 9.5], [21, 14]].forEach(function (p) { place(g, kit.cone(), p[0], p[1]); });
+    props.loader = place(g, kit.person(0xf28c28), 12, 9.5);
+  };
+  // ขั้น 9: รถลากพากล่องอ้อมปลายปีกไปที่ประตูท้องเครื่อง กล่องเข้าห้องสินค้า ประตูปิด แล้วเครื่องวิ่งขึ้น
+  ACTIONS.loadAndFly = function (c) {
+    var path = SHOTS[8].path, e = c.reduced ? 1 : easeInOut(c.u);
+    if (c.cargo.position.y <= 1.4) followCart(c.props.cart, path, e);
+    var inHold = c.u >= 0.72;
+    c.cargo.visible = !inHold;
+    c.props.plane.userData.hold.visible = !inHold || c.u < 0.78;       // ประตูเปิดอยู่ → ปิดหลังกล่องเข้า
+    var fly = span(c.u, 0.8, 1);
+    c.props.plane.position.set(2 + fly * 45, fly * fly * 14, 6);
+    c.props.plane.rotation.z = fly * 0.25;
+    c.props.loader.userData.arms.forEach(function (a) { a.rotation.x = -span(c.u, 0.55, 0.72) * 1.5; });
+  };
+
+  /* ---------- สถานี 4 สุวรรณภูมิ (ขั้น 10) ---------- */
+  BUILDERS[3] = function (g, props) {
+    terminal(g, -14, -20, 34);
+    place(g, kit.building(10, 6, 8, 0x2f5fb5), 14, -10);           // คลังสินค้า BKK (AVI)
+    props.plane = place(g, kit.plane(), -6, 4);
+    props.cart = place(g, makeCart(), 2, 8);
+    props.handler = place(g, kit.person(0xf28c28), 16, -4.5);
+  };
+  // ขั้น 10: เครื่องลงจอดแล้วจอด → กล่องลงจากท้องเครื่องขึ้นแท่น → รถลากพาเข้าคลัง BKK
+  ACTIONS.bkkUnload = function (c) {
+    var land = c.reduced ? 1 : span(c.u, 0, 0.28);
+    var k = 1 - land;
+    c.props.plane.position.set(-6 - k * 40, k * k * 10, 4);
+    c.props.plane.rotation.z = -k * 0.15;
+    // กล่องรออยู่ในห้องสินค้าจนเครื่องจอด แล้วค่อยเคลื่อนตามเส้นทาง
+    var path = SHOTS[9].path, e = c.reduced ? 1 : easeInOut(span(c.u, 0.3, 1));
+    var p = pathPoint(path, e);
+    c.cargo.position.set(p.x, p.y, p.z);
+    c.cargo.visible = c.u >= 0.3;
+    if (p.y <= 1.4 && p.z > -2.1) followCart(c.props.cart, path, e);
+    c.props.handler.userData.arms.forEach(function (a) { a.rotation.x = -span(c.u, 0.85, 1) * 1.4; });
+  };
+
   function buildStation(i) {
     var g = new THREE.Group(), props = {};
     buildGround(g, GROUND[i]);
