@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBlocks, readHtml } from './helpers/load.mjs';
+import { loadBlocks, readHtml, blockSource } from './helpers/load.mjs';
 
 test('โหลดบล็อก koi-data ได้ และ KoiData เป็น object', () => {
   const ctx = loadBlocks(['koi-data']);
@@ -22,15 +22,16 @@ test('ไม่อ้างทรัพยากรภายนอก (ออฟ
 });
 
 // ---- Task 12: ตรวจไฟล์ที่ส่งออกทั้งไฟล์ ----
-const noThree = (html) => html.replace(/<script id="three">[\s\S]*?<\/script>/, '');
+// ตัดบล็อกที่ฝังจากภายนอก (Three.js, addons, โมเดล) ออก เหลือเฉพาะโค้ดของเรา
+const noThree = (html) => html.replace(/<script id="(three|three-addons|koi-assets)">[\s\S]*?<\/script>/g, '');
 
 test('ส่งออก: ไม่มี URL ภายนอกในโค้ดของเรา (ยกเว้นข้อความใน Three.js ที่ฝังไว้)', () => {
   const ours = noThree(readHtml());
   assert.doesNotMatch(ours, /https?:\/\//);
 });
 
-test('ส่งออก: ขนาดไฟล์ไม่เกิน 2 MB', () => {
-  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 2 * 1024 * 1024);
+test('ส่งออก: ขนาดไฟล์ไม่เกิน 3 MB', () => {
+  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 3 * 1024 * 1024);
 });
 
 test('ส่งออก: มี lang="th" และ <title> 2–4 คำ', () => {
@@ -56,7 +57,7 @@ test('ส่งออก: ไม่มี console.log / debugger หลงเห
 
 test('ส่งออก: ทุกบล็อกที่ควรมีอยู่ครบ และ koi-boot อยู่หลังบล็อกอื่น', () => {
   const html = readHtml();
-  const ids = ['three', 'koi-data', 'koi-logic', 'koi-ui', 'koi-scene', 'koi-boot'];
+  const ids = ['three', 'three-addons', 'koi-assets', 'koi-data', 'koi-logic', 'koi-ui', 'koi-scene', 'koi-boot'];
   const pos = ids.map(id => html.indexOf('<script id="' + id + '">'));
   pos.forEach((p, i) => assert.ok(p > 0, 'ไม่พบ ' + ids[i]));
   for (let i = 1; i < pos.length; i++) assert.ok(pos[i] > pos[i - 1], ids[i] + ' ต้องอยู่หลัง ' + ids[i - 1]);
@@ -68,4 +69,20 @@ test('ส่งออก: หน้าแรกมีข้อความบอ
 
 test('ส่งออก: ไม่เหลือข้อความเพดาน 21 ชม. เดิม (เปลี่ยนเป็น 24 ชม. แล้ว)', () => {
   assert.doesNotMatch(noThree(readHtml()), /21\s*ชม/);
+});
+
+// ---- รุ่น 2 Task 1: ฝัง addons และโมเดลลงไฟล์เดียว ----
+test('ฝัง addons: GLTFLoader และ OrbitControls อยู่ในบล็อก three-addons', () => {
+  const src = blockSource(readHtml(), 'three-addons');
+  assert.match(src, /class GLTFLoader extends THREE\.Loader/);
+  assert.match(src, /OrbitControls/);
+});
+
+test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวที่ถอดรหัสแล้วขึ้นต้นด้วย glTF และมี colormap', () => {
+  const ctx = loadBlocks(['koi-assets']);
+  for (const n of ['delivery', 'van', 'tractor', 'cone']) {
+    const head = Buffer.from(ctx.KoiAssets.models[n], 'base64').subarray(0, 4).toString('latin1');
+    assert.equal(head, 'glTF', n);
+  }
+  assert.match(ctx.KoiAssets.textures.colormap, /^data:image\/png;base64,/);
 });
