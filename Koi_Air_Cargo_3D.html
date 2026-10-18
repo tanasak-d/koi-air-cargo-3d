@@ -6394,6 +6394,104 @@ var KoiScene = (function () {
     c.props.handler.userData.arms.forEach(function (a) { a.rotation.x = -span(c.u, 0.85, 1) * 1.4; });
   };
 
+  /* ---------- สถานี 5 ด่านกรมประมง (DOF) และกักกัน (ขั้น 11–14) ---------- */
+  BUILDERS[4] = function (g, props) {
+    place(g, kit.building(14, 5, 6, 0x11743a), -10, -11);                // อาคารด่าน DOF / ศุลกากร
+    // ขั้น 11: เคาน์เตอร์ตรวจ + เจ้าหน้าที่ DOF (เขียว) + ศุลกากร (กรมท่า) + เอกสาร 2 ใบเทียบกัน
+    place(g, kit.table(3, 1.4), -14, -2);
+    props.dof = place(g, kit.person(0x11743a), -14.6, -3.5);
+    props.customs = place(g, kit.person(0x1d2b3a), -12.6, -3.5);
+    props.docA = place(g, kit.doc(0x11743a), -15.3, -2.2, 0, 0.9);
+    props.docB = place(g, kit.doc(0x2f5fb5), -12.7, -2.2, 0, 0.9);
+    props.stamp3 = place(g, kit.stamp(), -12.7, -2.2, 0, 2);
+    // ขั้น 12: โต๊ะคำสั่งกักกัน + ตราประทับ "กักกัน"
+    place(g, kit.table(2.4, 1.4), -6, -2);
+    props.order = place(g, kit.doc(0xd9423e), -6.6, -2.2, 0, 0.9);
+    props.stamp4 = place(g, kit.stamp(), -6.6, -2.2, 0, 2);
+    props.qTag = sign(g, 'คำสั่งกักกัน (DOF)', -6, 2.6, -3.4, 3.6); props.qTag.visible = false;
+    // ขั้น 13: สถานที่กักกันที่ได้รับอนุญาต (บ่อแยก 3 บ่อ ในรั้ว)
+    [3, 7, 11].forEach(function (x) { place(g, kit.pond(1.6, 0x6fb8e6), x, -4); });
+    for (var x = 0.5; x <= 13.5; x += 1.6) { addBox(g, 0.12, 1, 0.12, 0xc5d0de, x, 0, -6.4); }
+    addBox(g, 13.2, 0.1, 0.06, 0xc5d0de, 7, 0.9, -6.4);
+    props.qKoi = [place(g, kit.koi(0xff7a33), 7, -4, 0, 0.45), place(g, kit.koi(0xffffff), 7, -4, 0, 0.45)];
+    props.keeper = place(g, kit.person(0x3c6e47), 8.5, -1.8);
+    // ขั้น 14: ประตูอนุญาตปล่อย (คานยกขึ้น) + เอกสาร ร.7 / IMD
+    addBox(g, 0.3, 2.4, 0.3, 0x3a4660, 16, 0, -1.5); addBox(g, 0.3, 2.4, 0.3, 0x3a4660, 16, 0, 1.5);
+    props.gate = group(g, 16, 2.1, -1.5);
+    addBox(props.gate, 0.2, 0.2, 3, 0xd9423e, 0, 0, 1.5);
+    props.release = sign(g, '✓ ร.7 · IMD อนุญาตปล่อย', 16, 3.4, -2.5, 4.4); props.release.visible = false;
+    props.van = place(g, kit.van(), -24, -2);
+  };
+  // ขั้น 11: กล่องมาถึงเคาน์เตอร์ DOF เทียบเอกสารกับตัวปลา ศุลกากรประทับตรา
+  ACTIONS.dofInspect = function (c) {
+    c.props.van.position.x = Math.min(-19, -24 + span(c.u, 0, 0.4) * 5);
+    var look = span(c.u, 0.35, 0.75), stamp = span(c.u, 0.75, 0.9);
+    c.props.docA.rotation.x = look * 0.6; c.props.docB.rotation.x = look * 0.6;
+    c.props.dof.userData.arms[1].rotation.x = -0.6 - Math.sin(c.t * 4) * 0.4 * (1 - stamp);
+    c.props.stamp3.position.y = 2 - stamp * 1.05 + (stamp >= 1 ? 0.3 : 0);
+  };
+  // ขั้น 12: DOF ประทับคำสั่งกักกัน กล่องติดป้ายกักกัน
+  ACTIONS.quarantineOrder = function (c) {
+    var stamp = span(c.u, 0.4, 0.6);
+    c.props.stamp4.position.y = 2 - stamp * 1.05 + (stamp >= 1 ? 0.3 : 0);
+    c.props.qTag.visible = c.u >= 0.6;
+  };
+  // ขั้น 13: กล่องเข้าสถานกักกัน เปิดถุง ปลาลงบ่อแยกและว่ายอยู่ในรั้ว
+  ACTIONS.quarantinePond = function (c) {
+    var inPond = span(c.u, 0.75, 0.95);
+    c.props.qKoi.forEach(function (f, k) {
+      if (inPond <= 0) { f.visible = false; return; }
+      f.visible = true; swim(f, 7, -4, 0.45, 0.6 + k * 0.4, c.t, k * 2, 0.5);
+    });
+    c.cargo.visible = c.u < 0.9;
+    c.props.keeper.userData.arms.forEach(function (a) { a.rotation.x = -span(c.u, 0.6, 0.85) * 1.5; });
+  };
+  // ขั้น 14: DOF อนุญาต ออกเอกสาร ร.7 / IMD คานประตูยกขึ้น กล่องออกจากกักกัน
+  ACTIONS.releaseDocs = function (c) {
+    c.props.qKoi.forEach(function (f, k) { f.visible = c.u < 0.3; swim(f, 7, -4, 0.45, 0.6 + k * 0.4, c.t, k * 2, 0.5); });
+    c.props.release.visible = c.u >= 0.25;
+    c.props.gate.rotation.x = -span(c.u, 0.35, 0.6) * 1.3;
+  };
+
+  /* ---------- สถานี 6 ผู้รับ (ฟาร์มบริษัท) ขั้น 15–17 ---------- */
+  BUILDERS[5] = function (g, props) {
+    place(g, kit.building(10, 4, 6, 0x2f5fb5), 6, -12);                 // โรงเรือนฟาร์มบริษัท
+    [[-26, -8], [-20, -12], [20, -9], [24, 4], [-28, 6]].forEach(function (p, k) { tree(g, p[0], p[1], 0.9 + (k % 2) * 0.3); });
+    props.truck = place(g, kit.truck(), -30, 2);
+    // ขั้น 16: บ่อพักฟื้น 2 บ่อ + คนปรับน้ำ
+    place(g, kit.pond(2, 0x7cc4ee), -2, -3); place(g, kit.pond(1.6, 0x7cc4ee), -6.5, -4.5);
+    props.rKoi = [place(g, kit.koi(0xff7a33), -2, -3, 0, 0.45), place(g, kit.koi(0xd13b32), -2, -3, 0, 0.45)];
+    props.caretaker = place(g, kit.person(0x3c6e47), 0.5, -1.2);
+    // ขั้น 17: บ่อเพาะพันธุ์ใหญ่ + บ่อลูกปลา + ป้ายขาย
+    place(g, kit.pond(3, 0x3f8fd0), 8, -3); place(g, kit.pond(1.4, 0x6fb8e6), 13, 0.5);
+    props.bKoi = [place(g, kit.koi(0xff7a33), 8, -3, 0, 0.45), place(g, kit.koi(0xffffff), 8, -3, 0, 0.45)];
+    props.fry = [0, 1, 2, 3, 4].map(function () { var f = place(g, kit.koi(0xf5c242), 13, 0.5, 0, 0.45); f.scale.setScalar(0.4); return f; });
+    props.sale = sign(g, 'ลูกปลาคัดเกรด → ขาย', 13, 2.6, 0.5, 4); props.sale.visible = false;
+  };
+  // ขั้น 15: กล่องขึ้นรถไปฟาร์มบริษัท รถวิ่งเข้ามาจอด
+  ACTIONS.truckToFarm = function (c) {
+    var x = c.cargo.position.x;
+    c.props.truck.position.x = Math.min(-6, x + 4);
+    c.cargo.visible = c.u > 0.97;
+  };
+  // ขั้น 16: ปลาลงบ่อพักฟื้น คนปรับน้ำ ปลาว่ายคล่องขึ้นเรื่อย ๆ
+  ACTIONS.recovery = function (c) {
+    var into = span(c.u, 0.75, 0.95);
+    c.props.truck.position.x = -6;
+    c.props.rKoi.forEach(function (f, k) { f.visible = into > 0; swim(f, -2, -3, 0.45, 0.7 + k * 0.5, c.t, k * 2.2, 0.2 + c.u * 0.8); });
+    c.cargo.visible = c.u < 0.9;
+    c.props.caretaker.userData.arms[1].rotation.x = -0.8 - Math.sin(c.t * 3) * 0.4;
+  };
+  // ขั้น 17: พ่อแม่พันธุ์ว่ายคู่กันในบ่อเพาะ → ลูกปลาปรากฏในบ่อเล็ก → ป้ายขายขึ้น
+  ACTIONS.breeding = function (c) {
+    c.cargo.visible = false;
+    c.props.rKoi.forEach(function (f) { f.visible = false; });
+    c.props.bKoi.forEach(function (f, k) { swim(f, 8, -3, 0.45, 1.4, c.t, k * 0.6, 0.7); });
+    var born = span(c.u, 0.35, 0.7);
+    c.props.fry.forEach(function (f, k) { f.visible = born * 5 > k; swim(f, 13, 0.5, 0.45, 0.3 + k * 0.15, c.t, k * 1.3, 1.2); });
+    c.props.sale.visible = c.u >= 0.75;
+  };
+
   function buildStation(i) {
     var g = new THREE.Group(), props = {};
     buildGround(g, GROUND[i]);

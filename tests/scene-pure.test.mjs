@@ -235,3 +235,5 @@ const actionsFor = (from, to) => { for (let i = from; i <= to; i++) assert.equal
 test('ACTIONS: ทุกช็อตของสถานี 1 (ขั้น 1–6) มีฟังก์ชันอนิเมชัน', () => actionsFor(0, 5));
 test('ACTIONS: ทุกช็อตของสถานี 2 (ขั้น 7–8) มีฟังก์ชันอนิเมชัน', () => actionsFor(6, 7));
 test('ACTIONS: ช็อตของสถานี 3–4 (ขั้น 9–10) มีฟังก์ชันอนิเมชัน', () => actionsFor(8, 9));
+test('ACTIONS: ช็อตของสถานี 5–6 (ขั้น 11–17) มีฟังก์ชันอนิเมชัน', () => actionsFor(10, 16));
+test('ACTIONS: ครบทั้ง 17 ช็อต', () => SC.SHOTS.forEach(s => assert.equal(typeof SC.ACTIONS[s.act], 'function', s.act)));
