@@ -4869,6 +4869,7 @@ var KoiAssets = {"models":{"delivery":"Z2xURgIAAACIqgMAaB8AAEpTT057ImFzc2V0Ijp7I
    koi-data : ข้อมูลทั้งหมดของโมเดล (ไม่มีโค้ดตรรกะ มีแต่ข้อมูล)
    - STEPS     17 ขั้นตอนตั้งแต่ผู้ส่งถึงผู้รับ (ข้อความเขียนเป็นภาษาง่าย)
    - STATIONS  6 สถานี: บอกว่าขั้นไหนอยู่สถานีไหน (first/last = ลำดับในอาร์เรย์ STEPS เริ่มจาก 0)
+   (ตำแหน่งในฉาก 3 มิติอยู่ที่ SHOTS ในบล็อก koi-scene)
    - SCENARIOS สถานการณ์เสี่ยง 5 แบบ (+ แบบปกติ)
    - เวลา t = [เริ่ม, จบ] เป็น "นาทีของเวลา JST นับจาก 00:00 ของวันส่ง"
      t = null แปลว่ารายงานไม่ได้ระบุเวลา -> ต้องแสดงว่า "โดยประมาณ" (approx)
@@ -4893,16 +4894,6 @@ var KoiData = (function () {
     { id: 's4', short: 'BKK', name: 'สนามบินสุวรรณภูมิ (BKK)', first: 9, last: 9 },
     { id: 's5', short: 'DOF', name: 'ด่านกรมประมง (DOF) และกักกัน', first: 10, last: 13 },
     { id: 's6', short: 'ผู้รับ', name: 'ผู้รับ (ฟาร์มบริษัท)', first: 14, last: 16 }
-  ];
-
-  // ตำแหน่งที่กล่องปลาไปหยุดในฉาก (หน่วยฉาก x,z อยู่ในช่วง -10..10) ต่อสถานี 1 จุดต่อ 1 ขั้น
-  var WAYPOINTS = [
-    [{ x: -8, z: 4 }, { x: -5, z: 3 }, { x: -2, z: 1 }, { x: 1, z: 0 }, { x: 4, z: 0 }, { x: 8, z: -2 }],
-    [{ x: -5, z: 0 }, { x: 5, z: 0 }],
-    [{ x: 0, z: 0 }],
-    [{ x: 0, z: 0 }],
-    [{ x: -7, z: 0 }, { x: -2, z: 0 }, { x: 3, z: 0 }, { x: 8, z: 0 }],
-    [{ x: -6, z: 0 }, { x: 0, z: 0 }, { x: 7, z: 0 }]
   ];
 
   /* 17 ขั้นตอน
@@ -5184,7 +5175,7 @@ co:{t:"บริษัทเรา (ผู้นำเข้า/เจ้าข�
 };
 
   return {
-    CONST: CONST, STATIONS: STATIONS, WAYPOINTS: WAYPOINTS, STEPS: STEPS,
+    CONST: CONST, STATIONS: STATIONS, STEPS: STEPS,
     FOURFLOW: FOURFLOW, GLOSSARY: GLOSSARY,
     SCENARIOS: SC,            // [0] = ปกติ, [1..5] = เหตุการณ์เสี่ยง
     STEP_PARTIES: PT,         // ขั้นไหนเกี่ยวกับฝ่ายไหน
@@ -5702,13 +5693,6 @@ var KoiScene = (function () {
 
   /* ---------- (ก) ฟังก์ชันบริสุทธิ์ ---------- */
 
-  // ตำแหน่ง (x,z) ที่กล่องปลาควรอยู่เมื่ออยู่ที่ขั้นนี้ (ดึงจาก WAYPOINTS ของสถานีนั้น)
-  function boxTarget(stepIdx) {
-    var st = L.stationOf(stepIdx);
-    var p = D.WAYPOINTS[st][stepIdx - D.STATIONS[st].first];
-    return { x: p.x, z: p.z };
-  }
-
   // เร่งตอนเริ่ม ชะลอตอนจบ ให้การเคลื่อนที่ดูนุ่ม (t บีบให้อยู่ใน 0..1)
   function easeInOut(t) {
     t = Math.max(0, Math.min(1, t));
@@ -5719,6 +5703,91 @@ var KoiScene = (function () {
   function lerpPose(a, b, t) {
     return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t };
   }
+
+  /* ---------- ช็อตของ 17 ขั้น ----------
+     หนึ่งขั้น = หนึ่ง "ช็อต" เหมือนในหนัง:
+       st   สถานีที่ฉากนี้อยู่ (ต้องตรงกับ stationOf)
+       act  ชื่ออนิเมชันของขั้นนี้ (ฟังก์ชันใน ACTIONS)
+       dur  เล่นกี่วินาที
+       path เส้นทางของ "ของที่ผู้ชมตามดู" (ขั้น 1–3 คือถังปลา ตั้งแต่ขั้น 4 คือกล่องปลา) จุดแรก → จุดสุดท้าย
+       cam  มุมกล้อง: p = ตำแหน่งกล้อง, t = จุดที่กล้องมอง (ต้องเป็นจุดที่เกิดเหตุ)
+     พิกัดเป็นหน่วยฉาก ทุกสถานีสร้างที่จุดกำเนิดเดียวกัน (แสดงทีละสถานี) อยู่ในช่วง -30..30
+     กติกา: ในสถานีเดียวกัน ช็อตถัดไปต้องเริ่มที่จุดที่ช็อตก่อนจบ กล่องจะได้ไม่วาร์ป (มีเทสต์ตรวจ) */
+  function v(x, y, z) { return { x: x, y: y, z: z }; }
+  function shot(st, act, dur, path, camP, camT) {
+    return { st: st, act: act, dur: dur, path: path.map(function (a) { return v(a[0], a[1], a[2]); }),
+      cam: { p: v(camP[0], camP[1], camP[2]), t: v(camT[0], camT[1], camT[2]) } };
+  }
+  var SHOTS = [
+    // สถานี 1 ผู้ส่ง: บ่อ (-16,0) → โต๊ะตรวจ (-8,-1) → บ่อพัก (-2,-3) → โต๊ะบรรจุ (4..6,-1) → รถ (12,2)
+    shot(0, 'pondSelect', 5, [[-16, 0.4, 0], [-12, 0.9, 1]], [-8, 9, 16], [-14, 0.5, 0]),
+    shot(0, 'healthCheck', 5, [[-12, 0.9, 1], [-8, 0.95, -1]], [-2, 7, 12], [-8, 1, -1]),
+    shot(0, 'fasting', 5, [[-8, 0.95, -1], [-2, 0.6, -3]], [4, 8, 10], [-2, 0.8, -3]),
+    shot(0, 'bagging', 8, [[-2, 0.6, -3], [4, 0.95, -1]], [9, 6, 9], [4, 1, -1]),
+    shot(0, 'labeling', 5, [[4, 0.95, -1], [6, 0.95, -1]], [10, 5, 7], [6, 1, -1]),
+    shot(0, 'truckToNRT', 8, [[6, 0.95, -1], [10, 1.6, 2], [28, 1.6, 2]], [14, 9, 20], [16, 1, 2]),
+    // สถานี 2 นาริตะ: รถเข้ามาที่คลัง AVI (-12,-8) → สายพานและ X-ray (2,-2.5)
+    shot(1, 'aviReceive', 6, [[-28, 1.6, 0], [-13, 1.6, 0], [-10, 1, -2.5]], [-4, 8, 14], [-12, 1, -1]),
+    shot(1, 'xrayCheck', 7, [[-10, 1, -2.5], [-6, 1, -2.5], [10, 1, -2.5]], [4, 7, 10], [2, 1, -2.5]),
+    // สถานี 3 ขึ้นเครื่อง: รถลากอ้อมปลายปีก (z=24) และหัวเครื่อง ไปที่ประตูท้องเครื่อง (10,2.3,7.7)
+    shot(2, 'loadAndFly', 10, [[-16, 1.35, 24], [22, 1.35, 24], [22, 1.35, 10], [10, 1.35, 10], [10, 2.3, 7.7]], [24, 13, 30], [8, 2, 12]),
+    // สถานี 4 สุวรรณภูมิ: ประตูท้องเครื่อง (2,2.3,5.7) → รถลาก → คลัง BKK (14,-10)
+    shot(3, 'bkkUnload', 9, [[2, 2.3, 5.7], [2, 1.35, 8], [14, 1.35, 8], [14, 1.35, -2], [14, 1, -5]], [22, 10, 22], [10, 1.5, 2]),
+    // สถานี 5 DOF และกักกัน: เคาน์เตอร์ (-14,-2) → โต๊ะคำสั่ง (-6,-2) → บ่อกักกัน (7,-3) → ประตูปล่อย (16,-2)
+    shot(4, 'dofInspect', 6, [[-20, 1, -2], [-14, 1, -2]], [-8, 7, 10], [-14, 1, -2]),
+    shot(4, 'quarantineOrder', 5, [[-14, 1, -2], [-6, 1, -2]], [0, 7, 10], [-6, 1, -2]),
+    shot(4, 'quarantinePond', 7, [[-6, 1, -2], [2, 1, 0], [7, 0.6, -3]], [10, 9, 12], [6, 0.8, -2]),
+    shot(4, 'releaseDocs', 6, [[7, 0.6, -3], [12, 1, 0], [18, 1, 0]], [20, 7, 12], [15, 1.5, -1]),
+    // สถานี 6 ฟาร์มบริษัท: รถเข้ามา (-10,2) → บ่อพักฟื้น (-2,-3) → บ่อเพาะ (8,-3)
+    shot(5, 'truckToFarm', 6, [[-26, 1.6, 2], [-10, 1.6, 2]], [-12, 9, 18], [-14, 1.2, 2]),
+    shot(5, 'recovery', 6, [[-10, 1.6, 2], [-6, 1, 0], [-2, 0.6, -3]], [4, 8, 10], [-3, 0.8, -2]),
+    shot(5, 'breeding', 7, [[-2, 0.6, -3], [8, 0.6, -3]], [14, 9, 10], [8, 0.8, -3])
+  ];
+
+  // จุดบนเส้นทางที่สัดส่วน u ของ "ระยะทางจริง" (0 = จุดแรก, 1 = จุดสุดท้าย) u นอกช่วงถูกบีบ
+  function pathPoint(path, u) {
+    var last = path[path.length - 1];
+    if (u >= 1) return v(last.x, last.y, last.z);     // ปลายทางตรงจุดเป๊ะ (ไม่มีเศษทศนิยม)
+    if (!(u > 0)) return v(path[0].x, path[0].y, path[0].z);
+    var lens = [], total = 0, i;
+    for (i = 1; i < path.length; i++) {
+      var a = path[i - 1], b = path[i], d = Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+      lens.push(d); total += d;
+    }
+    var want = u * total;
+    for (i = 0; i < lens.length; i++) {
+      if (want <= lens[i] || i === lens.length - 1) {
+        var k = lens[i] ? Math.min(1, want / lens[i]) : 1, p = path[i], q = path[i + 1];
+        return v(p.x + (q.x - p.x) * k, p.y + (q.y - p.y) * k, p.z + (q.z - p.z) * k);
+      }
+      want -= lens[i];
+    }
+    return v(path[0].x, path[0].y, path[0].z);
+  }
+
+  // ตำแหน่งของกล่องในขั้น i ที่ความคืบหน้า u (0..1) — ขึ้นกับขั้นและเวลาเท่านั้น (กดซ้ำได้ภาพเดิม)
+  // ผู้ใช้ตั้งลดการเคลื่อนไหว: ไปจุดปลายทันที
+  function shotPose(i, u, reduced) {
+    return pathPoint(SHOTS[i].path, reduced ? 1 : easeInOut(u));
+  }
+
+  // ตำแหน่ง (x,z) ที่กล่องไปหยุดเมื่อจบขั้นนี้
+  function boxTarget(i) {
+    var e = SHOTS[i].path[SHOTS[i].path.length - 1];
+    return { x: e.x, z: e.z };
+  }
+
+  /* ป้ายอธิบายของในฉาก (ไม่ใช่ป้ายของขั้น — ขั้นปัจจุบันบอกในการ์ดลอยแล้ว) */
+  var SCENE_NOTES = [
+    [{ x: -16, y: 3.5, z: -6, text: 'ฟาร์มโคอิพรีเมียม · ญี่ปุ่น' }],
+    [{ x: -12, y: 7.5, z: -8, text: 'สนามบินนาริตะ (NRT) · คลังสัตว์มีชีวิต (AVI)' }],
+    [{ x: 2, y: 9.5, z: 6, text: 'Boeing 787-8 · JL707 NRT → BKK' },
+     { x: -8, y: 6, z: 2, text: 'ผู้ดูแลปลานั่งในห้องโดยสาร เข้าห้องสัมภาระไม่ได้' }],
+    [{ x: 14, y: 7, z: -10, text: 'สนามบินสุวรรณภูมิ (BKK)' },
+     { x: -6, y: 9.5, z: 4, text: 'JL707 ลงจอด 23:00 เวลาไทย' }],
+    [{ x: 7, y: 4, z: -7, text: 'อยู่ในกักกันจนกว่า DOF จะตรวจและอนุญาตให้ปล่อย' }],
+    [{ x: 6, y: 5, z: -9, text: 'ฟาร์มบริษัทของเรา' }]
+  ];
 
   // กระพริบช้า: สลับทุก 500 ms = 1 รอบต่อวินาที (ไม่เกิน 2 Hz ตามข้อกำหนด)
   // ถ้าผู้ใช้ตั้งลดการเคลื่อนไหว (reduced motion) จะค้างที่ "เปิด" ไม่กระพริบ
@@ -5810,49 +5879,6 @@ var KoiScene = (function () {
     return g;
   }
 
-  /* ---------- ป้ายชื่อจุดในฉาก (ข้อมูล) ----------
-     x,z = ตำแหน่ง  y = ความสูงของป้าย (ไม่ใส่ = 2.6)
-     ป้ายชุดแรกของแต่ละสถานีอยู่ที่จุดวางกล่องของแต่ละขั้น ที่เหลือเป็นป้ายอธิบายของในฉาก */
-  var STATION_LABELS = [
-    [ // S1 ผู้ส่ง (ฟาร์มในญี่ปุ่น)
-      { x: -8, z: 4, text: 'ขั้น 1 · บ่อฟาร์ม คัดปลา' },
-      { x: -5, z: 3, text: 'ขั้น 2 · ตรวจสุขภาพ' },
-      { x: -2, z: 1, text: 'ขั้น 3 · บ่อพัก งดอาหาร' },
-      { x: 1, z: 0, text: 'ขั้น 4 · บรรจุถุง 3 ชั้น' },
-      { x: 4, z: 0, text: 'ขั้น 5 · ติดป้าย LIVE ANIMALS' },
-      { x: 8, z: -2, text: 'ขั้น 6 · รถควบคุมอุณหภูมิ' }
-    ],
-    [ // S2 สนามบินนาริตะ
-      { x: -5, z: 0, text: 'ขั้น 7 · คลังสัตว์มีชีวิต (AVI)' },
-      { x: 5, z: 0, text: 'ขั้น 8 · ตรวจเอกสาร · X-ray' },
-      { x: 0, z: -5, text: 'สนามบินนาริตะ (NRT)' }
-    ],
-    [ // S3 บนเที่ยวบิน JL707
-      { x: 0, z: 0, text: 'ขั้น 9 · ห้องสัมภาระ JL707' },
-      { x: 8.5, z: -3, y: 4.4, text: 'ห้องโดยสาร: ที่นั่งผู้ดูแลปลา' },
-      { x: 8.5, z: 3, y: 4.4, text: 'ผู้ดูแลปลาเข้าห้องสัมภาระไม่ได้' },
-      { x: -7, z: 4, y: 4, text: 'Boeing 787-8 · NRT → BKK' }
-    ],
-    [ // S4 สนามบินสุวรรณภูมิ
-      { x: 0, z: 0, text: 'ขั้น 10 · คลังสินค้า BKK (AVI)' },
-      { x: -5.5, z: 4.5, y: 4, text: 'JL707 ลงจอด 23:00 เวลาไทย' },
-      { x: 4, z: -4.5, y: 4.6, text: 'สนามบินสุวรรณภูมิ (BKK)' }
-    ],
-    [ // S5 ด่าน DOF และกักกัน
-      { x: -7, z: 0, text: 'ขั้น 11 · DOF ตรวจ + ศุลกากร' },
-      { x: -2, z: 0, text: 'ขั้น 12 · คำสั่งกักกัน' },
-      { x: 3, z: 0, text: 'ขั้น 13 · สถานที่กักกัน' },
-      { x: 8, z: 0, text: 'ขั้น 14 · อนุญาตปล่อย' },
-      { x: 0, z: -6.5, y: 3.8, text: 'อยู่ในกักกันจนกว่า DOF จะตรวจและอนุญาตให้ปล่อย' }
-    ],
-    [ // S6 ผู้รับ (ฟาร์มบริษัท)
-      { x: -6, z: 0, text: 'ขั้น 15 · ขนส่งไปฟาร์มบริษัท' },
-      { x: 0, z: 0, text: 'ขั้น 16 · พักฟื้น + ปรับสภาพ' },
-      { x: 7, z: 0, text: 'ขั้น 17 · เพาะพันธุ์ → ขาย' },
-      { x: 3.5, z: -7, y: 4.4, text: 'ฟาร์มบริษัทของเรา' }
-    ]
-  ];
-
   /* ---------- ตัวช่วยสร้างวัตถุ 3 มิติ ---------- */
   // วัสดุใช้ซ้ำตามสี (เก็บไว้ใน MATS) เพื่อไม่สร้างใหม่ซ้ำ ๆ — ตอนล้างฉากจึงห้าม dispose วัสดุที่แชร์
   var MATS = {};
@@ -5907,12 +5933,8 @@ var KoiScene = (function () {
     return s;
   }
   function addLabels(g, i) {
-    var first = D.STATIONS[i].first, n = D.STATIONS[i].last - first + 1;
-    STATION_LABELS[i].forEach(function (l, k) {
-      var s = makeLabel(l.text); s.position.set(l.x, l.y || 2.6, l.z);
-      // ป้ายชุดแรก = ป้ายของแต่ละขั้น: โชว์เฉพาะขั้นปัจจุบันเพื่อไม่ให้ป้ายซ้อนกันรก
-      if (k < n) s.userData.stepIdx = first + k;
-      g.add(s);
+    SCENE_NOTES[i].forEach(function (l) {
+      var s = makeLabel(l.text); s.position.set(l.x, l.y, l.z); g.add(s);
     });
   }
 
@@ -6044,14 +6066,14 @@ var KoiScene = (function () {
       new THREE.MeshStandardMaterial({ color: th.ground, roughness: 1 }));
     ground.position.y = -0.1;
     g.add(ground);
-    D.WAYPOINTS[i].forEach(function (p) {
+    SHOTS.filter(function (sh) { return sh.st === i; }).map(function (sh, k) { return boxTarget(SHOTS.indexOf(sh)); }).forEach(function (p) {
       var pad = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 0.05, 24),
         new THREE.MeshStandardMaterial({ color: th.grid, roughness: 1 }));
       pad.position.set(p.x, 0.03, p.z);
       g.add(pad);
     });
     if (BUILDERS[i]) BUILDERS[i](g);
-    if (STATION_LABELS[i]) addLabels(g, i);
+    addLabels(g, i);
     return g;
   }
 
@@ -6265,7 +6287,7 @@ var KoiScene = (function () {
   }
 
   return {
-    NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, STATION_LABELS: STATION_LABELS,
+    NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES, pathPoint: pathPoint, shotPose: shotPose,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
     loadModels: loadModels, cloneModel: cloneModel,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,

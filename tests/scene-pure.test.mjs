@@ -7,13 +7,6 @@ const SC = ctx.KoiScene;
 const D = ctx.KoiData;
 const L = ctx.KoiLogic;
 
-test('boxTarget: ทุกขั้น 0..16 มีตำแหน่งอยู่ในกรอบ [-10,10]', () => {
-  for (let i = 0; i < 17; i++) {
-    const p = SC.boxTarget(i);
-    assert.ok(Math.abs(p.x) <= 10 && Math.abs(p.z) <= 10, 'ขั้น ' + i);
-  }
-});
-
 test('boxTarget: ขั้นต่อเนื่องในสถานีเดียวกันอยู่คนละจุด', () => {
   for (let i = 0; i < 16; i++) {
     if (L.stationOf(i) !== L.stationOf(i + 1)) continue;
@@ -70,51 +63,6 @@ test('NO_WEBGL_MESSAGE ตรงข้อความที่ตกลงไว
   assert.equal(SC.NO_WEBGL_MESSAGE, 'เครื่องนี้แสดงภาพ 3 มิติไม่ได้ ยังดูขั้นตอนได้ตามปกติ');
 });
 
-// ---- Task 8: ป้ายชื่อในฉากสถานี (ข้อมูลล้วน ทดสอบใน Node ได้) ----
-test('STATION_LABELS สถานี 1–3: ป้ายมีข้อความ อยู่ในกรอบ และมีป้ายอย่างน้อยเท่าจำนวนขั้น', () => {
-  for (let i = 0; i <= 2; i++) {
-    const labels = SC.STATION_LABELS[i];
-    assert.ok(labels && labels.length >= D.STATIONS[i].last - D.STATIONS[i].first + 1, 'สถานี ' + i);
-    for (const l of labels) {
-      assert.ok(typeof l.text === 'string' && l.text.length > 0);
-      assert.ok(Math.abs(l.x) <= 10 && Math.abs(l.z) <= 10, l.text);
-    }
-  }
-});
-
-test('ทุกขั้นของสถานี 1–3 มีป้ายอยู่ใกล้จุดวางกล่อง (ห่างไม่เกิน 3 หน่วย) ให้ผู้ชมรู้ว่าอยู่ตรงไหน', () => {
-  for (let step = 0; step <= 8; step++) {
-    const st = L.stationOf(step), p = SC.boxTarget(step);
-    const near = SC.STATION_LABELS[st].some(l => Math.hypot(l.x - p.x, l.z - p.z) <= 3);
-    assert.ok(near, 'ขั้น ' + (step + 1) + ' ไม่มีป้ายใกล้จุดวาง');
-  }
-});
-
-test('ป้ายสถานี 3 ระบุว่าผู้ดูแลปลานั่งในห้องโดยสาร (ไม่เข้าห้องสัมภาระ)', () => {
-  const txt = SC.STATION_LABELS[2].map(l => l.text).join(' ');
-  assert.match(txt, /ห้องโดยสาร/);
-});
-
-// ---- Task 9: ป้ายสถานี 4–6 ----
-test('STATION_LABELS ครบทั้ง 6 สถานี และทุกขั้น 1–17 มีป้ายใกล้จุดวางกล่อง', () => {
-  assert.equal(SC.STATION_LABELS.length, 6);
-  for (let step = 0; step < 17; step++) {
-    const st = L.stationOf(step), p = SC.boxTarget(step);
-    assert.ok(SC.STATION_LABELS[st].some(l => Math.hypot(l.x - p.x, l.z - p.z) <= 3), 'ขั้น ' + (step + 1));
-  }
-  for (let i = 3; i <= 5; i++) {
-    const labels = SC.STATION_LABELS[i];
-    assert.ok(labels.length >= D.STATIONS[i].last - D.STATIONS[i].first + 1);
-    for (const l of labels) assert.ok(l.text.length > 0 && Math.abs(l.x) <= 10 && Math.abs(l.z) <= 10, l.text);
-  }
-});
-
-test('ป้ายสถานี 5 ใช้ถ้อยคำกักกันที่ล็อกไว้ และไม่มีจำนวนวัน', () => {
-  const txt = SC.STATION_LABELS[4].map(l => l.text).join(' ');
-  assert.match(txt, /จนกว่า DOF จะตรวจและอนุญาตให้ปล่อย/);
-  assert.doesNotMatch(txt, /\d+\s*วัน/);
-});
-
 test('overviewTile: ตำแหน่งกระเบื้อง 6 สถานีเรียงซ้ายไปขวา ไม่ซ้อนกัน และอยู่ในกรอบ', () => {
   const xs = [0, 1, 2, 3, 4, 5].map(i => SC.overviewTile(i).x);
   for (let i = 1; i < 6; i++) assert.ok(xs[i] - xs[i - 1] >= 3.5, 'กระเบื้อง ' + i + ' ชิดเกินไป');
@@ -159,4 +107,80 @@ test('base64ToBuffer: ถอดรหัสโมเดลได้ ขึ้น
 test('placeholderSize: มีขนาดสำรองของทุกโมเดล (กว้าง/สูง/ยาว > 0)', () => {
   assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone']);
   for (const n of SC.MODEL_NAMES) { const s = SC.placeholderSize(n); assert.ok(s.w > 0 && s.h > 0 && s.d > 0, n); }
+});
+
+// ---- รุ่น 2 Task 3: ช็อตของ 17 ขั้น (เส้นทางกล่อง + มุมกล้อง) ----
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const plain = (o) => JSON.parse(JSON.stringify(o));
+
+test('SHOTS: 17 ช็อต สถานีตรงกับ stationOf, act ไม่ซ้ำ, ใช้เวลา 3–10 วินาที', () => {
+  assert.equal(SC.SHOTS.length, 17);
+  assert.equal(new Set(SC.SHOTS.map(s => s.act)).size, 17);
+  SC.SHOTS.forEach((s, i) => {
+    assert.equal(s.st, L.stationOf(i), 'ขั้น ' + (i + 1));
+    assert.ok(s.dur >= 3 && s.dur <= 10, 'ขั้น ' + (i + 1));
+    assert.ok(s.path.length >= 2, 'ขั้น ' + (i + 1));
+  });
+});
+
+test('SHOTS: ชื่อ act ตรงตามแผน', () => {
+  assert.deepEqual(plain(SC.SHOTS.map(s => s.act)), ['pondSelect', 'healthCheck', 'fasting', 'bagging', 'labeling', 'truckToNRT',
+    'aviReceive', 'xrayCheck', 'loadAndFly', 'bkkUnload', 'dofInspect', 'quarantineOrder', 'quarantinePond', 'releaseDocs',
+    'truckToFarm', 'recovery', 'breeding']);
+});
+
+test('SHOTS: ทุกจุดอยู่ในฉาก |x|,|z| ≤ 30 และ y ≥ 0', () => {
+  SC.SHOTS.forEach((s, i) => {
+    for (const p of [...s.path, s.cam.p, s.cam.t]) {
+      assert.ok(Math.abs(p.x) <= 30 && Math.abs(p.z) <= 30 && p.y >= 0, 'ขั้น ' + (i + 1) + ' ' + JSON.stringify(p));
+    }
+  });
+});
+
+test('SHOTS: ในสถานีเดียวกัน ช็อตถัดไปเริ่มที่จุดที่ช็อตก่อนจบ (กล่องไม่วาร์ป)', () => {
+  for (let i = 1; i < 17; i++) if (SC.SHOTS[i].st === SC.SHOTS[i - 1].st) {
+    assert.ok(dist(SC.SHOTS[i - 1].path.at(-1), SC.SHOTS[i].path[0]) < 0.01, 'ขั้น ' + (i + 1));
+  }
+});
+
+test('SHOTS: กล้องมองจุดเกิดเหตุ — เป้าห่างเส้นทางกล่อง ≤ 8, กล้องสูง ≥ 3, ห่างเป้า 8–45', () => {
+  SC.SHOTS.forEach((s, i) => {
+    let near = Infinity;
+    for (let u = 0; u <= 1.0001; u += 0.05) near = Math.min(near, dist(s.cam.t, SC.pathPoint(s.path, u)));
+    assert.ok(near <= 8, 'ขั้น ' + (i + 1) + ' เป้าห่าง ' + near.toFixed(1));
+    assert.ok(s.cam.p.y >= 3, 'ขั้น ' + (i + 1));
+    const d = dist(s.cam.p, s.cam.t);
+    assert.ok(d >= 8 && d <= 45, 'ขั้น ' + (i + 1) + ' ระยะ ' + d.toFixed(1));
+  });
+});
+
+test('pathPoint: u=0 จุดแรก u=1 จุดสุดท้าย u กลางอยู่ครึ่งระยะทาง และบีบค่านอกช่วง', () => {
+  const p = [{ x: 0, y: 0, z: 0 }, { x: 10, y: 0, z: 0 }, { x: 10, y: 0, z: 10 }];
+  assert.deepEqual(plain(SC.pathPoint(p, 0)), { x: 0, y: 0, z: 0 });
+  assert.deepEqual(plain(SC.pathPoint(p, 0.5)), { x: 10, y: 0, z: 0 });
+  assert.deepEqual(plain(SC.pathPoint(p, 0.75)), { x: 10, y: 0, z: 5 });
+  assert.deepEqual(plain(SC.pathPoint(p, 2)), { x: 10, y: 0, z: 10 });
+  assert.deepEqual(plain(SC.pathPoint(p, -1)), { x: 0, y: 0, z: 0 });
+});
+
+test('shotPose: reduced-motion ได้จุดปลายทันที; ปกติ u=0 อยู่จุดเริ่ม', () => {
+  for (let i = 0; i < 17; i++) {
+    assert.deepEqual(plain(SC.shotPose(i, 0, true)), plain(SC.SHOTS[i].path.at(-1)));
+    assert.deepEqual(plain(SC.shotPose(i, 0, false)), plain(SC.SHOTS[i].path[0]));
+  }
+});
+
+test('boxTarget: คือจุดปลายของเส้นทาง (x,z)', () => {
+  for (let i = 0; i < 17; i++) {
+    const e = SC.SHOTS[i].path.at(-1);
+    assert.deepEqual(plain(SC.boxTarget(i)), { x: e.x, z: e.z });
+  }
+});
+
+test('SCENE_NOTES: 6 สถานี; สถานี 3 บอกว่าผู้ดูแลปลานั่งห้องโดยสาร; สถานี 5 ใช้ถ้อยคำกักกันที่ล็อกไว้ ไม่มีจำนวนวัน', () => {
+  assert.equal(SC.SCENE_NOTES.length, 6);
+  assert.match(SC.SCENE_NOTES[2].map(n => n.text).join(' '), /ห้องโดยสาร/);
+  const s5 = SC.SCENE_NOTES[4].map(n => n.text).join(' ');
+  assert.match(s5, /จนกว่า DOF จะตรวจและอนุญาตให้ปล่อย/);
+  assert.doesNotMatch(s5, /\d+\s*วัน/);
 });

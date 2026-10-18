@@ -44,15 +44,6 @@ test('ทุกขั้นมี who/what/why และ t===null ต้อง a
   }
 });
 
-test('WAYPOINTS ครบตามจำนวนขั้นของแต่ละสถานี และอยู่ในกรอบ [-10,10]', () => {
-  D.STATIONS.forEach((st, i) => {
-    assert.equal(D.WAYPOINTS[i].length, st.last - st.first + 1);
-    for (const p of D.WAYPOINTS[i]) {
-      assert.ok(Math.abs(p.x) <= 10 && Math.abs(p.z) <= 10);
-    }
-  });
-});
-
 test('ไม่มีคำต้องห้ามตามที่ล็อกไว้', () => {
   assert.doesNotMatch(all, /(21|30\s*[-–]\s*35|60)\s*วัน/);
   assert.doesNotMatch(all, /ความไวต่ออัตรารอด/);
