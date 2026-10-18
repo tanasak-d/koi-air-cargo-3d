@@ -5588,6 +5588,12 @@ var KoiUI = (function () {
   function keyToAction(key) { return Object.prototype.hasOwnProperty.call(KEYS, key) ? KEYS[key] : null; }
   // ช่วงเวลาระหว่างขั้นตอนตอนเล่นอัตโนมัติ: โหมดนำเสนอช้าลง 2 เท่าให้ผู้พูดอธิบายทัน
   function playIntervalMs(present) { return present ? 2200 : 1100; }
+  // เล่นอัตโนมัติ: รอให้อนิเมชันของขั้นนี้ (ยาว shotSec วินาที) เล่นจบก่อน แล้วพักอีกนิด
+  // โหมดนำเสนอพัก 2.5 วินาที ให้ผู้พูดอธิบายทัน · ไม่รู้ความยาวช็อต (ไม่มีฉาก 3 มิติ) ใช้ค่าเดิม
+  function playDelayMs(shotSec, present) {
+    if (!(shotSec > 0)) return playIntervalMs(present);
+    return Math.round(shotSec * 1000 + (present ? 2500 : 800));
+  }
   // คำสั่งเดิน/ถอย (ผ่านตรรกะ จึงไม่ข้ามด่านที่ค้างอยู่)
   function runAction(S, action) {
     if (action === 'next') L.next(S); else if (action === 'prev') L.prev(S);
@@ -5609,7 +5615,7 @@ var KoiUI = (function () {
     var S = L.newState(0), tab = 'who', timer = null, present = false, savedTab = 'who';
     var $ = function (id) { return root.querySelector(id); };
 
-    function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
+    function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
     var riskOpen = false; // เมนูเหตุการณ์เปิดค้างไว้หรือไม่ (จำไว้ เพราะวาดใหม่ทุกครั้ง)
     function render() {
       var ae = document.activeElement, fsel = ae && root.contains(ae) ? focusSelector(ae.dataset) : null;
@@ -5630,10 +5636,14 @@ var KoiUI = (function () {
     function togglePlay() {
       if (timer) { stopTimer(); }
       else {
-        timer = setInterval(function () {
-          if (!L.canAdvance(S)) { stopTimer(); render(); return; }
-          L.next(S); render();
-        }, playIntervalMs(present));
+        // ตั้งเวลาทีละขั้น: แต่ละขั้นรอนานเท่าอนิเมชันของขั้นนั้น (hooks.shotSec ให้ฉาก 3 มิติบอกความยาว)
+        var tick = function () {
+          timer = setTimeout(function () {
+            if (!L.canAdvance(S)) { timer = null; render(); return; }
+            L.next(S); render(); tick();
+          }, playDelayMs(hooks.shotSec ? hooks.shotSec(S.idx) : null, present));
+        };
+        tick();
       }
       render();
     }
@@ -5690,7 +5700,7 @@ var KoiUI = (function () {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
     esc: esc, renderGlossary: renderGlossary, renderTimeline: renderTimeline, renderCard: renderCard,
     renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
-    renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>
@@ -6831,6 +6841,7 @@ var KoiScene = (function () {
   KoiScene.attachCard(document.getElementById("card"));   // การ์ดลอยตามกล่องปลา
   KoiUI.mount(document.getElementById("app"), {
     onRender: function (S) { KoiScene.sync(S); },
+    shotSec: function (i) { return ok ? KoiScene.SHOTS[i].dur : null; },   // เล่นอัตโนมัติรอให้อนิเมชันจบ
     onTheme: function (name) { KoiScene.setTheme(name); }   // กดคีย์ T สลับธีม
   });
   document.getElementById("theme-btn").addEventListener("click", function () { KoiUI.toggleTheme(); KoiScene.setTheme(KoiUI.currentTheme({ doc: document, matchMedia: window.matchMedia.bind(window) })); });

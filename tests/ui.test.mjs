@@ -225,3 +225,10 @@ test('focusSelector: สร้าง selector ของปุ่มจาก dat
   assert.equal(UI.focusSelector({ sc: '1' }), '[data-sc="1"]');
   assert.equal(UI.focusSelector({}), null);
 });
+
+// ---- รุ่น 2 Task 11: เล่นอัตโนมัติรอให้อนิเมชันของขั้นจบก่อน ----
+test('playDelayMs: รอจนช็อตของขั้นจบแล้วพักอีกนิด (โหมดนำเสนอพักนานกว่า ให้ผู้พูดอธิบาย)', () => {
+  assert.equal(UI.playDelayMs(6, false), 6800);
+  assert.equal(UI.playDelayMs(6, true), 8500);
+  assert.equal(UI.playDelayMs(undefined, false), UI.playIntervalMs(false));   // ไม่รู้ความยาวช็อต ใช้ค่าเดิม
+});
