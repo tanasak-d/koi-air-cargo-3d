@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadBlocks, readHtml } from './helpers/load.mjs';
+import { loadBlocks, readHtml, blockSource } from './helpers/load.mjs';
 
 test('โหลดบล็อก koi-data ได้ และ KoiData เป็น object', () => {
   const ctx = loadBlocks(['koi-data']);
@@ -22,15 +22,17 @@ test('ไม่อ้างทรัพยากรภายนอก (ออฟ
 });
 
 // ---- Task 12: ตรวจไฟล์ที่ส่งออกทั้งไฟล์ ----
-const noThree = (html) => html.replace(/<script id="three">[\s\S]*?<\/script>/, '');
+// ตัดบล็อกที่ฝังจากภายนอก (Three.js, addons, โมเดล) ออก เหลือเฉพาะโค้ดของเรา
+const noThree = (html) => html.replace(/<script id="(three|three-addons|koi-assets)">[\s\S]*?<\/script>/g, '');
 
 test('ส่งออก: ไม่มี URL ภายนอกในโค้ดของเรา (ยกเว้นข้อความใน Three.js ที่ฝังไว้)', () => {
   const ours = noThree(readHtml());
   assert.doesNotMatch(ours, /https?:\/\//);
 });
 
-test('ส่งออก: ขนาดไฟล์ไม่เกิน 2 MB', () => {
-  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 2 * 1024 * 1024);
+// มาร์ชขยายเพดานจาก 3 MB เป็น 5 MB (2026-10-18) เพื่อให้ใส่โมเดลจาก Blender ได้มากขึ้น
+test('ส่งออก: ขนาดไฟล์ไม่เกิน 5 MB', () => {
+  assert.ok(Buffer.byteLength(readHtml(), 'utf8') <= 5 * 1024 * 1024);
 });
 
 test('ส่งออก: มี lang="th" และ <title> 2–4 คำ', () => {
@@ -56,7 +58,7 @@ test('ส่งออก: ไม่มี console.log / debugger หลงเห
 
 test('ส่งออก: ทุกบล็อกที่ควรมีอยู่ครบ และ koi-boot อยู่หลังบล็อกอื่น', () => {
   const html = readHtml();
-  const ids = ['three', 'koi-data', 'koi-logic', 'koi-ui', 'koi-scene', 'koi-boot'];
+  const ids = ['three', 'three-addons', 'koi-assets', 'koi-data', 'koi-logic', 'koi-ui', 'koi-scene', 'koi-boot'];
   const pos = ids.map(id => html.indexOf('<script id="' + id + '">'));
   pos.forEach((p, i) => assert.ok(p > 0, 'ไม่พบ ' + ids[i]));
   for (let i = 1; i < pos.length; i++) assert.ok(pos[i] > pos[i - 1], ids[i] + ' ต้องอยู่หลัง ' + ids[i - 1]);
@@ -68,4 +70,52 @@ test('ส่งออก: หน้าแรกมีข้อความบอ
 
 test('ส่งออก: ไม่เหลือข้อความเพดาน 21 ชม. เดิม (เปลี่ยนเป็น 24 ชม. แล้ว)', () => {
   assert.doesNotMatch(noThree(readHtml()), /21\s*ชม/);
+});
+
+// ---- รุ่น 2 Task 1: ฝัง addons และโมเดลลงไฟล์เดียว ----
+test('ฝัง addons: GLTFLoader และ OrbitControls อยู่ในบล็อก three-addons', () => {
+  const src = blockSource(readHtml(), 'three-addons');
+  assert.match(src, /class GLTFLoader extends THREE\.Loader/);
+  assert.match(src, /OrbitControls/);
+});
+
+test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวที่ถอดรหัสแล้วขึ้นต้นด้วย glTF และมี colormap', () => {
+  const ctx = loadBlocks(['koi-assets']);
+  for (const n of ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai']) {
+    const head = Buffer.from(ctx.KoiAssets.models[n], 'base64').subarray(0, 4).toString('latin1');
+    assert.equal(head, 'glTF', n);
+  }
+  assert.match(ctx.KoiAssets.textures.colormap, /^data:image\/png;base64,/);
+});
+
+// ---- รุ่น 2 Task 5: เลย์เอาต์ B ----
+test('เลย์เอาต์ B: มีเวที (การ์ดลอย ปุ่มบนโมเดล เมนูเหตุการณ์) และเส้นเวลา; ไม่เหลือแถบสถานี/แผงขั้นตอนเดิม', () => {
+  const html = readHtml();
+  for (const id of ['stage', 'card', 'stage-ctrl', 'risk', 'timeline', 'tabs']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const id of ['strip', 'steps', 'controls']) assert.doesNotMatch(html, new RegExp('id="' + id + '"'), id);
+});
+
+test('เลย์เอาต์ B: วิธีใช้บอกคีย์ลัดครบ (← → Space P T O)', () => {
+  const how = /<details class="card howto">([\s\S]*?)<\/details>/.exec(readHtml())[1];
+  assert.match(how, /คีย์ลัด/);
+  for (const k of ['←', '→', 'Space', 'P', 'T', 'O']) assert.ok(how.includes(k), k);
+});
+
+test('ไม่มี WebGL: การ์ดชื่อขั้นยังแสดงแบบคงที่ (มีสไตล์ #card.static)', () => {
+  assert.match(readHtml(), /#card\.static\{[^}]*position:/);
+});
+
+test('เปลี่ยนสถานีแบบนุ่ม: ภาพจาง-ขึ้น (มี transition ของ opacity ที่ canvas)', () => {
+  assert.match(readHtml(), /#stage canvas\{[^}]*transition:opacity/);
+});
+
+test('ฝังแผนที่: KoiAssets.map มีประเทศญี่ปุ่นและไทย (ข้อมูล Natural Earth)', () => {
+  const ctx = loadBlocks(['koi-assets']);
+  const a3 = ctx.KoiAssets.map.countries.map(c => c.a3);
+  assert.ok(a3.includes('JPN') && a3.includes('THA'));
+});
+
+test('V4: มีแถบบน (สถานะการขนส่ง) แผงติดตามด้านข้าง และป้ายสถานีบนภาพ', () => {
+  const html = readHtml();
+  for (const id of ['topbar', 'status', 'panel', 'station-badge']) assert.match(html, new RegExp('id="' + id + '"'), id);
 });

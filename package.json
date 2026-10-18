@@ -3,6 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.mjs"
+    "test": "node --test tests/*.test.mjs",
+    "inline": "node tools/inline-three.mjs && node tools/inline-assets.mjs",
+    "export": "node tools/export.mjs"
   }
 }
