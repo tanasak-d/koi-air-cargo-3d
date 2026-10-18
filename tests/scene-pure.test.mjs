@@ -237,3 +237,24 @@ test('ACTIONS: ทุกช็อตของสถานี 2 (ขั้น 7�
 test('ACTIONS: ช็อตของสถานี 3–4 (ขั้น 9–10) มีฟังก์ชันอนิเมชัน', () => actionsFor(8, 9));
 test('ACTIONS: ช็อตของสถานี 5–6 (ขั้น 11–17) มีฟังก์ชันอนิเมชัน', () => actionsFor(10, 16));
 test('ACTIONS: ครบทั้ง 17 ช็อต', () => SC.SHOTS.forEach(s => assert.equal(typeof SC.ACTIONS[s.act], 'function', s.act)));
+
+// ---- รุ่น 2 Task 10: ภาพเหตุการณ์เสี่ยงที่ด่าน ----
+test('riskCue: แต่ละเหตุการณ์ที่ค้างได้ cue ของตัวเอง ไม่ค้าง = null', () => {
+  const want = [null, 'bag-leak', 'cutoff-clock', 'hold-notoc', 'doc-mismatch', 'disease'];
+  for (let sc = 1; sc <= 5; sc++) { const S = L.newState(sc); while (L.canAdvance(S)) L.next(S); assert.equal(SC.riskCue(S), want[sc], 'เหตุการณ์ ' + sc); }
+  assert.equal(SC.riskCue(L.newState(0)), null);
+  const ok = L.newState(1); while (L.canAdvance(ok)) L.next(ok); L.verify(ok); L.correct(ok, D.SCENARIOS[1].opts.findIndex(o => o.good));
+  assert.equal(SC.riskCue(ok), null);   // แก้แล้ว ไม่ค้าง
+});
+
+test('riskCue: ด่านของเหตุการณ์อยู่ในช็อตที่กล้องจับได้ (ขั้นของเหตุการณ์มีช็อต)', () => {
+  for (let sc = 1; sc <= 5; sc++) assert.ok(SC.SHOTS[D.SCENARIOS[sc].step], 'เหตุการณ์ ' + sc);
+});
+
+test('holdU: ค้างที่ด่านแล้วอนิเมชันหยุดที่จังหวะของด่าน (0 < u ≤ 1) ไม่ค้าง = null', () => {
+  for (let sc = 1; sc <= 5; sc++) {
+    const S = L.newState(sc); while (L.canAdvance(S)) L.next(S);
+    const u = SC.holdU(S); assert.ok(u > 0 && u <= 1, 'เหตุการณ์ ' + sc);
+  }
+  assert.equal(SC.holdU(L.newState(0)), null);
+});

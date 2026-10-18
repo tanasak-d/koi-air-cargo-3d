@@ -5885,6 +5885,13 @@ var KoiScene = (function () {
     return { left: left, top: top };
   }
 
+  /* ---------- ภาพเหตุการณ์เสี่ยงที่ด่าน ----------
+     เหตุการณ์ 1–5 แต่ละแบบมีภาพของตัวเอง (cue) แสดงคู่กับกล่องแดง และอนิเมชันหยุดที่จังหวะของด่าน (holdU) */
+  var CUES = [null, 'bag-leak', 'cutoff-clock', 'hold-notoc', 'doc-mismatch', 'disease'];
+  var HOLD_U = [null, 0.75, 1, 0.65, 0.6, 0.95];
+  function riskCue(S) { return L.heldAtCheckpoint(S) ? CUES[S.sc] : null; }
+  function holdU(S) { return L.heldAtCheckpoint(S) ? HOLD_U[S.sc] : null; }
+
   /* ---------- (ข) ส่วนที่ต้องมี WebGL ---------- */
   var R = null; // เก็บของที่สร้างไว้: renderer, scene, camera, controls, cargo, ...
 
@@ -6096,15 +6103,15 @@ var KoiScene = (function () {
   function vehicle(name, len) { var g = group(), m = cloneModel(name, len); m.rotation.y = Math.PI / 2; g.add(m); return g; }
 
   // ป้ายลอยเป็น sprite (วาดข้อความลง canvas) อ่านได้ทั้งธีมสว่าง/มืด
-  function makeLabel(text) {
+  function makeLabel(text, tone) {
     var dark = themeName() === 'dark';
     var FONT = '"Noto Sans Thai","Sarabun","Segoe UI",sans-serif';
     var c = document.createElement('canvas'); c.width = 720; c.height = 120;
     var x = c.getContext('2d');
     var bg = dark ? 'rgba(20,30,51,0.92)' : 'rgba(255,255,255,0.94)';
-    x.fillStyle = bg; x.strokeStyle = dark ? '#7db0ff' : '#1d62c4'; x.lineWidth = 5;
+    x.fillStyle = bg; x.strokeStyle = tone === 'bad' ? (dark ? '#ff8a82' : '#b3261e') : (dark ? '#7db0ff' : '#1d62c4'); x.lineWidth = tone === 'bad' ? 8 : 5;
     x.beginPath(); x.rect(4, 4, 712, 112); x.fill(); x.stroke();
-    x.fillStyle = dark ? '#e8eef8' : '#0f1c2e'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillStyle = tone === 'bad' ? (dark ? '#ff8a82' : '#b3261e') : (dark ? '#e8eef8' : '#0f1c2e'); x.textAlign = 'center'; x.textBaseline = 'middle';
     var size = 48, w;
     do { x.font = '700 ' + size + 'px ' + FONT; w = x.measureText(text).width; size -= 2; } while (w > 680 && size > 18);
     x.fillText(text, 360, 62);
@@ -6492,6 +6499,32 @@ var KoiScene = (function () {
     c.props.sale.visible = c.u >= 0.75;
   };
 
+  /* ---------- ภาพของเหตุการณ์เสี่ยง (สร้างเมื่อกล่องค้างที่ด่าน วางตามตำแหน่งกล่อง) ---------- */
+  // ป้ายเตือนวางหน้ากล่องใกล้พื้น (ฝั่งกล้อง) — การ์ดลอยอยู่เหนือกล่อง ป้ายจะได้ไม่ถูกบังและไม่หลุดขอบภาพ
+  function badSign(g, text) { var s = makeLabel(text, 'bad'); s.position.set(0, 0.5, 2.6); s.scale.set(6, 1, 1); g.add(s); return s; }
+  function buildCue(name) {
+    var g = group();
+    if (name === 'bag-leak') {                       // ถุงแฟบข้างกล่อง
+      badSign(g, '✕ ถุงรั่ว / ออกซิเจนไม่พอ');
+      var b = put(g, new THREE.CylinderGeometry(0.5, 0.6, 0.25, 8), 0xff8a82, 1.4, 0.13, 0, 0.7); b.scale.set(1.3, 1, 0.8);
+    } else if (name === 'cutoff-clock') {            // นาฬิกาเกินเวลาปิดรับ
+      badSign(g, '✕ ถึงช้ากว่าเวลา cut-off');
+      var face = put(g, new THREE.CylinderGeometry(0.8, 0.8, 0.12, 16), 0xffffff, 2.2, 2.2, 0.5); face.rotation.x = Math.PI / 2;
+      g.userData.hand = group(g, 2.2, 2.2, 0.58);
+      addBox(g.userData.hand, 0.08, 0.6, 0.04, 0xd9423e, 0, 0, 0);
+    } else if (name === 'hold-notoc') {              // หยุดบรรทุก ข้อมูลสัตว์มีชีวิตไม่ถึง Load Control
+      badSign(g, '✕ HOLD · NOTOC ไม่ครบ หยุดบรรทุก');
+    } else if (name === 'doc-mismatch') {            // เอกสาร 2 ใบตัวเลขไม่ตรงกัน
+      badSign(g, '✕ เอกสารไม่ตรงกัน');
+      var a = makeLabel('Health Cert: 24 ตัว'); a.position.set(-1.9, 1.6, 2.6); a.scale.set(3.2, 0.55, 1); g.add(a);
+      var b2 = makeLabel('AWB: 20 ตัว', 'bad'); b2.position.set(1.9, 1.6, 2.6); b2.scale.set(3.2, 0.55, 1); g.add(b2);
+    } else if (name === 'disease') {                 // บ่อกักกันขึ้นกรอบแดง
+      badSign(g, '✕ พบ KHV / SVCV ระหว่างกักกัน');
+      var ring = put(g, new THREE.TorusGeometry(2, 0.12, 6, 24), 0xd13b32, 0, 0.45, -1); ring.rotation.x = Math.PI / 2;
+    }
+    return g;
+  }
+
   function buildStation(i) {
     var g = new THREE.Group(), props = {};
     buildGround(g, GROUND[i]);
@@ -6631,6 +6664,7 @@ var KoiScene = (function () {
     R.stationGroup = buildStation(i);
     R.scene.add(R.stationGroup);
     R.station = i;
+    R.cue = null; R.cueName = null;                 // ภาพเหตุการณ์อยู่ในกลุ่มเดิมที่ถูกล้างแล้ว
   }
 
   // look = 'held' | 'loss' | 'normal'
@@ -6705,12 +6739,27 @@ var KoiScene = (function () {
     if (R.ready && !R.overview && R.stationGroup) {
       var i = R.anim.i, sh = SHOTS[i];
       var sec = (now - R.anim.t0) / 1000, u = Math.min(1, sec / sh.dur);
-      var p = shotPose(i, u, reduced);
+      var hu = R.lastS ? holdU(R.lastS) : null;
+      if (hu != null && R.lastS.idx === i) u = Math.min(u, hu);          // ค้างที่ด่าน: อนิเมชันหยุดที่จังหวะของด่าน
+      var p = shotPose(i, u, reduced && hu == null);
       R.cargo.position.set(p.x, p.y, p.z);
       R.cargo.visible = true; R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
       var tags = R.cargo.userData.box.userData; tags.live.visible = tags.arrow.visible = i >= 5;   // ป้ายติดแล้วตั้งแต่ขั้น 6
       var act = ACTIONS[sh.act];
-      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: reduced ? 1 : u, t: sec, reduced: reduced });
+      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: reduced && hu == null ? 1 : u, t: sec, reduced: reduced });
+      // ภาพของเหตุการณ์เสี่ยง: สร้างใหม่เมื่อชนิดเปลี่ยน วางที่กล่อง
+      var cue = R.lastS ? riskCue(R.lastS) : null;
+      if (cue !== R.cueName) {
+        if (R.cue) { R.cue.parent && R.cue.parent.remove(R.cue); disposeGroup(R.cue); R.cue = null; }
+        if (cue) { R.cue = buildCue(cue); R.stationGroup.add(R.cue); }
+        R.cueName = cue;
+      }
+      if (R.cue) {
+        if (R.cue.parent !== R.stationGroup) R.stationGroup.add(R.cue);
+        R.cue.position.set(R.cargo.position.x, 0, R.cargo.position.z);
+        if (R.cue.userData.hand) R.cue.userData.hand.rotation.z = -now / 400;
+        R.cargo.visible = true;                                         // กล่องที่ค้างต้องมองเห็นเสมอ
+      }
     }
     // กล้อง: เลื่อนเข้าหามุมของช็อต / กลับมุมช็อตเมื่อผู้ชมปล่อยไว้นาน
     if (!R.gliding && idleReturnDue(R.lastInput, now, false)) { R.gliding = true; R.lastInput = null; }
@@ -6754,7 +6803,7 @@ var KoiScene = (function () {
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, camGlide: camGlide, glideK: glideK, IDLE_RETURN_MS: IDLE_RETURN_MS,
     idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
-    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS,
+    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
     loadModels: loadModels, cloneModel: cloneModel,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
