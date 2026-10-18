@@ -29,6 +29,10 @@ CC0 = ใช้ได้ทั้งงานเรียน งานส่ว�
 | `models/dof.glb` | `tools/blender/make_scenery.py` | อาคารด่านตรวจและกักกัน (ป้ายภาษาอังกฤษทั่วไป ไม่ใช่ตราหน่วยงานจริง) |
 | `models/trees.glb` | `tools/blender/make_scenery.py` | ต้นไม้ 2 แบบ |
 | `models/reefer.glb` | `tools/blender/make_reefer.py` | รถบรรทุกห้องเย็น (ไม่ระบุตัวเลขอุณหภูมิตามข้อตกลงของทีม) |
+| `models/japan.glb` | `tools/blender/make_culture.py` | บรรยากาศญี่ปุ่น: โทริอิ โคมหิน ซากุระ สน ฟูจิ รั้วไผ่ |
+| `models/thai.glb` | `tools/blender/make_culture.py` | บรรยากาศไทย: ศาลพระภูมิ ศาลาทรงไทย มะพร้าว กล้วย เจดีย์ เรือนไทย |
+
+แผนที่ในขั้น 9: Natural Earth 1:50m Admin 0 Countries (สาธารณสมบัติ) ตัดและย่อด้วย `tools/build-map.mjs` → `map/asia.json`
 
 โลโก้ที่หางเครื่องบิน: โลโก้สาขา Aviation Safety Management มหาวิทยาลัยศรีปทุม (`textures/aviation-logo.webp`) มาร์ชเป็นผู้ให้มาใช้ในงานนี้
 

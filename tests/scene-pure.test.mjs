@@ -105,7 +105,7 @@ test('base64ToBuffer: ถอดรหัสโมเดลได้ ขึ้น
 });
 
 test('placeholderSize: มีขนาดสำรองของทุกโมเดล (กว้าง/สูง/ยาว > 0)', () => {
-  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer']);
+  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai']);
   for (const n of SC.MODEL_NAMES) { const s = SC.placeholderSize(n); assert.ok(s.w > 0 && s.h > 0 && s.d > 0, n); }
 });
 
@@ -407,4 +407,27 @@ test('SHOTS ขั้น 9: มีมุมกล้องที่สอง (�
   assert.ok(Math.abs(s.cam2.t.y - SC.MAP_Y) < 2, 'กล้องต้องมองที่แผนที่');
   assert.equal(SC.flightPhases(s.camAt).mapView, true);
   assert.equal(SC.flightPhases(s.camAt - 0.02).mapView, false);
+});
+
+// ---- บรรยากาศประเทศ: ญี่ปุ่น (สถานี 1–3) · ไทย (สถานี 4–6) ----
+const segDist2 = (p, a, b) => { const dx = b.x - a.x, dz = b.z - a.z, L = dx * dx + dz * dz;
+  const t = L ? Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / L)) : 0; return Math.hypot(p.x - a.x - t * dx, p.z - a.z - t * dz); };
+test('DECOR: ของตกแต่งฝั่งญี่ปุ่นอยู่สถานี 1–3 และฝั่งไทยอยู่สถานี 4–6 ทุกสถานีมีของตกแต่ง', () => {
+  assert.equal(SC.DECOR.length, 6);
+  SC.DECOR.forEach((list, st) => {
+    assert.ok(list.length > 0, 'สถานี ' + (st + 1));
+    for (const d of list) assert.equal(d.model, st <= 2 ? 'japan' : 'thai', d.node + ' สถานี ' + (st + 1));
+  });
+});
+test('DECOR: ของตกแต่งไม่ขวางเส้นทางของกล่อง/รถ (ห่างเส้นทาง ≥ รัศมีของ + 1.2) — กันภาพเหลื่อมทับ', () => {
+  SC.DECOR.forEach((list, st) => {
+    const paths = SC.SHOTS.filter(s => s.st === st).map(s => s.path);
+    for (const d of list) {
+      if (d.bg) continue;                                                // ฉากหลังไกล ๆ (ภูเขา/เจดีย์)
+      for (const path of paths) for (let k = 1; k < path.length; k++) {
+        const dist = segDist2({ x: d.x, z: d.z }, path[k - 1], path[k]);
+        assert.ok(dist >= d.r + 1.2, d.node + ' ชิดเส้นทางสถานี ' + (st + 1) + ' (' + dist.toFixed(1) + ')');
+      }
+    }
+  });
 });
