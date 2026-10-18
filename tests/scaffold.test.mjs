@@ -104,3 +104,7 @@ test('เลย์เอาต์ B: วิธีใช้บอกคีย์�
 test('ไม่มี WebGL: การ์ดชื่อขั้นยังแสดงแบบคงที่ (มีสไตล์ #card.static)', () => {
   assert.match(readHtml(), /#card\.static\{[^}]*position:/);
 });
+
+test('เปลี่ยนสถานีแบบนุ่ม: ภาพจาง-ขึ้น (มี transition ของ opacity ที่ canvas)', () => {
+  assert.match(readHtml(), /#stage canvas\{[^}]*transition:opacity/);
+});

@@ -91,7 +91,9 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .layout{display:grid;gap:8px;min-width:0}
 #stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:14px;
   aspect-ratio:16/9;min-height:260px;overflow:hidden}
-#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;transition:opacity .35s ease}
+#stage canvas.switching{opacity:0;transition:none}
+@media (prefers-reduced-motion: reduce){#stage canvas{transition:none}}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
 #card{position:absolute;left:0;top:0;max-width:280px;background:var(--surface);color:var(--text);
@@ -5805,6 +5807,15 @@ var KoiScene = (function () {
     return { x: e.x, z: e.z };
   }
 
+  // ลำดับการจัดท่าของในฉากทุกขั้นของสถานีเดียวกัน (กันของค้างครึ่งทางเมื่อกดข้ามขั้น):
+  // ขั้นที่ผ่านแล้ว = ท่าจบ (u=1), ขั้นที่ยังไม่ถึง = ท่าเริ่ม (u=0), ขั้นปัจจุบันทำทีหลังสุดจึงชนะเสมอ
+  function poseOrder(i, u) {
+    var out = [];
+    SHOTS.forEach(function (sh, k) { if (k !== i && sh.st === SHOTS[i].st) out.push({ k: k, u: k < i ? 1 : 0 }); });
+    out.push({ k: i, u: u });
+    return out;
+  }
+
   /* ป้ายอธิบายของในฉาก (ไม่ใช่ป้ายของขั้น — ขั้นปัจจุบันบอกในการ์ดลอยแล้ว) */
   var SCENE_NOTES = [
     [{ x: -16, y: 3.5, z: -6, text: 'ฟาร์มโคอิพรีเมียม · ญี่ปุ่น' }],
@@ -5894,8 +5905,9 @@ var KoiScene = (function () {
   }
 
   // คุณภาพอัตโนมัติ: เฟรมต่อวินาทีต่ำกว่า 28 → ปิดเงาก่อน ถ้ายังช้าค่อยลดความละเอียดเหลือ 1 เท่า
-  function nextQuality(q, fps) {
-    if (fps >= 28) return { ratio: q.ratio, shadows: q.shadows };
+  // streak = จำนวนช่วงวัด (ช่วงละ 2 วินาที) ที่เฟรมตกติดกัน — ต้องตก 2 ช่วงติดจึงลด (สะดุดครั้งเดียวไม่นับ)
+  function nextQuality(q, fps, streak) {
+    if (fps >= 28 || (streak != null && streak < 2)) return { ratio: q.ratio, shadows: q.shadows };
     if (q.shadows) return { ratio: q.ratio, shadows: false };
     return { ratio: Math.min(q.ratio, 1), shadows: false };
   }
@@ -6763,8 +6775,12 @@ var KoiScene = (function () {
     controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.48;
     controls.minDistance = 6; controls.maxDistance = 70;
     var cargo = makeCargo(); scene.add(cargo);
+    // กล่องจำลอง (ไม่อยู่ในฉาก) ให้อนิเมชันของขั้นอื่นอ่าน/เขียนแทนกล่องจริง
+    var stub = new THREE.Object3D();
+    stub.userData = { tub: new THREE.Object3D(), box: new THREE.Object3D() };
+    stub.userData.box.userData = { live: new THREE.Object3D(), arrow: new THREE.Object3D() };
     R = {
-      canvas: canvas, renderer: renderer, scene: scene, camera: camera, controls: controls, sun: sun, cargo: cargo,
+      canvas: canvas, renderer: renderer, scene: scene, camera: camera, controls: controls, sun: sun, cargo: cargo, stub: stub,
       station: -1, stationGroup: null, overviewGroup: null, overview: false, ovKey: null,
       anim: { i: 0, t0: performance.now() }, camGoal: SHOTS[0].cam, gliding: true, lastInput: null,
       look: 'normal', quality: quality, frames: 0, fpsT0: performance.now(), last: performance.now(),
@@ -6814,9 +6830,12 @@ var KoiScene = (function () {
   function showStation(i) {
     if (!R || R.station === i) return;
     if (R.stationGroup) { R.scene.remove(R.stationGroup); disposeGroup(R.stationGroup); }
+    // เปลี่ยนสถานีแบบนุ่ม: ซ่อนภาพทันที แล้วค่อย ๆ จางขึ้นในเฟรมถัดไป (ไม่ตัดภาพกระชาก)
+    if (R.station >= 0) { R.canvas.classList.add('switching'); setTimeout(function () { if (R) R.canvas.classList.remove('switching'); }, 40); }
     R.stationGroup = buildStation(i);
     R.scene.add(R.stationGroup);
     R.station = i;
+    R.fpsT0 = clock(); R.frames = 0;                 // การสร้างฉากใหม่ทำให้สะดุดหนึ่งครั้ง ไม่นับเป็นเครื่องช้า
     R.cue = null; R.cueName = null;                 // ภาพเหตุการณ์อยู่ในกลุ่มเดิมที่ถูกล้างแล้ว
   }
 
@@ -6876,7 +6895,7 @@ var KoiScene = (function () {
 
   // วนวาดทุกเฟรม: ขยับของตามช็อต เลื่อนกล้อง ลดคุณภาพถ้าเครื่องช้า วางการ์ดลอย
   // นาฬิกาของฉาก (เลื่อนเวลาได้ด้วย debugAdvance ตอนตรวจในเบราว์เซอร์ที่ถูกซ่อน ซึ่งไม่วาดเฟรมเอง)
-  function clock() { return performance.now() + (R ? R.clockOffset : 0); }
+  function clock() { return R && R.fixedClock != null ? R.fixedClock : performance.now() + (R ? R.clockOffset : 0); }
   function loop() {
     if (!R) return;
     R.raf = requestAnimationFrame(loop);
@@ -6888,7 +6907,9 @@ var KoiScene = (function () {
     if (!R.ready || gap > 500) { R.frames = 0; R.fpsT0 = now; }
     R.frames++;
     if (now - R.fpsT0 >= 2000) {
-      var fps = R.frames * 1000 / (now - R.fpsT0), q = nextQuality(R.quality, fps);
+      var fps = R.frames * 1000 / (now - R.fpsT0);
+      R.slow = fps < 28 ? (R.slow || 0) + 1 : 0;
+      var q = nextQuality(R.quality, fps, R.slow);
       if (q.shadows !== R.quality.shadows) { R.renderer.shadowMap.enabled = q.shadows; R.sun.castShadow = q.shadows; }
       if (q.ratio !== R.quality.ratio) { R.renderer.setPixelRatio(q.ratio); resize(); }
       R.quality = q; R.frames = 0; R.fpsT0 = now;
@@ -6901,9 +6922,15 @@ var KoiScene = (function () {
       R.cargo.position.set(p.x, p.y, p.z);
       R.cargo.visible = true; R.cargo.userData.tub.visible = i < 3; R.cargo.userData.box.visible = i >= 3;
       var tags = R.cargo.userData.box.userData; tags.live.visible = tags.arrow.visible = i >= 5;   // ป้ายติดแล้วตั้งแต่ขั้น 6
-      var act = ACTIONS[sh.act];
+      // จัดท่าของในฉากทุกขั้นของสถานีนี้ (ขั้นอื่นใช้กล่องจำลอง R.stub จะได้ไม่ไปขยับกล่องจริง) แล้วขั้นปัจจุบันทำทีหลังสุด
       // ลดการเคลื่อนไหว: เวลา t ถูกตรึง (ปลาไม่ว่าย มือไม่โบก ไฟไม่วิ่ง)
-      if (act) act({ g: R.stationGroup, props: R.stationGroup.userData.props, cargo: R.cargo, u: u, t: reduced ? 0 : sec, reduced: reduced });
+      var props = R.stationGroup.userData.props, tt = reduced ? 0 : sec;
+      poseOrder(i, u).forEach(function (o) {
+        var fn = ACTIONS[SHOTS[o.k].act]; if (!fn) return;
+        var cg = R.cargo;
+        if (o.k !== i) { cg = R.stub; var sp = shotPose(o.k, o.u, false); cg.position.set(sp.x, sp.y, sp.z); }
+        fn({ g: R.stationGroup, props: props, cargo: cg, u: o.u, t: tt, reduced: reduced });
+      });
       // ภาพของเหตุการณ์เสี่ยง: สร้างใหม่เมื่อชนิดเปลี่ยน วางที่กล่อง
       var cue = R.lastS ? riskCue(R.lastS) : null;
       if (cue !== R.cueName) {
@@ -6941,8 +6968,14 @@ var KoiScene = (function () {
         var w = R.canvas.clientWidth, h = R.canvas.clientHeight;
         var pr = R.cargo.position.clone(); pr.y += 1.6; pr.project(R.camera);
         // เว้นแถบปุ่มด้านล่างเวที (ถ้าปุ่มอยู่บนภาพ) การ์ดจะได้ไม่ทับปุ่ม
-        var ctrl = document.getElementById('stage-ctrl'), reserve = ctrl && getComputedStyle(ctrl).position === 'absolute' ? ctrl.offsetHeight + 8 : 0;
-        var pos = cardPos((pr.x * 0.5 + 0.5) * w, (-pr.y * 0.5 + 0.5) * h, R.card.offsetWidth, R.card.offsetHeight, w, h - reserve);
+        // วัดขนาดการ์ด/แถบปุ่มทุก 15 เฟรม (การอ่านขนาดจากหน้าเว็บทุกเฟรมทำให้เบราว์เซอร์ต้องคำนวณเลย์เอาต์ใหม่ = กระตุก)
+        if (!R.cardSize || R.frames % 15 === 0) {
+          var ctrl = document.getElementById('stage-ctrl');
+          R.cardSize = { w: R.card.offsetWidth, h: R.card.offsetHeight,
+            reserve: ctrl && getComputedStyle(ctrl).position === 'absolute' ? ctrl.offsetHeight + 8 : 0 };
+        }
+        var reserve = R.cardSize.reserve;
+        var pos = cardPos((pr.x * 0.5 + 0.5) * w, (-pr.y * 0.5 + 0.5) * h, R.cardSize.w, R.cardSize.h, w, h - reserve);
         R.card.style.transform = 'translate(' + Math.round(pos.left) + 'px,' + Math.round(pos.top) + 'px)';
       }
     }
@@ -6962,7 +6995,7 @@ var KoiScene = (function () {
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, camGlide: camGlide, glideK: glideK, IDLE_RETURN_MS: IDLE_RETURN_MS,
     idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
-    pathPoint: pathPoint, shotPose: shotPose, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU, animU: animU, resumeT0: resumeT0,
+    pathPoint: pathPoint, shotPose: shotPose, poseOrder: poseOrder, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU, animU: animU, resumeT0: resumeT0,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize,
     loadModels: loadModels, cloneModel: cloneModel, koiBreed: koiBreed,
     riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
@@ -6972,7 +7005,10 @@ var KoiScene = (function () {
     // หลังเลื่อนเวลา คัดลอกภาพล่าสุดไปวางทับเวที (ภาพ WebGL ในแท็บที่ถูกซ่อนจะไม่อัปเดตบนจอ) — ใช้ตรวจเท่านั้น
     debugAdvance: function (sec) {
       if (!R) return;
-      for (var k = 0; k < sec * 30; k++) { R.clockOffset += 1000 / 30; frame(clock()); }
+      // นาฬิกาเดินทีละ 1/30 วินาทีพอดี (ไม่นับเวลาจริงที่ใช้คำนวณ) จะได้วัดความเร็วเฟรมได้ตรง
+      R.fixedClock = clock();
+      for (var k = 0; k < sec * 30; k++) { R.fixedClock += 1000 / 30; frame(R.fixedClock); }
+      R.clockOffset = R.fixedClock - performance.now(); R.fixedClock = null;
       var img = document.getElementById('debug-shot');
       if (!img) { img = document.createElement('img'); img.id = 'debug-shot'; img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none'; R.canvas.parentNode.insertBefore(img, R.canvas.nextSibling); }
       img.src = R.canvas.toDataURL();

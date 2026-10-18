@@ -294,3 +294,16 @@ test('koiBreed: เลือกสายพันธุ์ตามสี (ข�
   assert.equal(SC.koiBreed(0xd13b32), 'Koi_Kohaku');
   assert.equal(SC.koiBreed(0xf5c242), 'Koi_Ogon');
 });
+
+// ---- ความเสถียร: ของในฉากต้องอยู่ในท่าที่ถูกต้องเสมอ ไม่ว่าจะข้ามขั้นมาอย่างไร ----
+test('poseOrder: ทุกขั้นในสถานีถูกจัดท่า — ขั้นที่ผ่านแล้ว u=1, ขั้นที่ยังไม่ถึง u=0, ขั้นปัจจุบันทำทีหลังสุด', () => {
+  const list = plain(SC.poseOrder(3, 0.4));          // ขั้น 4 ของสถานี 1 (ขั้น 1–6)
+  assert.deepEqual(list, [{ k: 0, u: 1 }, { k: 1, u: 1 }, { k: 2, u: 1 }, { k: 4, u: 0 }, { k: 5, u: 0 }, { k: 3, u: 0.4 }]);
+  assert.deepEqual(plain(SC.poseOrder(8, 0.7)), [{ k: 8, u: 0.7 }]);   // สถานีที่มีขั้นเดียว
+});
+
+test('nextQuality: ลดคุณภาพเมื่อเฟรมตกติดกัน 2 ช่วงเท่านั้น (สะดุดครั้งเดียวตอนสร้างฉากใหม่ไม่นับ)', () => {
+  const q = { ratio: 2, shadows: true };
+  assert.deepEqual(plain(SC.nextQuality(q, 20, 1)), q);
+  assert.deepEqual(plain(SC.nextQuality(q, 20, 2)), { ratio: 2, shadows: false });
+});
