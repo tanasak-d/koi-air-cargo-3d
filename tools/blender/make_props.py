@@ -69,22 +69,37 @@ def warehouse(ox=0):
     CONC = mat('Dock', hexrgb(0xa9b0b8), 0.9)
     W, D, H = 12.0, 8.0, 6.0
     r = root('Warehouse'); r.location = (ox, 0, 0)
-    prim('cube', 'Shell', WALL, loc=(0, 0, H / 2), scale=(W / 2, D / 2, H / 2), parent=r)
+    DW, DH = 2.2, 3.8                                              # ครึ่งความกว้าง / ความสูงช่องประตู (รถลากเข้าได้)
+    INSIDE = mat('Inside', hexrgb(0x6c7584), 0.9)
+    # ผนัง: หลัง ซ้าย ขวา หลังคา + ผนังหน้า 3 ชิ้น (ซ้าย ขวา เหนือประตู) เว้นช่องประตูจริงให้รถเข้าได้
+    prim('cube', 'WallBack', WALL, loc=(0, D / 2 - 0.1, H / 2), scale=(W / 2, 0.1, H / 2), parent=r)
+    for s_ in (1, -1):
+        prim('cube', 'WallSide', WALL, loc=(s_ * (W / 2 - 0.1), 0, H / 2), scale=(0.1, D / 2, H / 2), parent=r)
+        prim('cube', 'WallFront', WALL, loc=(s_ * (W / 4 + DW / 2), -D / 2 + 0.1, H / 2), scale=((W / 2 - DW) / 2, 0.1, H / 2), parent=r)
+    prim('cube', 'WallLintel', WALL, loc=(0, -D / 2 + 0.1, (H + DH) / 2), scale=(DW, 0.1, (H - DH) / 2), parent=r)
+    prim('cube', 'Roof', WALL, loc=(0, 0, H - 0.1), scale=(W / 2, D / 2, 0.1), parent=r)
+    # ข้างใน: ผนังด้านในสีเข้ม (ดูเป็นห้องลึก) + ชั้นวางสินค้า 2 แถว
+    prim('cube', 'InsideBack', INSIDE, loc=(0, D / 2 - 0.25, H / 2), scale=(W / 2 - 0.25, 0.04, H / 2 - 0.15), parent=r)
+    for x in (-3.8, 3.8):
+        prim('cube', 'Rack', mat('Rack', hexrgb(0xd9823b), 0.6), loc=(x, 1.5, 1.6), scale=(1.2, 2.0, 0.05), parent=r)
+        prim('cube', 'Rack', mat('Rack', hexrgb(0xd9823b), 0.6), loc=(x, 1.5, 0.6), scale=(1.2, 2.0, 0.05), parent=r)
     # ผนังลอนเหล็ก: ซี่แนวตั้งด้านหน้าและด้านข้าง
     for i in range(int(W / 0.5) + 1):
         x = -W / 2 + i * 0.5
-        if abs(x) < 2.3: continue                                   # เว้นช่องประตู
+        if abs(x) < DW + 0.1: continue                              # เว้นช่องประตู
         prim('cube', 'Rib', RIB, loc=(x, -D / 2 - 0.03, H / 2), scale=(0.06, 0.03, H / 2), parent=r)
     for i in range(int(D / 0.5) + 1):
         y = -D / 2 + i * 0.5
         for s in (1, -1):
             prim('cube', 'Rib', RIB, loc=(s * (W / 2 + 0.03), y, H / 2), scale=(0.03, 0.06, H / 2), parent=r)
     prim('cube', 'RoofTrim', TRIM, loc=(0, 0, H + 0.2), scale=(W / 2 + 0.3, D / 2 + 0.3, 0.2), parent=r)
-    prim('cube', 'Base', CONC, loc=(0, 0, 0.15), scale=(W / 2 + 0.05, D / 2 + 0.05, 0.15), parent=r)
-    # ประตูม้วน (ชื่อ Door) + ร่องบานเกล็ด + กันสาด
-    door = prim('cube', 'Door', DOOR, loc=(0, -D / 2 - 0.04, 1.9), scale=(2.1, 0.04, 1.9), parent=r)
+    prim('cube', 'Base', CONC, loc=(0, 0, 0.02), scale=(W / 2 + 0.05, D / 2 + 0.05, 0.02), parent=r)
+    # ประตูม้วน: ตัวแม่ชื่อ RollerDoor จุดหมุนอยู่ "ขอบบน" ของประตู — เว็บย่อความสูง (scale) เพื่อม้วนประตูขึ้น
+    roller = empty('RollerDoor', r, loc=(0, -D / 2 - 0.04, DH))
+    prim('cube', 'Door', DOOR, loc=(0, 0, -DH / 2), scale=(DW, 0.04, DH / 2), parent=roller)
     for k in range(12):
-        prim('cube', 'DoorSlat', SLAT, loc=(0, -D / 2 - 0.09, 0.3 + k * 0.3), scale=(2.1, 0.01, 0.02), parent=r)
+        prim('cube', 'DoorSlat', SLAT, loc=(0, -0.05, -DH + 0.3 + k * 0.3), scale=(DW, 0.01, 0.02), parent=roller)
+    prim('cube', 'DoorBox', TRIM, loc=(0, -D / 2 - 0.15, DH + 0.15), scale=(DW + 0.1, 0.15, 0.15), parent=r)
     prim('cube', 'Canopy', TRIM, loc=(0, -D / 2 - 0.8, 4.2), rot=(math.radians(-8), 0, 0), scale=(2.8, 0.85, 0.06), parent=r)
     # หน้าต่างแถบด้านบน + ป้ายชื่อ
     for x in (-4.4, -3.2, 3.2, 4.4):
@@ -92,7 +107,7 @@ def warehouse(ox=0):
     prim('cube', 'SignBoard', TRIM, loc=(0, -D / 2 - 0.08, 5.2), scale=(3.2, 0.04, 0.45), parent=r)
     text('CARGO TERMINAL - AVI', 0.42, WHITE, (0, -D / 2 - 0.13, 5.2), (math.radians(90), 0, 0), r, name='SignText')
     # เสากันชนสีเหลืองหน้าประตู + ช่องระบายอากาศบนหลังคา
-    for x in (-2.5, 2.5):
+    for x in (-2.7, 2.7):
         prim('cylinder', 'Bollard', YEL, loc=(x, -D / 2 - 0.35, 0.5), vertices=10, radius=0.12, depth=1.0, parent=r)
     for x in (-3.5, 0, 3.5):
         prim('cylinder', 'Vent', RIB, loc=(x, 1.5, H + 0.6), vertices=10, radius=0.35, depth=0.5, parent=r)

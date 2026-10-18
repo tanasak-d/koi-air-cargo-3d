@@ -264,13 +264,13 @@ const heldAt = (sc) => { const S = L.newState(sc); while (L.canAdvance(S)) L.nex
 test('animU: ค้างที่ด่าน → หยุดที่จังหวะของด่าน; reduced-motion ไปที่จังหวะนั้นทันที', () => {
   const S = heldAt(3), dur = SC.SHOTS[S.idx].dur;
   assert.equal(SC.animU(S, S.idx, 1, dur, false), 1 / dur);
-  assert.equal(SC.animU(S, S.idx, 100, dur, false), 0.65);
-  assert.equal(SC.animU(S, S.idx, 0, dur, true), 0.65);
+  assert.equal(SC.animU(S, S.idx, 100, dur, false), 0.55);
+  assert.equal(SC.animU(S, S.idx, 0, dur, true), 0.55);
 });
 test('animU: ตอบผิด (สูญเสีย) อนิเมชันยังหยุดที่ด่าน ไม่เล่นต่อเหมือนส่งสำเร็จ', () => {
   const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => !o.good));
   assert.equal(S.end, 'loss');
-  assert.equal(SC.animU(S, S.idx, 100, SC.SHOTS[S.idx].dur, false), 0.65);
+  assert.equal(SC.animU(S, S.idx, 100, SC.SHOTS[S.idx].dur, false), 0.55);
 });
 test('animU: แก้ถูกแล้วเล่นต่อจนจบ; reduced-motion = 1; ขั้นอื่นไม่ถูกจำกัด', () => {
   const S = heldAt(3); L.verify(S); L.correct(S, D.SCENARIOS[3].opts.findIndex(o => o.good));
@@ -306,4 +306,71 @@ test('nextQuality: ลดคุณภาพเมื่อเฟรมตกต�
   const q = { ratio: 2, shadows: true };
   assert.deepEqual(plain(SC.nextQuality(q, 20, 1)), q);
   assert.deepEqual(plain(SC.nextQuality(q, 20, 2)), { ratio: 2, shadows: false });
+});
+
+// ---- ขั้น 9: ต้องขนของขึ้นเครื่องให้เสร็จก่อนเครื่องบินออก (มาร์ชพบว่าเครื่องออกก่อนของขึ้น) ----
+test('loadPhases: เครื่องบินเริ่มเคลื่อนก็ต่อเมื่อกล่องถึงประตูแล้ว เข้าห้องสินค้าแล้ว และประตูปิดแล้ว', () => {
+  for (let u = 0; u <= 1.0001; u += 0.01) {
+    const p = SC.loadPhases(u);
+    if (p.fly > 0) {
+      assert.equal(p.e, 1, 'u=' + u.toFixed(2));
+      assert.equal(p.inHold, true, 'u=' + u.toFixed(2));
+      assert.equal(p.doorOpen, false, 'u=' + u.toFixed(2));
+    }
+    if (p.inHold) assert.equal(p.e, 1, 'กล่องหายเข้าเครื่องก่อนถึงประตู u=' + u.toFixed(2));
+  }
+  assert.equal(SC.loadPhases(0).fly, 0);
+  assert.equal(SC.loadPhases(1).fly, 1);
+});
+
+test('loadPhases: เหตุการณ์ NOTOC ค้างที่ด่านก่อนกล่องเข้าห้องสินค้า (กล่องยังมองเห็นอยู่ที่ประตู)', () => {
+  const S = L.newState(3); while (L.canAdvance(S)) L.next(S);
+  const p = SC.loadPhases(SC.holdU(S));
+  assert.equal(p.inHold, false);
+  assert.ok(p.e > 0.9);
+});
+
+// ---- ขั้น 11–12: โต๊ะ เอกสาร และกล่องต้องวางพอดี ไม่เหลื่อมกัน (มาร์ชพบเอกสารซ้อนโต๊ะ/กล่อง) ----
+const rect = (x, z, w, d) => ({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 });
+const inside = (a, b) => a.x0 >= b.x0 && a.x1 <= b.x1 && a.z0 >= b.z0 && a.z1 <= b.z1;
+const overlap = (a, b) => a.x0 < b.x1 && a.x1 > b.x0 && a.z0 < b.z1 && a.z1 > b.z0;
+test('DOF_LAYOUT: เอกสารทุกใบอยู่บนโต๊ะทั้งใบ และไม่ซ้อนกับกล่องปลาที่วางบนโต๊ะ', () => {
+  const Lay = SC.DOF_LAYOUT;
+  for (const [deskName, step, docs] of [['counter', 10, ['docA', 'docB']], ['order', 11, ['order']]]) {
+    const d = Lay.desks[deskName], desk = rect(d.x, d.z, d.w, d.d);
+    const e = SC.SHOTS[step].path.at(-1), box = rect(e.x, e.z, 1.65, 1.15);
+    assert.ok(inside(box, desk), 'กล่องไม่อยู่บนโต๊ะ ' + deskName);
+    for (const n of docs) {
+      const p = Lay.docs[n], doc = rect(p.x, p.z, 0.7, 0.95);
+      assert.ok(inside(doc, desk), n + ' ล้นโต๊ะ');
+      assert.ok(!overlap(doc, box), n + ' ซ้อนกล่อง');
+    }
+  }
+});
+
+// ---- ขั้น 11: รถตู้ถอยหลังเข้ามาจอดหน้าเคาน์เตอร์ แล้วจึงยกกล่องออก (มาร์ชพบว่ากล่องไม่ได้อยู่ในรถ) ----
+test('vanPhases: กล่องอยู่ในรถ (มองไม่เห็น) ตลอดที่รถยังเคลื่อน รถหันท้ายเข้าเคาน์เตอร์และจอดก่อนชนโต๊ะ', () => {
+  const desk = SC.DOF_LAYOUT.desks.counter, deskLeft = desk.x - desk.w / 2;
+  let prevX = -Infinity;
+  for (let u = 0; u <= 1.0001; u += 0.01) {
+    const v = SC.vanPhases(u);
+    assert.ok(v.x >= prevX - 1e-9, 'รถต้องถอยเข้าทางเดียว (x เพิ่มขึ้น)'); prevX = v.x;
+    const moving = SC.vanPhases(Math.min(1, u + 0.01)).x > v.x + 1e-6;
+    if (moving) assert.equal(v.cargoInVan, true, 'กล่องออกจากรถตอนรถยังวิ่ง u=' + u.toFixed(2));
+    assert.ok(v.x + 2.3 <= deskLeft - 0.3, 'ท้ายรถชนโต๊ะ u=' + u.toFixed(2));
+  }
+  assert.equal(SC.vanPhases(0).cargoInVan, true);
+  assert.equal(SC.vanPhases(1).cargoInVan, false);
+  assert.equal(SC.vanPhases(0).facing, Math.PI);              // หันหัวออก (ท้ายรถเข้าหาเคาน์เตอร์)
+});
+
+// ---- ขั้น 10: ประตูคลัง BKK เปิดก่อน แล้วรถลากพากล่องเข้าไปข้างใน (มาร์ชขอ) ----
+test('bkkPhases: ประตูเปิดสุดก่อนรถลากถึงแนวผนังหน้า และเส้นทางจบข้างในคลัง', () => {
+  const path = SC.SHOTS[9].path, FRONT_Z = -6;          // คลังอยู่ที่ z = -10 ลึก 8 → ผนังหน้าอยู่ที่ z = -6
+  assert.ok(path.at(-1).z < FRONT_Z - 1.5, 'เส้นทางต้องเข้าไปในคลัง');
+  for (let u = 0; u <= 1.0001; u += 0.01) {
+    const ph = SC.bkkPhases(u), p = SC.pathPoint(path, ph.e);
+    if (p.z < FRONT_Z + 2.5) assert.equal(ph.door, 1, 'รถถึงประตูแต่ประตูยังไม่เปิดสุด u=' + u.toFixed(2));
+  }
+  assert.equal(SC.bkkPhases(0).door, 0);
 });
