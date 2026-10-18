@@ -10,7 +10,7 @@ WHITE = mat('white', hexrgb(0xf4f6f8), 0.35)
 BELLY = mat('belly', hexrgb(0xb9c0c9), 0.5)
 DARK = mat('window', hexrgb(0x1d2b3a), 0.2)
 GREY = mat('metal', hexrgb(0x9aa3ae), 0.35, 0.6)
-RED = mat('tail', hexrgb(0xd9423e), 0.4)
+RED = mat('tail', hexrgb(0xf4f6f8), 0.35)          # หางสีขาว เป็นพื้นให้โลโก้สาขา
 TYRE = mat('tyre', hexrgb(0x22262c), 0.9)
 DOOR = mat('door', hexrgb(0x5d6876), 0.5)
 
@@ -109,6 +109,37 @@ for f in [(0, 2, 6, 4), (1, 5, 7, 3), (0, 4, 5, 1), (2, 3, 7, 6), (4, 6, 7, 5), 
 bm.normal_update()
 obj_from_bmesh('Fin', bm, RED, parent=plane)
 
+# โลโก้สาขา Aviation Safety Management (ม.ศรีปทุม) ที่หางทั้งสองข้าง — แผ่นบางติดผิวหาง ใช้ภาพ assets/textures/aviation-logo.webp
+LOGO_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'assets', 'textures', 'aviation-logo.webp')
+logo_img = bpy.data.images.load(os.path.abspath(LOGO_PATH))
+logo_img.scale(1024, 1024)                                   # ย่อภาพ ไฟล์เล็กลง (บนหางมองเห็นพอ)
+# ภาพต้นฉบับมีพื้นโปร่งใส: เทพื้นขาวลงไปแทน (JPEG ไม่มีความโปร่งใส ส่วนโปร่งใสจะกลายเป็นสีดำ)
+import numpy as np
+px = np.empty(1024 * 1024 * 4, dtype=np.float32); logo_img.pixels.foreach_get(px)
+px = px.reshape(-1, 4); a_ = px[:, 3:4]
+px[:, :3] = px[:, :3] * a_ + (1.0 - a_); px[:, 3] = 1.0
+logo_img.pixels.foreach_set(px.ravel())
+LOGO = bpy.data.materials.new('TailLogo'); LOGO.use_nodes = True
+tex = LOGO.node_tree.nodes.new('ShaderNodeTexImage'); tex.image = logo_img
+LOGO.node_tree.links.new(tex.outputs['Color'], LOGO.node_tree.nodes['Principled BSDF'].inputs['Base Color'])
+LOGO.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.4
+# ส่วนของภาพที่มีโลโก้ (ภาพ 2000×2000 พื้นขาว โลโก้อยู่ช่วงกลาง) เป็นพิกัด UV: u ซ้าย→ขวา, v ล่าง→บน
+U0, U1, V0, V1 = 0.005, 0.99, 0.29, 0.76
+LW, LH = 3.1, 3.1 * (V1 - V0) / (U1 - U0)                     # ขนาดบนหาง รักษาสัดส่วนภาพ
+LX, LZ = X0 + 3.3, CY + 2.5                                  # ตำแหน่งกลางโลโก้บนหาง
+for side in (-1, 1):                                         # -1 = ด้าน -Y (ฝั่งกล้องในเว็บ), +1 = อีกด้าน
+    bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap')
+    y = side * (th + 0.012)
+    # ด้านตรงข้ามต้องกลับซ้ายขวา ไม่งั้นตัวอักษรกลับด้าน
+    xs = (LX - LW / 2, LX + LW / 2) if side == -1 else (LX + LW / 2, LX - LW / 2)
+    vs = [bm.verts.new((xs[0], y, LZ - LH / 2)), bm.verts.new((xs[1], y, LZ - LH / 2)),
+          bm.verts.new((xs[1], y, LZ + LH / 2)), bm.verts.new((xs[0], y, LZ + LH / 2))]
+    f = bm.faces.new(vs if side == 1 else list(reversed(vs)))
+    corners = {vs[0]: (U0, V0), vs[1]: (U1, V0), vs[2]: (U1, V1), vs[3]: (U0, V1)}
+    for lp in f.loops: lp[uv].uv = corners[lp.vert]
+    bm.normal_update()
+    obj_from_bmesh('TailLogo', bm, LOGO, parent=plane)
+
 # ล้อ: ล้อหน้า 2 ล้อ, ล้อหลัก 2 ชุด ชุดละ 4 ล้อ
 def gear(x, y, wheels):
     prim('cylinder', 'Strut', GREY, loc=(x, y, 0.95), vertices=8, radius=0.09, depth=1.5, parent=plane)
@@ -123,3 +154,7 @@ prim('cube', 'HoldDoor', DOOR, loc=(8.0, -R * 0.99, CY - 0.75), rot=(math.radian
 
 export_glb('airliner.glb')
 render_preview('airliner.png', cam_loc=(26, -30, 14), target=(1, 0, 2.5), lens=45)
+# ภาพใกล้หาง ไว้ตรวจโลโก้
+bpy.context.scene.camera.location = (-6, -15, 7); bpy.data.objects['tgt'].location = (-9, 0, 5.5)
+bpy.context.scene.render.filepath = os.path.join(os.path.dirname(bpy.context.scene.render.filepath), 'airliner_tail.png')
+bpy.ops.render.render(write_still=True)

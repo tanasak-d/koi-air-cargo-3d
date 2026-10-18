@@ -85,7 +85,8 @@ def export_glb(filename):
     os.makedirs(MODELS, exist_ok=True)
     path = os.path.join(MODELS, filename)
     bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=False,
+    # ภาพ texture (เช่น โลโก้) แปลงเป็น JPEG — Three.js r128 อ่าน webp ใน glTF ไม่ได้ และ JPEG ไฟล์เล็ก
+    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', use_selection=False, export_image_format='JPEG',
                               export_apply=True, export_yup=True, export_cameras=False, export_lights=False)
     print('EXPORTED', path, os.path.getsize(path))
     return path

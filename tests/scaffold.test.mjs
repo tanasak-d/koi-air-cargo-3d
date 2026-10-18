@@ -81,7 +81,7 @@ test('ฝัง addons: GLTFLoader และ OrbitControls อยู่ในบ
 
 test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวที่ถอดรหัสแล้วขึ้นต้นด้วย glTF และมี colormap', () => {
   const ctx = loadBlocks(['koi-assets']);
-  for (const n of ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees']) {
+  for (const n of ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer']) {
     const head = Buffer.from(ctx.KoiAssets.models[n], 'base64').subarray(0, 4).toString('latin1');
     assert.equal(head, 'glTF', n);
   }

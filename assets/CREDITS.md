@@ -28,6 +28,11 @@ CC0 = ใช้ได้ทั้งงานเรียน งานส่ว�
 | `models/farmhouse.glb` | `tools/blender/make_scenery.py` | บ้านฟาร์มแบบญี่ปุ่น (ฟาร์มผู้ส่งและฟาร์มบริษัท) |
 | `models/dof.glb` | `tools/blender/make_scenery.py` | อาคารด่านตรวจและกักกัน (ป้ายภาษาอังกฤษทั่วไป ไม่ใช่ตราหน่วยงานจริง) |
 | `models/trees.glb` | `tools/blender/make_scenery.py` | ต้นไม้ 2 แบบ |
+| `models/reefer.glb` | `tools/blender/make_reefer.py` | รถบรรทุกห้องเย็น (ไม่ระบุตัวเลขอุณหภูมิตามข้อตกลงของทีม) |
+
+โลโก้ที่หางเครื่องบิน: โลโก้สาขา Aviation Safety Management มหาวิทยาลัยศรีปทุม (`textures/aviation-logo.webp`) มาร์ชเป็นผู้ให้มาใช้ในงานนี้
+
+เปิดดูโมเดลทั้งหมดใน Blender: รัน `tools/blender/make_showcase.py` จะได้ไฟล์ `assets/koi-models.blend` (ไม่เก็บลง git)
 
 ภาพตัวอย่างของแต่ละโมเดลอยู่ใน `previews/` สร้างใหม่ได้ด้วยคำสั่ง (แล้วรัน `npm run inline` เพื่อฝังลงไฟล์เว็บ):
 
