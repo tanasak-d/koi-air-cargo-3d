@@ -63,19 +63,20 @@ test('renderEnd: กรณีสูญเสีย มีข้อความ�
   assert.equal(UI.renderEnd(L.newState(0)), '');
 });
 
-test('renderTab: ความเสี่ยงของขั้นปัจจุบัน, ใคร/ทำอะไร, เอกสาร, 4-Flow', () => {
+test('renderFacts/renderMore (V6 แทนแท็บ): ความเสี่ยง, ใคร/ทำอะไร, เอกสาร, 4-Flow', () => {
   const S = L.newState(0); L.goTo(S, 3); // ขั้น 4 บรรจุถุง
-  assert.match(UI.renderTab('risk', S), /ถุงรั่ว/);
-  assert.match(UI.renderTab('who', S), /ฟาร์มผู้ขาย/);
-  assert.match(UI.renderTab('what', S), /1:2/);
-  assert.match(UI.renderTab('docs', S), /Packing list/);
-  const flow = UI.renderTab('flow', S);
+  const facts = UI.renderFacts(S);
+  assert.match(facts, /ถุงรั่ว/);
+  assert.match(facts, /ฟาร์มผู้ขาย/);
+  assert.match(facts, /1:2/);
+  assert.match(facts, /Packing list/);
+  const flow = UI.renderMore(S);
   assert.equal(count(flow, /data-lane="/g), 4);
 });
 
-test('renderTab flow: เลนที่มีปัญหาแสดง ✕ ไม่ใช่สีอย่างเดียว', () => {
+test('renderMore 4-Flow: เลนที่มีปัญหาแสดง ✕ ไม่ใช่สีอย่างเดียว', () => {
   const S = walk(L.newState(1));
-  const flow = UI.renderTab('flow', S);
+  const flow = UI.renderMore(S);
   assert.match(flow, /✕/);
   assert.match(flow, /✓/);
 });
@@ -84,7 +85,7 @@ test('ข้อมูลที่มี HTML ถูก escape', () => {
   const f = fresh();
   f.D.STEPS[0].name = '<script>alert(1)</script>';
   const S = f.L.newState(0);
-  const h = f.UI.renderTimeline(S) + f.UI.renderTab('what', S) + f.UI.renderCard(S);
+  const h = f.UI.renderTimeline(S) + f.UI.renderFacts(S) + f.UI.renderCard(S);
   assert.doesNotMatch(h, /<script>alert/);
   assert.match(h, /&lt;script&gt;/);
 });
@@ -248,13 +249,6 @@ test('renderStatus: แถบบนบอกสถานะการขนส่
   L.verify(held); L.correct(held, D.SCENARIOS[2].opts.findIndex(o => !o.good));
   assert.match(UI.renderStatus(held), /✕ สูญเสีย/);
   assert.match(UI.renderStatus(walk(L.newState(0))), /✓ ถึงมือผู้รับ/);
-});
-
-test('renderStationBadge: ป้ายบนภาพบอก "สถานี k / 6" และชื่อสถานี', () => {
-  const S = L.newState(0); L.goTo(S, 8);
-  const h = UI.renderStationBadge(S);
-  assert.match(h, /สถานี 3 \/ 6/);
-  assert.match(h, /บนเที่ยวบิน JL707/);
 });
 
 test('renderStageControls V4: มีแถบความคืบหน้าของขั้น (ฉาก 3 มิติเติมความยาวเอง)', () => {

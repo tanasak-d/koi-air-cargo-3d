@@ -91,7 +91,7 @@ test('ฝังโมเดล: KoiAssets มีโมเดล 4 ตัวท�
 // ---- รุ่น 2 Task 5: เลย์เอาต์ B ----
 test('เลย์เอาต์ B: มีเวที (การ์ดลอย ปุ่มบนโมเดล เมนูเหตุการณ์) และเส้นเวลา; ไม่เหลือแถบสถานี/แผงขั้นตอนเดิม', () => {
   const html = readHtml();
-  for (const id of ['stage', 'card', 'stage-ctrl', 'risk', 'timeline', 'tabs']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const id of ['stage', 'card', 'stage-ctrl', 'risk', 'timeline', 'facts']) assert.match(html, new RegExp('id="' + id + '"'), id);
   for (const id of ['strip', 'steps', 'controls']) assert.doesNotMatch(html, new RegExp('id="' + id + '"'), id);
 });
 
@@ -117,5 +117,5 @@ test('ฝังแผนที่: KoiAssets.map มีประเทศญี�
 
 test('V4: มีแถบบน (สถานะการขนส่ง) แผงติดตามด้านข้าง และป้ายสถานีบนภาพ', () => {
   const html = readHtml();
-  for (const id of ['topbar', 'status', 'panel', 'station-badge']) assert.match(html, new RegExp('id="' + id + '"'), id);
+  for (const id of ['topbar', 'status', 'panel', 'route']) assert.match(html, new RegExp('id="' + id + '"'), id);
 });

@@ -95,11 +95,6 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 #stage canvas.switching{opacity:0;transition:none}
 @media (prefers-reduced-motion: reduce){#stage canvas{transition:none}}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
-/* ป้ายสถานีมุมซ้ายบนของภาพ */
-.station-badge{position:absolute;left:12px;top:12px;background:var(--surface);border:1px solid var(--line);border-radius:14px;
-  padding:6px 12px;box-shadow:0 4px 14px rgba(15,28,46,.12);pointer-events:none;max-width:calc(100% - 200px)}
-.station-badge small{display:block;color:var(--muted);font-size:.78rem}
-.station-badge b{font-size:.98rem}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
 #card{position:absolute;left:0;top:0;max-width:300px;background:var(--surface);color:var(--text);
   border:2px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
@@ -129,14 +124,10 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   box-shadow:0 8px 24px rgba(15,28,46,.08)}
 .panel-inner{position:absolute;inset:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 /* จอกว้าง: ข้อมูลขั้นอยู่บนสุดของแผงเสมอ เลื่อนเฉพาะเส้นเวลา (ไม่งั้นพอเลื่อนหาขั้นปัจจุบัน ข้อมูลจะหลุดจากจอ) */
-.panel-inner #tabs{flex:0 1 auto;max-height:60%;overflow:auto}
+.panel-inner #facts{flex:0 1 auto;max-height:62%;overflow:auto}
 .panel-inner #timeline{flex:1 1 0;min-height:120px;overflow:auto}
 .panel-title{margin:0;font-size:.9rem;color:var(--muted);font-weight:600}
-#tabs{min-width:0;border:1px solid var(--accent);border-radius:14px;padding:10px 12px;background:var(--soft)}
 .step-title{margin:0 0 6px;font-size:1rem}
-.tabbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.tabbar button{min-height:32px;padding:4px 12px;font-size:.88rem}
-.tabbar button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 /* เส้นเวลาแนวตั้ง 17 ขั้น (แบบหน้าติดตามพัสดุ): จุด ✓ ผ่านแล้ว · ชมพู = ตอนนี้ */
 #timeline{display:grid;gap:2px;min-width:0}
 .tl-group{display:grid;gap:2px}
@@ -181,7 +172,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 @media (max-width:1000px){
   .layout{grid-template-columns:minmax(0,1fr)}
   .panel-inner{position:static;display:grid}
-  .panel-inner #tabs,.panel-inner #timeline{max-height:none;overflow:visible}
+  .panel-inner #facts,.panel-inner #timeline{max-height:none;overflow:visible}
 }
 @media (max-width:560px){
   #app{padding:8px 16px 24px}
@@ -191,8 +182,6 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #stage canvas{aspect-ratio:4/3;height:auto}
   .stage-ctrl{position:static;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
   /* จอมือถือ: ป้ายสถานีย่อเหลือ "สถานี k / 6" (ชื่อสถานีมีในเส้นเวลาใต้ภาพแล้ว) ไม่ชนปุ่มเหตุการณ์ */
-  .station-badge{left:8px;top:8px;padding:4px 10px}
-  .station-badge b{display:none}
   .risk{right:8px;top:8px}
   .risk-menu summary{padding:4px 10px;font-size:.85rem}
   #card{max-width:200px;font-size:.82rem}
@@ -209,8 +198,29 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .muted{color:var(--muted)}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
 .badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.9rem}
-.tabbody h3{margin:8px 0 2px;font-size:1rem}
-.tabbody p,.tabbody ul{margin:0 0 6px}
+/* ---- V6 การ์ดข้อมูลแบบไอคอน ---- */
+#facts{min-width:0;display:grid;gap:10px;align-content:start}
+.eyebrow{margin:0;font-size:.78rem;color:var(--muted);font-weight:700;letter-spacing:.02em}
+.step-title{margin:0;font-size:1.15rem;line-height:1.35}
+.times{margin:0;display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
+.ico{width:16px;height:16px;flex:none}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fact{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:8px;align-items:flex-start;min-width:0}
+.fact.wide{grid-column:1/-1}
+.fact .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--text)}
+.fact.risk .ic{color:var(--warn)}
+.fact small{display:block;font-size:.75rem;color:var(--muted)}
+.fact b{display:block;font-size:.9rem;line-height:1.4;font-weight:600}
+.meter{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.meter-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.85rem}
+.meter-top b{font-variant-numeric:tabular-nums}
+.meter-bar{height:8px;border-radius:4px;background:var(--soft);margin-top:8px;overflow:hidden}
+.meter-bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+.meter.over .meter-bar i{background:var(--bad)}
+.more{border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.more summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.more h3{margin:8px 0 2px;font-size:.95rem}
+.more p,.more ul{margin:0 0 6px}
 .lanes{list-style:none;padding:0}
 .lanes li{margin-bottom:6px}
 abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
@@ -222,6 +232,27 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 </style>
 </head>
 <body>
+<!-- ไอคอนเส้นเดียวกันทั้งชุด (เรียกใช้ด้วย <use href="#i-ชื่อ">) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-plane" viewBox="0 0 24 24"><path d="M2 16l20-6-20-6 3 6-3 6zM5 10h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-farm" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9H3z M9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4 M12 11v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 24 24"><path d="M2 12c3-5 9-6 14-3l5-3v12l-5-3c-5 3-11 2-14-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="8" cy="11" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M7 11V5a1.5 1.5 0 013 0v5 M10 10V4a1.5 1.5 0 013 0v6 M13 10V5a1.5 1.5 0 013 0v6 M16 11V8a1.5 1.5 0 013 0v6c0 4-3 7-7 7s-6-2-7-5l-2-4a1.5 1.5 0 012.5-1.5L7 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z M14 3v4h4 M9 12h6 M9 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z M12 10v5 M12 18v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></symbol>
+  <symbol id="i-screen" viewBox="0 0 24 24"><path d="M3 5h18v11H3z M8 20h8 M12 16v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14A8 8 0 0110 4a8 8 0 1010 10z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4 M12 17v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7z M14 5h3v14h-3z" fill="currentColor"/></symbol>
+</svg>
 <div id="app">
   <header id="topbar" class="topbar">
     <div class="brandmark" aria-hidden="true">✈</div>
@@ -251,7 +282,6 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <main class="layout">
     <section id="stage" aria-label="ฉาก 3 มิติของขั้นปัจจุบัน">
       <canvas id="c" aria-label="ภาพ 3 มิติ"></canvas>
-      <div id="station-badge" class="station-badge"></div>
       <div id="card" aria-live="polite"></div>
       <div id="stage-ctrl" class="stage-ctrl"></div>
       <div id="risk" class="risk"></div>
@@ -259,7 +289,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
     <aside id="panel" class="panel" aria-label="ติดตามการขนส่ง">
       <div class="panel-inner">
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
-        <section id="tabs" aria-live="polite"></section>
+        <section id="facts" aria-live="polite"></section>
         <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
       </div>
     </aside>
@@ -5585,13 +5615,6 @@ var KoiUI = (function () {
     return '<span class="st-ok">✓ สถานะปกติ</span>';
   }
 
-  // ป้ายสถานีมุมซ้ายบนของภาพ: "สถานี k / 6" + ชื่อสถานี
-  function renderStationBadge(S) {
-    var k = L.stationOf(S.idx), st = D.STATIONS[k];
-    if (S.overview) return '<small>ภาพรวม</small><b>ทั้งเส้นทาง ญี่ปุ่น → ไทย</b>';
-    return '<small>สถานี ' + (k + 1) + ' / ' + D.STATIONS.length + '</small><b>' + esc(st.name) + '</b>';
-  }
-
   // การ์ดลอยบนภาพ 3 มิติ: ขั้นอะไร ใครทำ (ค้างที่ด่าน = ✕ HOLD)
   function renderCard(S) {
     var s = D.STEPS[S.idx];
@@ -5611,40 +5634,46 @@ var KoiUI = (function () {
     return out;
   }
 
-  var TAB_NAMES = [['who', 'ใคร'], ['what', 'ทำอะไร'], ['docs', 'เอกสาร'], ['risk', 'ความเสี่ยง'], ['flow', '4-Flow']];
-  function renderTabBar(tab) {
-    return '<div class="tabbar" role="tablist">' + TAB_NAMES.map(function (t) {
-      return '<button type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
-    }).join('') + '</div>';
+  // ไอคอนเส้นเดียวกันทั้งชุด (นิยามเป็น <symbol> ไว้ต้น <body>)
+  function icon(name) { return '<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-' + name + '"/></svg>'; }
+
+  // การ์ดข้อมูลของขั้นปัจจุบัน (V6 แทนแท็บ): หัวการ์ด + เวลา + 4 การ์ด ใครทำ/ทำอะไร/เอกสาร/ความเสี่ยง + มาตรวัดอายุถุง
+  function renderFacts(S) {
+    var s = D.STEPS[S.idx], k = L.stationOf(S.idx);
+    var fact = function (cls, ic, label, body) {
+      return '<div class="fact' + cls + '"><span class="ic">' + icon(ic) + '</span><div><small>' + label + '</small><b>' + body + '</b></div></div>';
+    };
+    var out = '<p class="eyebrow">ขั้นที่ ' + s.n + ' · สถานี ' + (k + 1) + ' ' + esc(D.STATIONS[k].label) + '</p>' +
+      '<h2 class="step-title">' + esc(s.name) + '</h2>' +
+      '<p class="times">' + icon('clock') + ' ' + esc(L.stepTimeLabel(S.idx, S)) + '</p>' +
+      '<div class="facts">' +
+      fact(' wide', 'user', 'ใครทำ', renderGlossary(s.who)) +
+      fact(' wide', 'hand', 'ทำอะไร', renderGlossary(s.what)) +
+      fact('', 'doc', 'เอกสาร', s.docs.map(renderGlossary).join('<br>')) +
+      fact(' risk', 'alert', 'ความเสี่ยง', renderGlossary(s.risk)) + '</div>';
+    var age = L.bagAgeMin(S);
+    if (age != null) {
+      // มาตรวัดอายุปลาในถุง เทียบเพดาน 24 ชม. (บอกด้วยตัวเลขและ ✓/✕ เสมอ ไม่ใช้สีอย่างเดียว)
+      var over = L.bagStatus(S) === 'over', pct = Math.min(100, Math.round(age / 1440 * 100));
+      out += '<div class="meter' + (over ? ' over' : '') + '" role="meter" aria-valuemin="0" aria-valuemax="24" aria-valuenow="' + (age / 60).toFixed(1) +
+        '" aria-label="อายุปลาในถุง"><div class="meter-top"><span>อายุปลาในถุง</span><b>' + (over ? '✕ ' : '✓ ') + (age / 60).toFixed(1) +
+        ' ชม. / เพดาน 24 ชม.</b></div><div class="meter-bar"><i style="width:' + pct + '%"></i></div></div>';
+    }
+    return out;
   }
 
-  // เนื้อหาแท็บของขั้นปัจจุบัน
-  function renderTab(name, S) {
+  // ข้อมูลเพิ่มเติม (พับได้): ทำไมสำคัญ · ถ้าผ่าน/ไม่ผ่าน · 4-Flow (เลนปกติ ✓ มีปัญหา ✕)
+  function renderMore(S, open) {
     var s = D.STEPS[S.idx];
-    if (name === 'who') {
-      return '<h3>ใครทำ</h3><p>' + renderGlossary(s.who) + '</p>' +
-        '<p class="muted">' + esc(s.ph) + '</p>';
-    }
-    if (name === 'what') {
-      return '<h3>ทำอะไร</h3><p>' + renderGlossary(s.what) + '</p>' +
-        '<h3>ทำไมสำคัญ</h3><p>' + renderGlossary(s.why) + '</p>' +
-        '<h3>ถ้าผ่าน / ไม่ผ่าน</h3><p>' + renderGlossary(s.dec) + '</p>';
-    }
-    if (name === 'docs') {
-      return '<h3>เอกสารของขั้นนี้</h3><ul>' + s.docs.map(function (d) {
-        return '<li>' + renderGlossary(d) + '</li>';
-      }).join('') + '</ul>';
-    }
-    if (name === 'risk') {
-      return '<h3>ความเสี่ยง</h3><p>' + renderGlossary(s.risk) + '</p>';
-    }
-    // flow: 4 เลน ปกติ = ✓ มีปัญหา = ✕
-    return '<h3>4-Flow ต้องตรงกัน</h3><ul class="lanes">' + D.FOURFLOW.map(function (f) {
-      var okLane = S.lanes[f.lane] === 1;
-      var detail = f.lane === 'r' ? s.who : s.flow[f.lane];
-      return '<li data-lane="' + f.lane + '"><span class="' + (okLane ? 'st-ok' : 'st-bad') + '">' +
-        (okLane ? '✓' : '✕') + '</span> <b>' + esc(f.name) + '</b> (' + esc(f.sub) + '): ' + renderGlossary(detail) + '</li>';
-    }).join('') + '</ul>';
+    return '<details class="more"' + (open ? ' open' : '') + '><summary>ดูเพิ่มเติม: ทำไมสำคัญ · 4-Flow</summary>' +
+      '<h3>ทำไมสำคัญ</h3><p>' + renderGlossary(s.why) + '</p>' +
+      '<h3>ถ้าผ่าน / ไม่ผ่าน</h3><p>' + renderGlossary(s.dec) + '</p>' +
+      '<h3>4-Flow ต้องตรงกัน</h3><ul class="lanes">' + D.FOURFLOW.map(function (f) {
+        var okLane = S.lanes[f.lane] === 1;
+        var detail = f.lane === 'r' ? s.who : s.flow[f.lane];
+        return '<li data-lane="' + f.lane + '"><span class="' + (okLane ? 'st-ok' : 'st-bad') + '">' +
+          (okLane ? '✓' : '✕') + '</span> <b>' + esc(f.name) + '</b> (' + esc(f.sub) + '): ' + renderGlossary(detail) + '</li>';
+      }).join('') + '</ul></details>';
   }
 
   // แผง HOLD → VERIFY → CORRECT
@@ -5731,7 +5760,7 @@ var KoiUI = (function () {
   // hooks.onRender(S) ให้ส่วน 3 มิติมาเกาะเพื่ออัปเดตตามสถานะ
   function mount(root, hooks) {
     hooks = hooks || {};
-    var S = L.newState(0), tab = 'who', timer = null, present = false, savedTab = 'who';
+    var S = L.newState(0), timer = null, present = false, moreOpen = false;
     var $ = function (id) { return root.querySelector(id); };
 
     function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
@@ -5742,12 +5771,10 @@ var KoiUI = (function () {
       $('#route').innerHTML = renderRoute(S);
       var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
       if (stEl) stEl.innerHTML = renderStatus(S);
-      $('#station-badge').innerHTML = renderStationBadge(S);
       $('#card').innerHTML = renderCard(S);
       $('#stage-ctrl').innerHTML = renderStageControls(S, !!timer, present);
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
-      $('#tabs').innerHTML = '<div class="badges">' + renderTimeBadge(S) + '</div>' + renderHold(S) + renderEnd(S) +
-        (present ? '' : renderTabBar(tab)) + '<div class="tabbody">' + renderTab(tab, S) + '</div>';
+      $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
       root.classList.toggle('present', present);
       if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
       var here = $('#timeline').querySelector('.here'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
@@ -5761,7 +5788,11 @@ var KoiUI = (function () {
       if (hooks.onRender) hooks.onRender(S);
     }
     // จำสถานะเปิด/ปิดของเมนูเหตุการณ์ (event toggle ไม่ bubble จึงฟังแบบ capture)
-    root.addEventListener('toggle', function (e) { if (e.target.classList && e.target.classList.contains('risk-menu')) riskOpen = e.target.open; }, true);
+    root.addEventListener('toggle', function (e) {
+      if (!e.target.classList) return;
+      if (e.target.classList.contains('risk-menu')) riskOpen = e.target.open;
+      if (e.target.classList.contains('more')) moreOpen = e.target.open;
+    }, true);
     function togglePlay() {
       if (timer) { stopTimer(); }
       else {
@@ -5780,8 +5811,7 @@ var KoiUI = (function () {
     function togglePresentation() {
       present = !present;
       stopTimer();
-      if (present) { savedTab = tab; tab = 'what'; if (L.canAdvance(S)) { togglePlay(); return; } }
-      else { tab = savedTab; }
+      if (present && L.canAdvance(S)) { togglePlay(); return; }
       render();
     }
     function doAction(a) {
@@ -5811,7 +5841,6 @@ var KoiUI = (function () {
       var d = el.dataset;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
-      else if (d.tab != null) { tab = d.tab; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
       else if (d.act === 'next') { L.next(S); }
@@ -5829,8 +5858,8 @@ var KoiUI = (function () {
   return {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
     esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
-    renderStatus: renderStatus, renderStationBadge: renderStationBadge,
-    renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
+    renderStatus: renderStatus,
+    renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
     renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();

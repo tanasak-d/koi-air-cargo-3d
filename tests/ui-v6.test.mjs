@@ -37,3 +37,36 @@ test('CSS .route: แถบไม่กว้างเกินจอ (min-width
 test('focusSelector: ปุ่มสถานีคืนโฟกัสได้หลังวาดใหม่', () => {
   assert.equal(UI.focusSelector({ station: '2' }), '[data-station="2"]');
 });
+
+// ---- Task 3: การ์ดข้อมูลแบบไอคอน (แทนแท็บ) ----
+test('renderFacts: มี 4 การ์ด ใครทำ/ทำอะไร/เอกสาร/ความเสี่ยง และชื่อขั้นปัจจุบัน', () => {
+  const S = L.newState(0); L.goTo(S, 3);
+  const h = UI.renderFacts(S);
+  assert.equal(count(h, /class="fact[ "]/g), 4);
+  for (const w of ['ใครทำ', 'ทำอะไร', 'เอกสาร', 'ความเสี่ยง']) assert.match(h, new RegExp(w));
+  assert.match(h, /ขั้นที่ 4/);
+  assert.match(h, /สถานี 1 ฟาร์มผู้ส่ง/);
+  assert.match(h, /บรรจุถุง 3 ชั้น/);
+});
+test('renderFacts: มาตรวัดอายุถุงบอกเป็นตัวเลขและ ✓/✕ ไม่ใช่สีอย่างเดียว', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderFacts(S);
+  assert.match(h, /เพดาน 24 ชม\./);
+  assert.match(h, /[✓✕]/);
+  assert.match(h, /role="meter"/);
+});
+test('renderFacts: ก่อนปิดผนึกถุงไม่มีมาตรวัด', () => {
+  assert.doesNotMatch(UI.renderFacts(L.newState(0)), /class="meter/);
+});
+test('renderMore: พับได้ มีทำไมสำคัญ ถ้าผ่าน/ไม่ผ่าน และ 4-Flow ครบทุกเลน', () => {
+  const h = UI.renderMore(L.newState(0));
+  assert.match(h, /^<details class="more"/);
+  assert.match(h, /ทำไมสำคัญ/);
+  assert.match(h, /ถ้าผ่าน \/ ไม่ผ่าน/);
+  assert.equal(count(h, /data-lane="/g), D.FOURFLOW.length);
+});
+test('V6: เลิกใช้แท็บและป้ายสถานีบนภาพ', () => {
+  assert.equal(UI.renderTab, undefined);
+  assert.equal(UI.renderTabBar, undefined);
+  assert.equal(UI.renderStationBadge, undefined);
+});
