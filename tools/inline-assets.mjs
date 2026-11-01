@@ -13,7 +13,8 @@ const htmlPath = path.join(root, 'Koi_Air_Cargo_3D.html');
 const threeDir = 'C:/Users/tanas/projects/don-mueang-apron/node_modules/three/examples/js';
 // รถ 3 แบบ + กรวย: Kenney Car Kit (CC0) · เครื่องบิน ปลาคาร์ฟ คน กล่องปลา ถุง คลังสินค้า X-ray: สร้างใน Blender ด้วยสคริปต์ใน tools/blender/
 const MODELS = ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray',
-  'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai'];
+  'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai', 'terminal', 'tub',
+  'table', 'conveyor', 'uld', 'docs', 'oxygen', 'feedbag', 'fences', 'gate'];
 
 // ใส่บล็อกใหม่: ถ้ามีบล็อกเดิมอยู่แล้วให้แทนที่ ถ้ายังไม่มีให้แทนที่ตัวจองที่ (marker)
 function put(html, id, marker, body) {

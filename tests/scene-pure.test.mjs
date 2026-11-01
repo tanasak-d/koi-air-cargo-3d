@@ -105,8 +105,21 @@ test('base64ToBuffer: ถอดรหัสโมเดลได้ ขึ้น
 });
 
 test('placeholderSize: มีขนาดสำรองของทุกโมเดล (กว้าง/สูง/ยาว > 0)', () => {
-  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai']);
+  assert.deepEqual([...SC.MODEL_NAMES], ['delivery', 'van', 'tractor', 'cone', 'airliner', 'koi', 'person', 'fishbox', 'bag', 'warehouse', 'xray', 'pond', 'dolly', 'farmhouse', 'dof', 'trees', 'reefer', 'japan', 'thai', 'terminal', 'tub',
+    'table', 'conveyor', 'uld', 'docs', 'oxygen', 'feedbag', 'fences', 'gate']);
   for (const n of SC.MODEL_NAMES) { const s = SC.placeholderSize(n); assert.ok(s.w > 0 && s.h > 0 && s.d > 0, n); }
+});
+
+test('tileSpan: แบ่งช่วงยาวเป็นท่อน (รั้ว/สายพาน) ท่อนชนกันพอดี ไม่ล้นปลายทั้งสองข้าง', () => {
+  const t = plain(SC.tileSpan(-26, 20, 2.5));                     // รั้วไม้ฟาร์ม ยาว 46
+  assert.equal(t.count, 18);
+  assert.ok(Math.abs(t.count * 2.5 * t.scale - 46) < 1e-9);       // ความยาวรวมเท่าช่วงพอดี
+  assert.ok(Math.abs(t.centers[0] - (-26 + 2.5 * t.scale / 2)) < 1e-9);
+  assert.ok(Math.abs(t.centers[t.count - 1] - (20 - 2.5 * t.scale / 2)) < 1e-9);
+  assert.ok(t.scale > 0.85 && t.scale < 1.15);                    // ยืด/หดไม่เกิน 15% ภาพไม่เพี้ยน
+  const c = plain(SC.tileSpan(-9, 9, 2));                         // สายพานยาว 18 ท่อนละ 2 → 9 ท่อนพอดี
+  assert.equal(c.count, 9); assert.equal(c.scale, 1);
+  assert.equal(plain(SC.tileSpan(0, 1, 2.5)).count, 1);           // ช่วงสั้นกว่าท่อน: อย่างน้อย 1 ท่อน
 });
 
 // ---- รุ่น 2 Task 3: ช็อตของ 17 ขั้น (เส้นทางกล่อง + มุมกล้อง) ----
