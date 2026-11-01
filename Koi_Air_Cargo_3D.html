@@ -11,21 +11,19 @@
    - ธีมสว่าง = ค่าใน :root
    - ธีมมืดตามระบบ = media query (ยกเว้นผู้ใช้กดเลือกสว่างเอง data-theme="light")
    - ธีมมืดที่ผู้ใช้กดเลือก = :root[data-theme="dark"]  (ค่าต้องเหมือนแบบตามระบบ)
-   กติกาสี: ฟ้า=กดได้/ผ่านแล้ว · ชมพู=ตรงนี้ตอนนี้ · เขียว/เหลือง/แดง=สถานะ (ต้องมี ✓ ✕ หรือข้อความคู่เสมอ)
+   กติกาสี (V6 ดำขาว): accent ดำเต็ม=ผ่านแล้ว/ปุ่มหลัก · ดำมีวงรอบ+ป้าย "ตอนนี้"=ตอนนี้ · เขียว/เหลือง/แดง=สถานะ (ต้องมี ✓ ✕ หรือข้อความคู่เสมอ)
    ============================================================ */
 :root{
   color-scheme:light;
-  --bg:#f4f8fd;
+  --bg:#f2f2f2;
   --surface:#ffffff;
-  --text:#0f1c2e;
-  --muted:#52657d;
-  --line:#c5d5e8;
-  --tint:#e3eefc;
-  --stage-bg:#e8f0fa;
-  --blue:#1d62c4;
-  --on-blue:#ffffff;
-  --pink:#c71f73;
-  --on-pink:#ffffff;
+  --text:#111111;
+  --muted:#555555;
+  --line:#d4d4d4;
+  --soft:#ececec;
+  --stage-bg:#e6e6e6;
+  --accent:#111111;
+  --on-accent:#ffffff;
   --ok:#11743a;
   --warn:#8a5300;
   --bad:#b3261e;
@@ -33,17 +31,15 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --bg:#0b1220;
-    --surface:#141e33;
-    --text:#e8eef8;
-    --muted:#a3b3cb;
-    --line:#2a3a58;
-    --tint:#1b2c4d;
-    --stage-bg:#0f1a2e;
-    --blue:#7db0ff;
-    --on-blue:#08142b;
-    --pink:#ff7ab8;
-    --on-pink:#2a0618;
+    --bg:#0d0d0d;
+    --surface:#161616;
+    --text:#f2f2f2;
+    --muted:#a8a8a8;
+    --line:#333333;
+    --soft:#1c1c1c;
+    --stage-bg:#121212;
+    --accent:#f2f2f2;
+    --on-accent:#111111;
     --ok:#4cd388;
     --warn:#f2b84b;
     --bad:#ff8a82;
@@ -51,17 +47,15 @@
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0b1220;
-  --surface:#141e33;
-  --text:#e8eef8;
-  --muted:#a3b3cb;
-  --line:#2a3a58;
-  --tint:#1b2c4d;
-  --stage-bg:#0f1a2e;
-  --blue:#7db0ff;
-  --on-blue:#08142b;
-  --pink:#ff7ab8;
-  --on-pink:#2a0618;
+  --bg:#0d0d0d;
+  --surface:#161616;
+  --text:#f2f2f2;
+  --muted:#a8a8a8;
+  --line:#333333;
+  --soft:#1c1c1c;
+  --stage-bg:#121212;
+  --accent:#f2f2f2;
+  --on-accent:#111111;
   --ok:#4cd388;
   --warn:#f2b84b;
   --bad:#ff8a82;
@@ -79,7 +73,7 @@ body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
   border-radius:16px;padding:10px 14px;box-shadow:0 6px 20px rgba(15,28,46,.07)}
 .brandmark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px;
-  background:linear-gradient(135deg,#0bb4d9,#0a73a8);flex:0 0 auto}
+  background:var(--accent);color:var(--on-accent);flex:0 0 auto}
 .brand h1{margin:0;font-size:1.15rem;line-height:1.2}
 .brand small{color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
@@ -88,9 +82,9 @@ body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
-button:hover{border-color:var(--blue)}
-button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-button.primary{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+button:hover{border-color:var(--accent)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 button[disabled]{opacity:.55;cursor:not-allowed}
 
 /* ---- V4 เลย์เอาต์: ภาพ 3 มิติ (ซ้าย) + แผงติดตามการขนส่ง (ขวา) · จอแคบซ้อนลงมา ---- */
@@ -108,9 +102,9 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .station-badge b{font-size:.98rem}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
 #card{position:absolute;left:0;top:0;max-width:300px;background:var(--surface);color:var(--text);
-  border:2px solid var(--pink);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
+  border:2px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
   pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);will-change:transform}
-#card b{color:var(--pink)}
+#card b{color:var(--accent)}
 #card small{color:var(--muted)}
 /* ไม่มี WebGL: การ์ดอยู่คงที่ด้านบนของเวที (ข้อความแจ้งเตือนอยู่กลางเวที) */
 #card.static{position:absolute;left:8px;right:8px;top:8px;transform:none;max-width:none}
@@ -119,17 +113,17 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 10px;box-shadow:0 4px 14px rgba(15,28,46,.12)}
 .stage-ctrl .round{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;display:grid;place-items:center}
 .stage-ctrl .round.primary{width:48px;height:48px}
-.progress{flex:1 1 120px;height:6px;border-radius:99px;background:var(--tint);overflow:hidden;min-width:80px}
-.progress i{display:block;height:100%;width:0;background:var(--pink);border-radius:99px}
+.progress{flex:1 1 120px;height:6px;border-radius:99px;background:var(--soft);overflow:hidden;min-width:80px}
+.progress i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px}
 .stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
 .risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
 .risk-menu summary{list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--bad);color:var(--bad);
   border-radius:999px;padding:6px 14px;font-weight:600}
 .risk-menu summary::-webkit-details-marker{display:none}
-.risk-menu summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.risk-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .risk-list{display:grid;gap:6px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
 .risk-list button{border-radius:10px;text-align:left}
-.risk-list button[aria-pressed="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+.risk-list button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 /* แผงติดตามด้านขวา: สูงเท่าภาพ เลื่อนอ่านภายในแผง */
 .panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;min-width:0;
   box-shadow:0 8px 24px rgba(15,28,46,.08)}
@@ -138,11 +132,11 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .panel-inner #tabs{flex:0 1 auto;max-height:60%;overflow:auto}
 .panel-inner #timeline{flex:1 1 0;min-height:120px;overflow:auto}
 .panel-title{margin:0;font-size:.9rem;color:var(--muted);font-weight:600}
-#tabs{min-width:0;border:1px solid var(--pink);border-radius:14px;padding:10px 12px;background:var(--tint)}
+#tabs{min-width:0;border:1px solid var(--accent);border-radius:14px;padding:10px 12px;background:var(--soft)}
 .step-title{margin:0 0 6px;font-size:1rem}
 .tabbar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .tabbar button{min-height:32px;padding:4px 12px;font-size:.88rem}
-.tabbar button[aria-selected="true"]{background:var(--blue);color:var(--on-blue);border-color:var(--blue)}
+.tabbar button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 /* เส้นเวลาแนวตั้ง 17 ขั้น (แบบหน้าติดตามพัสดุ): จุด ✓ ผ่านแล้ว · ชมพู = ตอนนี้ */
 #timeline{display:grid;gap:2px;min-width:0}
 .tl-group{display:grid;gap:2px}
@@ -153,11 +147,11 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tl-step .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1}
 .tl-step .nm{font-size:.92rem}
 .tl-step .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
-.tl-step.passed .dot{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.tl-step.passed .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .tl-step.passed .nm{color:var(--muted)}
-.tl-step.here{background:var(--pink);border-color:var(--pink);color:var(--on-pink);font-weight:700}
-.tl-step.here .tm{color:var(--on-pink)}
-.tl-step.here .dot{border-color:var(--on-pink);color:var(--on-pink)}
+.tl-step.here{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.tl-step.here .tm{color:var(--on-accent)}
+.tl-step.here .dot{border-color:var(--on-accent);color:var(--on-accent)}
 
 /* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
 .st-ok{color:var(--ok);font-weight:600}
@@ -200,7 +194,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tabbody p,.tabbody ul{margin:0 0 6px}
 .lanes{list-style:none;padding:0}
 .lanes li{margin-bottom:6px}
-abbr[title]{text-decoration:underline dotted var(--blue);cursor:help}
+abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hold,.end{border:2px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
 .hold{border-color:var(--bad)}
 .hold h3,.end h3{margin:0 0 4px}

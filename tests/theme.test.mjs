@@ -38,7 +38,7 @@ test('มีธีมมืดทั้งแบบตามระบบ (prefer
 
 const PAIRS = [
   ['text', 'bg'], ['text', 'surface'], ['muted', 'bg'], ['muted', 'surface'],
-  ['blue', 'surface'], ['blue', 'bg'], ['on-blue', 'blue'], ['on-pink', 'pink'],
+  ['accent', 'surface'], ['accent', 'bg'], ['on-accent', 'accent'], ['text', 'soft'], ['muted', 'soft'],
   ['ok', 'surface'], ['warn', 'surface'], ['bad', 'surface']
 ];
 for (const [name, set] of [['สว่าง', light], ['มืด', darkAuto]]) {
@@ -50,6 +50,13 @@ for (const [name, set] of [['สว่าง', light], ['มืด', darkAuto]])
     }
   });
 }
+
+test('V6 โทนดำขาว: ธีมสว่างใช้ตัวเน้นดำ #111111 บนพื้นขาว และไม่เหลือโทเคนฟ้า/ชมพู', () => {
+  assert.equal(light.accent, '#111111');
+  assert.equal(light['on-accent'], '#ffffff');
+  assert.equal(light.surface, '#ffffff');
+  assert.doesNotMatch(css, /--blue|--pink/);
+});
 
 test('คลาสสถานะ (.st-ok/.st-warn/.st-bad) ไม่ใช้สีชมพู', () => {
   for (const c of ['.st-ok', '.st-warn', '.st-bad']) {
