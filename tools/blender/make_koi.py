@@ -1,12 +1,15 @@
-# ปลาคาร์ฟ 3 สายพันธุ์ (โคฮากุ ขาว-แดง / ซันเก้ ขาว-แดง-ดำ / โอกอน ทอง) สร้างด้วยโค้ด → assets/models/koi.glb
-# ลวดลายใช้ "สีที่จุดยอด" (vertex color) จึงไม่ต้องมีไฟล์ภาพ
-# ในเว็บ: หัวปลาไปทาง +x ยาว 1 หน่วย หางเป็นวัตถุลูกชื่อ "<ชื่อปลา>_Tail" จุดหมุนอยู่ที่โคนหาง (ไว้ส่ายหาง)
+# ปลาคาร์ฟ 3 สายพันธุ์ (โคฮากุ ขาว-แดง / ซันเก้ ขาว-แดง-ดำ / โอกอน ทอง) → assets/models/koi.glb
+# รุ่นปั้นใหม่ (1 พ.ย. 2026) ตามภาพอ้างอิง โมเดล/Group 1/koi.jpg: โลว์โพลีเห็นเหลี่ยม ครีบยาว มีหนวด
+# ลวดลายใช้ "สีที่จุดยอด" (vertex color) ระบายทีละหน้า จึงเห็นลายเป็นปื้นเหลี่ยมแบบภาพ และไม่ต้องมีไฟล์ภาพ
+# ในเว็บ: หัวปลาไปทาง +x ยาวราว 1 หน่วย หางเป็นวัตถุลูกชื่อ "<ชื่อปลา>_Tail" จุดหมุนอยู่ที่โคนหาง (โค้ดหมุนให้ส่ายหาง)
+# วิธีรัน: ใน Blender ที่เปิดอยู่ผ่าน MCP หรือ blender --background --factory-startup --python tools/blender/make_koi.py
 import bpy, bmesh, math, sys, os, random
 sys.path.insert(0, os.path.dirname(__file__))
 from common import reset, mat, hexrgb, root, export_glb, render_preview
 
 reset()
-random.seed(7)
+random.seed(11)
+
 
 def vcol_material(name):
     """วัสดุที่ใช้สีจากจุดยอด (สีลวดลายของปลา)"""
@@ -14,80 +17,125 @@ def vcol_material(name):
     nt = m.node_tree; p = nt.nodes['Principled BSDF']
     attr = nt.nodes.new('ShaderNodeVertexColor'); attr.layer_name = 'Col'
     nt.links.new(attr.outputs['Color'], p.inputs['Base Color'])
-    p.inputs['Roughness'].default_value = 0.35
+    p.inputs['Roughness'].default_value = 0.4
     return m
+
 
 def lin(rgb):
     return tuple(c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb) + (1.0,)
 
+
+def radius_at(t):
+    """รัศมีลำตัวตามความยาว (t = 0 โคนหาง, 1 ปลายจมูก): ท้ายเรียว ตัวป่องช่วงหน้า หัวมน"""
+    if t < 0.62:
+        r = 0.035 + 0.105 * math.sin(math.pi / 2 * t / 0.62) ** 1.3
+    else:
+        k = (t - 0.62) / 0.38
+        r = 0.14 * math.sqrt(max(0.0, 1 - k ** 2.2)) + 0.01
+    return r
+
+
 def body_mesh(name, paint):
-    """ลำตัวทรงตอร์ปิโด แบนข้างเล็กน้อย หัวมน ท้ายเรียวไปที่โคนหาง (x = -0.5 .. 0.5)"""
-    bm = bmesh.new(); rings, seg = 22, 16; prev = None; first = None
+    """ลำตัวโลว์โพลี (12 เหลี่ยมรอบตัว 18 ช่วงตามยาว) จาก x = -0.4 (โคนหาง) ถึง 0.48 (จมูก) ผิวเรียบแบบเหลี่ยม"""
+    bm = bmesh.new(); rings, seg = 18, 12; prev = None
     col = bm.loops.layers.color.new('Col')
     for i in range(rings + 1):
-        t = i / rings                       # 0 = โคนหาง, 1 = ปลายจมูก
-        x = -0.38 + t * 0.86
-        r = 0.13 * math.sin(math.pi * min(1, (t * 0.92 + 0.08))) ** 0.7 + 0.012
-        if t > 0.9: r *= math.sqrt(max(0.0, 1 - ((t - 0.9) / 0.1) ** 2)) * 0.9 + 0.1
-        ring = [bm.verts.new((x, math.cos(2 * math.pi * j / seg) * r * 0.72, math.sin(2 * math.pi * j / seg) * r * 0.95))
+        t = i / rings
+        x = -0.4 + t * 0.88
+        r = radius_at(t)
+        ring = [bm.verts.new((x, math.cos(2 * math.pi * j / seg) * r * 0.78,
+                              math.sin(2 * math.pi * j / seg) * r * (0.95 if math.sin(2 * math.pi * j / seg) > 0 else 0.8)))
                 for j in range(seg)]
         if prev:
             for j in range(seg):
                 bm.faces.new((prev[j], prev[(j + 1) % seg], ring[(j + 1) % seg], ring[j]))
         prev = ring
+    # ปิดปลายจมูกเป็นจุดเดียว
+    tip = bm.verts.new((0.5, 0, -0.005))
+    for j in range(seg):
+        bm.faces.new((prev[j], prev[(j + 1) % seg], tip))
     bm.normal_update()
-    for f in bm.faces:
+    for f in bm.faces:                     # ระบายสีทั้งหน้า (ใช้จุดกลางของหน้า) ลายจึงเป็นปื้นเหลี่ยม
+        c = paint(f.calc_center_median())
         for lp in f.loops:
-            lp[col] = lin(paint(lp.vert.co))
+            lp[col] = lin(c)                  # แปลงเป็นค่า linear ก่อน (แบบเดียวกับรุ่นเดิมที่สีในเว็บถูกต้อง)
     me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
     ob = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(ob)
     me.materials.append(vcol_material(name + '_mat'))
-    for p in me.polygons: p.use_smooth = True
     return ob
 
-def fin(name, verts, material, parent, loc=(0, 0, 0)):
-    """ครีบแผ่นบาง (หลายเหลี่ยมแบน) จากจุดในแนว x-z หรือ x-y"""
+
+def fin(name, verts, material, parent, loc=(0, 0, 0), thick=0.008):
+    """ครีบแผ่นบาง (หลายเหลี่ยมแบน)"""
     bm = bmesh.new(); vs = [bm.verts.new(v) for v in verts]; bm.faces.new(vs)
-    bmesh.ops.solidify(bm, geom=bm.faces[:], thickness=0.008)
+    bmesh.ops.solidify(bm, geom=bm.faces[:], thickness=thick)
     me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
     ob = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(ob)
     me.materials.append(material); ob.parent = parent; ob.location = loc
     return ob
 
-def blobs(n, colour, spread=0.33):
-    """จุดลวดลายสุ่มบนหลังปลา (ศูนย์กลาง รัศมี สี)"""
-    return [((random.uniform(-0.3, 0.38), random.uniform(-0.05, 0.05), random.uniform(0.02, 0.12)), random.uniform(0.07, 0.13), colour)
-            for _ in range(n)]
 
-def painter(base, spots):
+def spots(centres, colour):
+    """ปื้นลายบนผิวปลา: [(x, มุมรอบตัว, ครึ่งความยาว, ครึ่งความกว้างเป็นองศา)]
+    มุม 90 = กลางหลัง, 30 = ข้างซ้ายค่อนบน, 150 = ข้างขวาค่อนบน (ลายจึงไม่พันรอบตัวเป็นปล้อง)"""
+    return [(x, math.radians(a), rx, math.radians(ra), colour) for x, a, rx, ra in centres]
+
+
+def painter(base, marks, belly):
     def paint(co):
+        ang = math.atan2(co.z, -co.y)      # มุมรอบแกนตัวปลา (0 = ข้างขวา, 90 = หลัง, 180 = ข้างซ้าย)
+        if co.z < -0.035:                  # ท้องสีอ่อนเสมอ (ลายอยู่บนหลังและข้างตัว)
+            return belly
         c = base
-        for (cx, cy, cz), r, colour in spots:
-            if (co.x - cx) ** 2 + ((co.y - cy) * 0.7) ** 2 + (co.z - cz) ** 2 < r * r: c = colour
-        if co.z < -0.06: c = tuple(min(1, v * 0.9 + 0.08) for v in base)   # ท้องสีอ่อน
+        for cx, ca, rx, ra, colour in marks:
+            if ((co.x - cx) / rx) ** 2 + ((ang - ca) / ra) ** 2 < 1:
+                c = colour
         return c
     return paint
 
-WHITE, RED, BLACK, GOLD = hexrgb(0xf7f5f0), hexrgb(0xd8342a), hexrgb(0x1b1b1f), hexrgb(0xf6c64a)
+
+WHITE, RED, BLACK, GOLD = hexrgb(0xf4f3ef), hexrgb(0xd72a22), hexrgb(0x18181c), hexrgb(0xf0c64a)
+BELLY_W, BELLY_G = hexrgb(0xfbfaf7), hexrgb(0xfae38e)
+# ลายวางตามภาพ: โคฮากุ ปื้นแดงบนหัว แล้วสลับซ้าย-ขวาตามหลัง ปิดท้ายที่โคนหาง
+KOHAKU = spots([(0.36, 90, 0.07, 50), (0.2, 55, 0.06, 40), (0.14, 125, 0.06, 40),
+                (-0.02, 80, 0.07, 45), (-0.14, 140, 0.05, 35), (-0.3, 90, 0.05, 45)], RED)
+# ซันเก้ = ลายแดงแบบโคฮากุ + จุดดำเล็ก ๆ บนหลัง (ไม่มีดำบนหัว)
+SANKE = spots([(0.36, 90, 0.07, 50), (0.18, 120, 0.06, 45), (0.02, 60, 0.07, 45), (-0.2, 110, 0.06, 40),
+               (-0.32, 80, 0.04, 40)], RED) + \
+    spots([(0.24, 60, 0.025, 22), (0.1, 105, 0.03, 25), (-0.08, 140, 0.03, 25), (-0.12, 50, 0.025, 20),
+           (-0.27, 120, 0.02, 20)], BLACK)
+
 breeds = {
-    'Koi_Kohaku': (WHITE, blobs(4, RED), mat('fin_white', hexrgb(0xf3f1ec), 0.4, alpha=0.85)),
-    'Koi_Sanke': (WHITE, blobs(3, RED) + blobs(3, BLACK), mat('fin_white2', hexrgb(0xf3f1ec), 0.4, alpha=0.85)),
-    'Koi_Ogon': (GOLD, [], mat('fin_gold', hexrgb(0xf0b23a), 0.3, 0.3, alpha=0.9)),
+    'Koi_Kohaku': (painter(WHITE, KOHAKU, BELLY_W), mat('fin_white', hexrgb(0xf1f0ec), 0.4, alpha=0.88)),
+    'Koi_Sanke': (painter(WHITE, SANKE, BELLY_W), mat('fin_white2', hexrgb(0xf1f0ec), 0.4, alpha=0.88)),
+    'Koi_Ogon': (painter(GOLD, [], BELLY_G), mat('fin_gold', hexrgb(0xeab52e), 0.35, 0.15, alpha=0.92)),
 }
 EYE = mat('eye', hexrgb(0x111111), 0.2)
-for k, (name, (base, spots, finmat)) in enumerate(breeds.items()):
+
+for k, (name, (paint, finmat)) in enumerate(breeds.items()):
     fish = root(name); fish.location = (0, k * 0.6 - 0.6, 0.25)
-    body = body_mesh(name + '_Body', painter(base, spots)); body.parent = fish
-    # หาง (ลูกของปลา จุดหมุนที่โคนหาง x = -0.38) เป็นแฉกสองแฉก
+    body = body_mesh(name + '_Body', paint); body.parent = fish
+    if name == 'Koi_Ogon':                  # โอกอนเป็นสีทองทั้งตัว: ใช้วัสดุสีเดียวกับครีบ ไม่ใช้สีจุดยอด (สีจะได้ตรงกัน)
+        body.data.materials[0] = mat('gold_body', hexrgb(0xe9ad1f), 0.35, 0.15)
+    # หาง: ตัวแม่ว่างที่โคนหาง (x = -0.4) ลูกคือครีบหางสองแฉก
     tail = bpy.data.objects.new(name + '_Tail', None); bpy.context.scene.collection.objects.link(tail)
-    tail.parent = fish; tail.location = (-0.38, 0, 0)
-    fin(name + '_TailFin', [(0, 0, 0.02), (-0.26, 0, 0.16), (-0.18, 0, 0.0), (-0.26, 0, -0.14), (0, 0, -0.02)], finmat, tail)
-    fin(name + '_Dorsal', [(-0.2, 0, 0.1), (0.12, 0, 0.12), (0.02, 0, 0.2), (-0.16, 0, 0.16)], finmat, fish)
-    for s in (1, -1):
-        fin(name + '_Pectoral', [(0.22, s * 0.06, -0.06), (0.1, s * 0.2, -0.12), (0.06, s * 0.08, -0.08)], finmat, fish)
-        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.016, location=(0.36, s * 0.055, 0.03), segments=8, ring_count=6)
-        e = bpy.context.active_object; e.name = name + '_Eye'; e.data.materials.append(EYE); e.parent = fish
-        e.location = (0.36, s * 0.062, 0.035)
+    tail.parent = fish; tail.location = (-0.4, 0, 0)
+    fin(name + '_TailFin', [(0.02, 0, 0.025), (-0.12, 0, 0.09), (-0.26, 0, 0.17), (-0.2, 0, 0.0),
+                            (-0.26, 0, -0.15), (-0.12, 0, -0.08), (0.02, 0, -0.025)], finmat, tail)
+    # ครีบหลังยาวตามแนวหลัง (สูงด้านหน้า ลาดไปด้านหลัง)
+    fin(name + '_Dorsal', [(0.16, 0, 0.11), (0.08, 0, 0.21), (-0.04, 0, 0.17), (-0.2, 0, 0.1), (-0.22, 0, 0.07)], finmat, fish)
+    for s, side in ((1, 'L'), (-1, 'R')):
+        # ครีบอก (ใหญ่ กางออกข้าง) · ครีบท้อง · ครีบก้น
+        fin(name + '_Pectoral' + side, [(0.24, s * 0.07, -0.07), (0.1, s * 0.24, -0.13), (0.04, s * 0.2, -0.13), (0.14, s * 0.07, -0.08)], finmat, fish)
+        fin(name + '_Pelvic' + side, [(0.0, s * 0.05, -0.09), (-0.1, s * 0.13, -0.15), (-0.12, s * 0.07, -0.12)], finmat, fish)
+        # ตา (นูนเล็ก ๆ ข้างหัว)
+        bpy.ops.mesh.primitive_uv_sphere_add(radius=0.017, segments=8, ring_count=6)
+        e = bpy.context.active_object; e.name = name + '_Eye' + side; e.data.materials.append(EYE); e.parent = fish
+        e.location = (0.39, s * 0.068, 0.035)
+        # หนวด 1 คู่ที่มุมปาก
+        fin(name + '_Barbel' + side, [(0.47, s * 0.03, -0.035), (0.43, s * 0.075, -0.075), (0.425, s * 0.07, -0.07)], finmat, fish, thick=0.006)
+    fin(name + '_Anal', [(-0.16, 0, -0.07), (-0.22, 0, -0.14), (-0.27, 0, -0.06)], finmat, fish)
 
 export_glb('koi.glb')
-render_preview('koi.png', cam_loc=(1.6, -1.6, 1.4), target=(0, 0, 0.2), lens=50)
+if bpy.app.background:
+    render_preview('koi.png', cam_loc=(1.6, -1.6, 1.4), target=(0, 0, 0.2), lens=50)

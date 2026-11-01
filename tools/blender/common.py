@@ -14,7 +14,20 @@ _mats = {}
 
 def reset():
     """ล้างฉากให้ว่าง (ไม่เหลือกล้อง ไฟ ลูกบาศก์เริ่มต้น)"""
-    bpy.ops.wm.read_factory_settings(use_empty=True)
+    if bpy.app.background:
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+    else:
+        # รันใน Blender ที่เปิดอยู่ (ผ่าน MCP): ห้ามรีเซ็ตทั้งโปรแกรม เพราะหน้าจอที่มาร์ชดูอยู่จะหายไป
+        # จึงลบแค่วัตถุและข้อมูลในฉาก
+        if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+        for ob in list(bpy.data.objects):
+            bpy.data.objects.remove(ob, do_unlink=True)
+        for coll in (bpy.data.meshes, bpy.data.materials, bpy.data.curves, bpy.data.cameras, bpy.data.lights, bpy.data.worlds,
+                     bpy.data.images):
+            for d in list(coll):
+                if d.users == 0:
+                    coll.remove(d)
     _mats.clear()   # วัสดุเก่าถูกลบไปพร้อมฉากแล้ว ต้องล้างที่จำไว้ด้วย
 
 
@@ -124,10 +137,19 @@ def render_preview(filename, cam_loc, target=(0, 0, 0), lens=50, size=(960, 540)
 
 
 # ---------- ตัวช่วยรูปทรง (ใช้ร่วมกันหลายสคริปต์) ----------
-def text(body, size, material, loc, rot, parent, extrude=0.004, name='Text'):
-    """ตัวอักษรภาษาอังกฤษ (ฟอนต์ในตัวของ Blender) แปลงเป็นเมช"""
+THAI_FONT = 'C:/Windows/Fonts/tahoma.ttf'     # ฟอนต์ของ Windows ที่มีตัวอักษรไทย (ฟอนต์ในตัวของ Blender ไม่มีภาษาไทย)
+
+
+def text(body, size, material, loc, rot, parent, extrude=0.004, name='Text', font=None):
+    """ตัวอักษรแปลงเป็นเมช · ค่าเริ่มต้นใช้ฟอนต์ในตัวของ Blender (ภาษาอังกฤษ) · ข้อความไทยส่ง font=THAI_FONT"""
     bpy.ops.object.text_add(location=loc, rotation=rot)
     t = bpy.context.active_object
+    if font:
+        t.data.font = bpy.data.fonts.load(font, check_existing=True)
+        # Blender วางวรรณยุกต์ไทยไม่เป็น: "น้ำ" จะเห็นไม้โทจมหายใต้สระอำ
+        # แก้โดยแยกสระอำเป็นนิคหิต + สระอา แล้ววางนิคหิตก่อนวรรณยุกต์ (ทดสอบกับ tahoma แล้วตรง)
+        import re
+        body = re.sub('([่-๋])ำ', 'ํ\\1า', body)
     t.data.body = body; t.data.size = size; t.data.extrude = extrude
     t.data.align_x = 'CENTER'; t.data.align_y = 'CENTER'
     t.data.resolution_u = 2          # เส้นโค้งของตัวอักษรหยาบลงหน่อย ไฟล์จะเล็กลงมาก (มองไม่ออกในฉาก)
@@ -166,3 +188,96 @@ def lathe(name, profile, material, parent, seg=20, loc=(0, 0, 0)):
     return obj_from_bmesh(name, bm, material, smooth=True, parent=parent)
 
 
+# ---------- โลโก้หลักสูตร (ใช้กับเครื่องบินและรถทุกคัน) ----------
+LOGO_PATH = os.path.join(ROOT, 'assets', 'textures', 'aviation-logo.webp')
+# ส่วนของภาพที่มีโลโก้ (ภาพ 2000×2000 พื้นโปร่งใส โลโก้อยู่ช่วงกลาง) เป็นพิกัด UV: u ซ้าย→ขวา, v ล่าง→บน
+LOGO_UV = (0.005, 0.99, 0.29, 0.76)
+_logo = {}
+LOGO_PX = 512                 # ความละเอียดภาพโลโก้ (512 px ชัดพอบนรถในฉาก และไฟล์เล็กกว่า 1024 ราว 3 เท่า)
+
+
+def logo_material(bg=(1.0, 1.0, 1.0)):
+    """วัสดุภาพโลโก้บนพื้นสี bg (ค่า 0..1 แบบที่ตาเห็น ค่าเริ่มต้นขาว) ภาพย่อเหลือ LOGO_PX px ไฟล์จะได้เล็ก
+    ใช้สีพื้นเดียวกับผิวที่แปะ (เช่น หางสีฟ้า) แผ่นโลโก้จะกลืนไปกับผิว — สร้างครั้งเดียวต่อสีพื้นต่อฉาก"""
+    key = tuple(round(c, 3) for c in bg)
+    if key in _logo and _logo[key].name in bpy.data.materials:
+        return _logo[key]
+    import numpy as np
+    src = bpy.data.images.load(LOGO_PATH, check_existing=True)
+    img = src.copy(); img.name = 'logo_%02x%02x%02x' % tuple(int(c * 255) for c in bg)
+    img.scale(LOGO_PX, LOGO_PX)
+    # ภาพต้นฉบับมีพื้นโปร่งใส: เทสีพื้นลงไปแทน (ส่งออกเป็น JPEG ซึ่งไม่มีความโปร่งใส ส่วนโปร่งใสจะกลายเป็นสีดำ)
+    px = np.empty(LOGO_PX * LOGO_PX * 4, dtype=np.float32); img.pixels.foreach_get(px)
+    px = px.reshape(-1, 4); a_ = px[:, 3:4]
+    px[:, :3] = px[:, :3] * a_ + np.array(bg, dtype=np.float32) * (1.0 - a_); px[:, 3] = 1.0
+    img.pixels.foreach_set(px.ravel())
+    img.pack()                    # เก็บภาพที่แก้แล้วไว้ในไฟล์ ตัวส่งออกจะได้ใช้ภาพนี้ (ไม่ไปอ่านไฟล์ต้นฉบับใหม่)
+    m = bpy.data.materials.new('Logo'); m.use_nodes = True
+    tex = m.node_tree.nodes.new('ShaderNodeTexImage'); tex.image = img
+    m.node_tree.links.new(tex.outputs['Color'], m.node_tree.nodes['Principled BSDF'].inputs['Base Color'])
+    m.node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.5
+    _logo[key] = m
+    return m
+
+
+def logo_decal(name, parent, center, width, face='-y', bg=(1.0, 1.0, 1.0)):
+    """แผ่นโลโก้บาง ๆ แปะผิว (ไม่หนา ไม่บังรูปทรง) รักษาสัดส่วนภาพ
+    face = ทิศที่แผ่นหันออก: '-y' / '+y' (ด้านข้างรถ/ลำตัว) หรือ '+x' / '-x' (หน้า/ท้าย)
+    ใน Blender ด้าน -y = ด้าน +z ในเว็บ (ฝั่งกล้อง)"""
+    u0, u1, v0, v1 = LOGO_UV
+    h = width * (v1 - v0) / (u1 - u0)
+    cx, cy, cz = center
+    bm = bmesh.new(); uv = bm.loops.layers.uv.new('UVMap')
+    # มุมซ้ายล่าง → ขวาล่าง → ขวาบน → ซ้ายบน เมื่อมองจากด้านที่แผ่นหันออก (ตัวอักษรจึงไม่กลับด้าน)
+    if face == '-y':
+        pts = [(cx - width / 2, cy, cz - h / 2), (cx + width / 2, cy, cz - h / 2), (cx + width / 2, cy, cz + h / 2), (cx - width / 2, cy, cz + h / 2)]
+    elif face == '+y':
+        pts = [(cx + width / 2, cy, cz - h / 2), (cx - width / 2, cy, cz - h / 2), (cx - width / 2, cy, cz + h / 2), (cx + width / 2, cy, cz + h / 2)]
+    elif face == '+x':
+        pts = [(cx, cy - width / 2, cz - h / 2), (cx, cy + width / 2, cz - h / 2), (cx, cy + width / 2, cz + h / 2), (cx, cy - width / 2, cz + h / 2)]
+    else:
+        pts = [(cx, cy + width / 2, cz - h / 2), (cx, cy - width / 2, cz - h / 2), (cx, cy - width / 2, cz + h / 2), (cx, cy + width / 2, cz + h / 2)]
+    vs = [bm.verts.new(p) for p in pts]
+    f = bm.faces.new(vs)
+    for lp, c in zip(f.loops, ((u0, v0), (u1, v0), (u1, v1), (u0, v1))):
+        lp[uv].uv = c
+    bm.normal_update()
+    return obj_from_bmesh(name, bm, logo_material(bg), parent=parent)
+
+
+def wheel(name, loc, radius, width, tyre, rim, parent, seg=12, axis='y'):
+    """ล้อโลว์โพลี: ยาง + กระทะล้อทั้งสองข้าง (แกนล้อตามแกน y ของรถ)"""
+    rot = (math.radians(90), 0, 0) if axis == 'y' else (0, math.radians(90), 0)
+    prim('cylinder', name, tyre, loc=loc, rot=rot, vertices=seg, radius=radius, depth=width, parent=parent)
+    for s in (1, -1):
+        off = (0, s * (width / 2 + 0.005), 0) if axis == 'y' else (s * (width / 2 + 0.005), 0, 0)
+        prim('cylinder', name + '_Rim', rim, loc=(loc[0] + off[0], loc[1] + off[1], loc[2]), rot=rot,
+             vertices=seg, radius=radius * 0.55, depth=0.01, parent=parent)
+
+
+def boxes(name, items, material, parent, bevel=0.0):
+    """รวมกล่องหลายใบเป็นเมชเดียว (ไฟล์เล็กกว่าสร้างทีละชิ้นมาก เหมาะกับซี่ผนัง เสา คาน)
+    items = [(ศูนย์กลาง (x, y, z), ครึ่งขนาด (hx, hy, hz))] · bevel > 0 = ลบมุมทุกกล่อง"""
+    bm = bmesh.new()
+    for (cx, cy, cz), (hx, hy, hz) in items:
+        res = bmesh.ops.create_cube(bm, size=2.0)
+        bmesh.ops.scale(bm, vec=(hx, hy, hz), verts=res['verts'])
+        bmesh.ops.translate(bm, vec=(cx, cy, cz), verts=res['verts'])
+    ob = obj_from_bmesh(name, bm, material, parent=parent)
+    if bevel > 0:
+        m = ob.modifiers.new('bevel', 'BEVEL'); m.width = bevel; m.segments = 1
+    return ob
+
+
+def emblem(name, parent, center, radius, face='-y'):
+    """ตราหน่วยงานแบบวงกลมเรียบ ๆ (ไม่ใช่ตราจริง): วงกลมน้ำเงิน ขอบทอง จุดกลางทอง — มาร์ชเลือก 1 พ.ย. 2026"""
+    BLUE = mat('EmblemBlue', hexrgb(0x1f3f8a), 0.5)
+    GOLD = mat('EmblemGold', hexrgb(0xd4a63a), 0.35, 0.5)
+    rot = {'-y': (math.radians(90), 0, 0), '+y': (math.radians(-90), 0, 0),
+           '+x': (0, math.radians(90), 0), '-x': (0, math.radians(-90), 0)}[face]
+    out = {'-y': (0, -1, 0), '+y': (0, 1, 0), '+x': (1, 0, 0), '-x': (-1, 0, 0)}[face]
+    g = empty(name, parent, center)
+    prim('cylinder', name + '_Ring', GOLD, loc=(0, 0, 0), rot=rot, vertices=20, radius=radius, depth=0.06, parent=g)
+    prim('cylinder', name + '_Disc', BLUE, loc=tuple(o * 0.035 for o in out), rot=rot, vertices=20, radius=radius * 0.82, depth=0.02, parent=g)
+    prim('cylinder', name + '_Dot', GOLD, loc=tuple(o * 0.05 for o in out), rot=rot, vertices=12, radius=radius * 0.3, depth=0.02, parent=g)
+    return g
