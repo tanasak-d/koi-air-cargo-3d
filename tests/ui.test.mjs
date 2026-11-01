@@ -118,15 +118,15 @@ test('renderGlossary: ห่อศัพท์ครั้งแรกด้ว�
   assert.equal(UI.renderGlossary('สวัสดี'), 'สวัสดี');
 });
 
-test('renderStageControls: ปุ่มถัดไปปิดเมื่อค้าง hold และเปิดตอนปกติ', () => {
+test('renderScrub: ปุ่มถัดไปปิดเมื่อค้าง hold และเปิดตอนปกติ', () => {
   const S = walk(L.newState(1));
-  assert.match(UI.renderStageControls(S, false, false), /data-act="next"[^>]*disabled/);
-  assert.doesNotMatch(UI.renderStageControls(L.newState(0), false, false), /data-act="next"[^>]*disabled/);
+  assert.match(UI.renderScrub(S, false), /data-act="next"[^>]*disabled/);
+  assert.doesNotMatch(UI.renderScrub(L.newState(0), false), /data-act="next"[^>]*disabled/);
 });
 
 test('บอกสถานะขั้นปัจจุบัน "ขั้น n/17"', () => {
   const S = L.newState(0); L.goTo(S, 4);
-  assert.match(UI.renderStageControls(S, false, false), /ขั้น 5\/17/);
+  assert.match(UI.renderScrub(S, false), /ขั้น 5 \/17/);
 });
 
 test('renderScenarioMenu: เหตุการณ์ครบ 6 แบบ aria-pressed ถูกตัว และหัวเมนูบอกชื่อเหตุการณ์ที่เลือก', () => {
@@ -154,11 +154,11 @@ test('renderTimeline ตอน overview: ไม่มีขั้นใดเป
   assert.equal(count(UI.renderTimeline(S), /aria-current="step"/g), 0);
 });
 
-test('renderStageControls: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
+test('renderScrub: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
   const S = L.newState(0);
-  assert.match(UI.renderStageControls(S, false, false), /ดูทั้งเส้นทาง/);
+  assert.match(UI.renderScrub(S, false), /ดูทั้งเส้นทาง/);
   S.overview = true;
-  assert.match(UI.renderStageControls(S, false, false), /กลับสู่สถานี/);
+  assert.match(UI.renderScrub(S, false), /กลับสู่สถานี/);
 });
 
 // ---- Task 10: ภาพความเสี่ยง ----
@@ -210,10 +210,9 @@ test('runAction: ใน hold คำสั่ง next/prev จากคีย์�
   assert.equal(T.idx, 0);
 });
 
-test('renderStageControls: มีปุ่มโหมดนำเสนอ (เปลี่ยนข้อความตามโหมด)', () => {
-  const S = L.newState(0);
-  assert.match(UI.renderStageControls(S, false, false), /data-act="present"[^>]*>[^<]*โหมดนำเสนอ/);
-  assert.match(UI.renderStageControls(S, false, true), /ออกจากโหมดนำเสนอ/);
+test('presentLabel: ปุ่มโหมดนำเสนอบนแถบบนเปลี่ยนข้อความตามโหมด', () => {
+  assert.equal(UI.presentLabel(false), 'โหมดนำเสนอ');
+  assert.equal(UI.presentLabel(true), 'ออกจากโหมดนำเสนอ');
 });
 
 // ---- Final review fix: คงโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ ----
@@ -251,6 +250,6 @@ test('renderStatus: แถบบนบอกสถานะการขนส่
   assert.match(UI.renderStatus(walk(L.newState(0))), /✓ ถึงมือผู้รับ/);
 });
 
-test('renderStageControls V4: มีแถบความคืบหน้าของขั้น (ฉาก 3 มิติเติมความยาวเอง)', () => {
-  assert.match(UI.renderStageControls(L.newState(0), false, false), /id="step-progress"/);
+test('renderScrub V6: มีแถบความคืบหน้าของขั้น (ฉาก 3 มิติเติมความยาวเอง)', () => {
+  assert.match(UI.renderScrub(L.newState(0), false), /id="step-progress"/);
 });

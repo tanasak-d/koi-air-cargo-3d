@@ -106,10 +106,20 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 /* แถบเล่นด้านล่างของภาพ: ปุ่มกลม ก่อน/เล่น/ถัดไป + แถบความคืบหน้าของขั้น */
 .stage-ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 10px;box-shadow:0 4px 14px rgba(15,28,46,.12)}
-.stage-ctrl .round{width:40px;height:40px;min-height:40px;padding:0;border-radius:50%;display:grid;place-items:center}
-.stage-ctrl .round.primary{width:48px;height:48px}
-.progress{flex:1 1 120px;height:6px;border-radius:99px;background:var(--soft);overflow:hidden;min-width:80px}
-.progress i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px}
+.ctl{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;border:0;background:var(--soft);flex:none}
+.ctl.play{width:48px;height:48px;background:var(--accent);color:var(--on-accent)}
+.ctl .ico{width:20px;height:20px}
+.ov-btn{display:inline-flex;gap:6px;align-items:center}
+/* แถบเวลา 17 ช่อง: ปุ่มสูง 28px (กดง่าย) แต่เส้นที่เห็นบาง 6px */
+.scrub{flex:1 1 160px;min-width:120px;display:flex;align-items:center;height:28px}
+.tick{flex:1 1 0;min-width:0;height:28px;min-height:28px;padding:0;border:0;border-radius:0;background:transparent;position:relative}
+.tick::before{content:"";position:absolute;left:1px;right:1px;top:11px;height:6px;background:var(--line)}
+.tick.done::before{background:var(--accent)}
+.tick:first-child::before{border-radius:3px 0 0 3px}
+.tick:last-child::before{border-radius:0 3px 3px 0}
+.tick i{position:absolute;left:1px;top:11px;height:6px;width:0;max-width:calc(100% - 2px);background:var(--accent);z-index:1}
+.tick.now::after{content:"";position:absolute;left:50%;top:5px;width:3px;height:18px;margin-left:-1px;border-radius:2px;background:var(--accent)}
+.tick[disabled]{opacity:1}
 .stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
 .risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
 .risk-menu summary{list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--bad);color:var(--bad);
@@ -138,6 +148,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tl-step .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1}
 .tl-step .nm{font-size:.92rem}
 .tl-step .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.section-label{margin:4px 0 2px;font-size:.78rem;color:var(--muted);font-weight:600}
 .tl-step.passed .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .tl-step.passed .nm{color:var(--muted)}
 .tl-step.here{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
@@ -264,7 +275,8 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <span class="chip route">NRT 🇯🇵 → BKK 🇹🇭</span>
       <span class="chip flight">JL707 · 18:25 JST → 23:00 ICT</span>
       <span id="status" class="status" role="status"></span>
-      <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด">ธีม</button>
+      <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
+      <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> ธีม</button>
     </div>
   </header>
   <details class="card howto">
@@ -290,6 +302,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <div class="panel-inner">
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
         <section id="facts" aria-live="polite"></section>
+        <section id="station-steps" aria-label="ขั้นในสถานีนี้"></section>
         <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
       </div>
     </aside>
@@ -5709,17 +5722,40 @@ var KoiUI = (function () {
       (res ? '<p>' + esc(res) + '</p>' : '') + '</div>';
   }
 
-  // ปุ่มบนเวที: ก่อน/เล่น/ถัดไป + "ขั้น n/17" + ดูทั้งเส้นทาง + โหมดนำเสนอ
-  function renderStageControls(S, playing, present) {
+  // แถบเล่นบนเวที (V6): ก่อน/เล่น/ถัดไป + แถบเวลา 17 ขีด (กดขีดเพื่อข้ามขั้น) + "ขั้น n /17" + ดูทั้งเส้นทาง
+  // แถบเวลาแบ่งเป็น 17 ช่องเท่ากัน ช่องที่ผ่านแล้วเติมดำ ช่องปัจจุบันมี <i id="step-progress"> ให้ฉาก 3 มิติเติมความยาวเองทุกเฟรม
+  function renderScrub(S, playing) {
+    var n = D.STEPS.length, locked = S.mode === 'hold' || S.mode === 'end';
     var dis = L.canAdvance(S) ? '' : ' disabled';
-    return '<button type="button" class="round" data-act="prev" aria-label="ขั้นก่อนหน้า" title="ขั้นก่อนหน้า"' + ((S.mode === 'hold' || S.mode === 'end' || S.idx === 0) ? ' disabled' : '') + '>◀</button>' +
-      '<button type="button" class="round primary" data-act="play" aria-label="' + (playing ? 'หยุด' : 'เล่น') + '" title="' + (playing ? 'หยุด' : 'เล่น') + '"' + dis + '>' + (playing ? '⏸' : '▶') + '</button>' +
-      '<button type="button" class="round" data-act="next" aria-label="ขั้นถัดไป" title="ขั้นถัดไป"' + dis + '>▶▶</button>' +
-      // แถบความคืบหน้าของอนิเมชันในขั้นนี้ (ฉาก 3 มิติปรับความกว้างของ <i> เองทุกเฟรม)
-      '<div class="progress" aria-hidden="true"><i id="step-progress"></i></div>' +
-      '<b class="count">ขั้น ' + (S.idx + 1) + '/' + D.STEPS.length + '</b>' +
-      '<button type="button" data-act="overview">' + (S.overview ? '↩ กลับสู่สถานี' : 'ดูทั้งเส้นทาง') + '</button>' +
-      '<button type="button" data-act="present">' + (present ? 'ออกจากโหมดนำเสนอ' : '📽 โหมดนำเสนอ') + '</button>';
+    var ticks = '';
+    for (var i = 0; i < n; i++) {
+      var cls = 'tick' + (i < S.idx ? ' done' : i === S.idx ? ' now' : '');
+      ticks += '<button type="button" data-step="' + i + '" class="' + cls + '" aria-label="ไปขั้น ' + (i + 1) + '"' +
+        (locked ? ' disabled' : '') + '>' + (i === S.idx ? '<i id="step-progress"></i>' : '') + '</button>';
+    }
+    return '<button type="button" class="ctl" data-act="prev" aria-label="ขั้นก่อนหน้า" title="ขั้นก่อนหน้า"' + ((locked || S.idx === 0) ? ' disabled' : '') + '>' + icon('prev') + '</button>' +
+      '<button type="button" class="ctl play" data-act="play" aria-label="' + (playing ? 'หยุด' : 'เล่น') + '" title="' + (playing ? 'หยุด' : 'เล่น') + '"' + dis + '>' + icon(playing ? 'pause' : 'play') + '</button>' +
+      '<button type="button" class="ctl" data-act="next" aria-label="ขั้นถัดไป" title="ขั้นถัดไป"' + dis + '>' + icon('next') + '</button>' +
+      '<div class="scrub">' + ticks + '</div>' +
+      '<b class="count">ขั้น ' + (S.idx + 1) + ' /' + n + '</b>' +
+      '<button type="button" class="ov-btn" data-act="overview">' + icon('map') + ' ' + (S.overview ? 'กลับสู่สถานี' : 'ดูทั้งเส้นทาง') + '</button>';
+  }
+
+  // ข้อความปุ่มโหมดนำเสนอบนแถบบน
+  function presentLabel(present) { return present ? 'ออกจากโหมดนำเสนอ' : 'โหมดนำเสนอ'; }
+
+  // รายการขั้นของสถานีปัจจุบัน (แผงขวา) ใช้แถวแบบเดียวกับเส้นเวลา 17 ขั้น
+  function renderStationSteps(S) {
+    var st = D.STATIONS[L.stationOf(S.idx)], locked = S.mode === 'hold' || S.mode === 'end', out = [];
+    for (var i = st.first; i <= st.last; i++) {
+      var s = D.STEPS[i], here = i === S.idx, passed = i < S.idx;
+      var bad = here && (S.mode === 'hold' || S.end === 'loss');
+      out.push('<button type="button" data-step="' + i + '" class="tl-step' + (here ? ' here' : passed ? ' passed' : '') + '"' +
+        (here && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
+        '<span class="dot" aria-hidden="true">' + (bad ? '✕' : passed ? '✓' : s.n) + '</span>' +
+        '<span class="nm">' + esc(s.name) + '</span><span class="tm">' + esc(shortTime(S, i)) + '</span></button>');
+    }
+    return '<p class="section-label">ขั้นในสถานีนี้</p><div class="tl-steps">' + out.join('') + '</div>';
   }
 
   // เมนูเหตุการณ์เสี่ยง (พับได้) หัวเมนูบอกเหตุการณ์ที่เลือกอยู่
@@ -5772,7 +5808,9 @@ var KoiUI = (function () {
       var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
       if (stEl) stEl.innerHTML = renderStatus(S);
       $('#card').innerHTML = renderCard(S);
-      $('#stage-ctrl').innerHTML = renderStageControls(S, !!timer, present);
+      $('#stage-ctrl').innerHTML = renderScrub(S, !!timer);
+      $('#station-steps').innerHTML = renderStationSteps(S);
+      var pb = $('#present-btn'); if (pb) pb.lastChild.nodeValue = ' ' + presentLabel(present);
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
       root.classList.toggle('present', present);
@@ -5860,7 +5898,7 @@ var KoiUI = (function () {
     esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
-    renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>

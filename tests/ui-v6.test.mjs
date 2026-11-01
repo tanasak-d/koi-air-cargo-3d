@@ -70,3 +70,31 @@ test('V6: เลิกใช้แท็บและป้ายสถานี�
   assert.equal(UI.renderTabBar, undefined);
   assert.equal(UI.renderStationBadge, undefined);
 });
+
+// ---- Task 4: แถบเล่น + แถบเวลา 17 ขีด และรายการขั้นในสถานี ----
+test('renderScrub: 17 ขีด ขีดที่ผ่านแล้ว/ตอนนี้แยกด้วยคลาส และบอก "ขั้น 5 /17"', () => {
+  const S = L.newState(0); L.goTo(S, 4);
+  const h = UI.renderScrub(S, false);
+  assert.equal(count(h, /data-step="/g), 17);
+  assert.match(h, /data-step="4"[^>]*class="tick now"/);
+  assert.match(h, /data-step="0"[^>]*class="tick done"/);
+  assert.match(h, /ขั้น 5 \/17/);
+  assert.match(h, /data-act="play"[^>]*aria-label="เล่น"/);
+  assert.match(UI.renderScrub(S, true), /data-act="play"[^>]*aria-label="หยุด"/);
+});
+test('renderScrub: ตอน hold ขีดและปุ่มเดินหน้ากดไม่ได้', () => {
+  const S = walk(L.newState(1));
+  const h = UI.renderScrub(S, false);
+  assert.equal(count(h, /data-step="[^"]*"[^>]*disabled/g), 17);
+  assert.match(h, /data-act="next"[^>]*disabled/);
+});
+test('renderStationSteps: แสดงเฉพาะขั้นของสถานีปัจจุบัน ขั้นปัจจุบัน aria-current', () => {
+  const S = L.newState(0); L.goTo(S, 3);
+  const h = UI.renderStationSteps(S);
+  assert.equal(count(h, /data-step="/g), 6);   // สถานี 1 = ขั้น 1–6
+  assert.match(h, /data-step="3"[^>]*aria-current="step"/);
+  assert.match(h, /ขั้นในสถานีนี้/);
+});
+test('V6: เลิกใช้ renderStageControls', () => {
+  assert.equal(UI.renderStageControls, undefined);
+});
