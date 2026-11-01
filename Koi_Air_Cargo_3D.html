@@ -313,6 +313,8 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .cta .w-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
 .cta button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .w-keys{margin:14px 0 0;font-size:.82rem;color:#bdbdbd}
+/* จอแคบ: ตัวหนังสือทับภาพทั้งจอ ใช้เงาดำทึบขึ้นให้อ่านง่าย */
+@media (max-width:767px){.welcome{background:rgba(0,0,0,.82);padding:32px 16px}}
 .howto summary{cursor:pointer;font-weight:600}
 .howto ul{margin:8px 0 0;padding-left:20px}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
@@ -394,13 +396,14 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <details class="card howto">
     <summary>❓ วิธีใช้</summary>
     <ul>
-      <li>กด <b>▶ เล่น</b> หรือ <b>ถัดไป ▶</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
+      <li>กด <b>▶ เล่น</b> หรือ <b>ถัดไป</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
+      <li>แถบเส้นทางด้านบนบอกว่าตอนนี้อยู่สถานีไหน (วงดำเต็ม = ผ่านแล้ว · วงมีวงรอบ + "ตอนนี้" = ตอนนี้) กดชื่อสถานีหรือขีดบนแถบเวลาเพื่อข้ามไปดู</li>
       <li>ลากเมาส์หรือนิ้วบนภาพเพื่อหมุนดูรอบ ๆ · ล้อเมาส์หรือสองนิ้วเพื่อซูม (ปล่อยไว้สักพักกล้องจะกลับมุมเดิม)</li>
-      <li>แผง <b>ติดตามการขนส่ง</b> ด้านขวา (บนมือถืออยู่ใต้ภาพ): อ่านว่าใครทำอะไร เอกสาร ความเสี่ยง และกดชื่อขั้นเพื่อข้ามไปดู</li>
-      <li>เลือก <b>⚠ เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างเป็นสีแดงที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
+      <li>การ์ดด้านขวาบอกว่าใครทำ ทำอะไร เอกสาร ความเสี่ยง · บนมือถือลากแผ่นข้อมูลด้านล่างขึ้น (หรือกดที่จับ) เพื่อดูรายละเอียด</li>
+      <li>เลือก <b>⚠ เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
       <li>กด <b>โหมดนำเสนอ</b> เมื่อฉายหน้าห้อง · สลับธีมสว่าง/มืดที่ปุ่มมุมขวาบน</li>
     </ul>
-    <p class="muted keys">คีย์ลัด: ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · T สลับธีม · O ภาพรวม</p>
+    <p class="muted keys">คีย์ลัด: Enter เริ่ม · ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · Esc ออก · T สลับธีม · O ภาพรวม</p>
   </details>
   <nav id="route" class="route-wrap" aria-label="เส้นทาง 6 สถานี"></nav>
   <main class="layout">
@@ -6041,7 +6044,8 @@ var KoiUI = (function () {
     // จำสถานะเปิด/ปิดของเมนูเหตุการณ์ (event toggle ไม่ bubble จึงฟังแบบ capture)
     root.addEventListener('toggle', function (e) {
       if (!e.target.classList) return;
-      if (e.target.classList.contains('risk-menu')) riskOpen = e.target.open;
+      // จำเฉพาะเมนูบนภาพ (#risk) · เมนูในแผ่นมือถือเปิดค้างเสมอ ไม่นับ
+      if (e.target.classList.contains('risk-menu') && e.target.parentNode && e.target.parentNode.id === 'risk') riskOpen = e.target.open;
       if (e.target.classList.contains('more')) moreOpen = e.target.open;
     }, true);
     function togglePlay() {
