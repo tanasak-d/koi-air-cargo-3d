@@ -78,7 +78,7 @@ body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 .brand small{color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .chip,.status{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.85rem;background:var(--surface);white-space:nowrap}
-.chip.route{font-weight:700}
+.chip.trip{font-weight:700}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
 button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
@@ -180,22 +180,89 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .st-bad{color:var(--bad);font-weight:600}
 
 /* จอกลาง/เล็ก: แผงติดตามลงไปอยู่ใต้ภาพ (อ่านต่อเนื่องได้) */
-@media (max-width:1000px){
+/* ==== V6 จัดหน้าตามขนาดจอ ====
+   ≥1024 แล็ปท็อป/โปรเจกเตอร์: ภาพซ้าย แผงขวา · 768–1023 แท็บเล็ต: แผงลงใต้ภาพ
+   มือถือแนวตั้ง (<768): ภาพเต็มจอ + แผ่นข้อมูลล่าง · มือถือแนวนอน (สูง ≤500): แบบแล็ปท็อปย่อส่วน */
+/* ส่วนของแผ่นข้อมูลมือถือ: จอใหญ่ไม่ใช้ */
+.sheet-head,.sheet-ctrl,#sheet-tabs,.sheet-risk,.panel-inner #timeline{display:none}
+.panel-inner #station-steps{flex:1 1 0;min-height:120px;overflow:auto}
+@media (min-width:1024px){
+  .layout{grid-template-columns:minmax(0,1fr) 400px}
+  /* ภาพสูงพอดีจอ ไม่ต้องเลื่อนหน้า (สำคัญกับโปรเจกเตอร์) */
+  #stage{aspect-ratio:auto;height:calc(100vh - 250px);height:calc(100dvh - 250px);min-height:420px}
+  #app{padding-bottom:12px}
+  .topbar{flex-wrap:nowrap}
+  .chips{flex-wrap:nowrap}
+  .chips>*{flex:none}
+}
+@media (min-width:1600px){
+  html{font-size:18px}   /* จอใหญ่/โปรเจกเตอร์: ตัวอักษรใหญ่ขึ้นทั้งหน้า */
+  #app{max-width:1840px}
+  .layout{grid-template-columns:minmax(0,1fr) 460px}
+}
+@media (max-width:1023px){
   .layout{grid-template-columns:minmax(0,1fr)}
   .panel-inner{position:static;display:grid}
-  .panel-inner #facts,.panel-inner #timeline{max-height:none;overflow:visible}
+  .panel-inner #facts,.panel-inner #station-steps{max-height:none;overflow:visible}
+  .route .stn .txt>span{display:none}
 }
-@media (max-width:560px){
-  #app{padding:8px 16px 24px}
-  .chips .flight{display:none}
-  /* จอมือถือ: แถบเล่นอยู่ใต้ภาพ ไม่บังฉาก (ภาพยังเป็น 4:3) */
-  #stage{aspect-ratio:auto;min-height:0}
-  #stage canvas{aspect-ratio:4/3;height:auto}
-  .stage-ctrl{position:static;border:0;border-top:1px solid var(--line);border-radius:0;box-shadow:none}
-  /* จอมือถือ: ป้ายสถานีย่อเหลือ "สถานี k / 6" (ชื่อสถานีมีในเส้นเวลาใต้ภาพแล้ว) ไม่ชนปุ่มเหตุการณ์ */
-  .risk{right:8px;top:8px}
-  .risk-menu summary{padding:4px 10px;font-size:.85rem}
+@media (max-width:767px) and (orientation:portrait){
+  #app{padding:0;display:block}
+  .topbar,.howto,.risk{display:none}
+  #stage{position:fixed;inset:0;height:100vh;height:100dvh;border:0;border-radius:0;aspect-ratio:auto;min-height:0;box-shadow:none}
+  /* แถบเส้นทางย่อเหลือจุด 6 จุด ลอยบนภาพ (เห็นชื่อเฉพาะสถานีปัจจุบัน) */
+  .route-wrap{position:fixed;top:8px;left:8px;right:8px;z-index:3;padding:4px 6px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+  .stn button{padding:4px 2px;min-height:40px}
+  .stn .dot{width:24px;height:24px;font-size:.72rem}
+  .stn .txt{display:none}   /* ชื่อสถานีปัจจุบันอยู่ที่หัวแผ่นข้อมูลแล้ว */
+  .stn button{justify-content:center}
+  .stn::after{left:calc(50% + 16px);right:calc(-50% + 16px)}
   #card{max-width:200px;font-size:.82rem}
+  /* แผ่นข้อมูลด้านล่าง: ปิด = ชื่อขั้น + ปุ่มเล่นใหญ่ · เปิด = สูง 70% มีแท็บ */
+  .panel.sheet{position:fixed;left:0;right:0;bottom:0;z-index:4;border:0;border-radius:22px 22px 0 0;
+    box-shadow:0 -8px 30px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom);transition:transform .2s ease;touch-action:none}
+  .sheet.open{height:70vh;height:70dvh}
+  .panel-inner{position:static;display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;height:100%;overflow:auto;touch-action:pan-y}
+  .panel-title,.panel-inner #station-steps{display:none}
+  .sheet-head{display:block}
+  .sheet-head .eyebrow{font-size:.75rem}
+  .sheet-head .step-title{font-size:1.05rem}
+  .sheet-ctrl{display:block}
+  .sheet-ctrl .stage-ctrl{position:static;border:0;box-shadow:none;padding:0;background:transparent}
+  .sheet-ctrl .ctl{width:48px;height:48px}
+  .sheet-ctrl .ctl.play{width:56px;height:56px}
+  .grab{display:block;width:100%;min-height:28px;padding:8px 0 4px;border:0;border-radius:0;background:transparent;touch-action:none}
+  .grab span{display:block;width:44px;height:5px;margin:0 auto;border-radius:3px;background:var(--line)}
+  .panel-inner #facts{max-height:none;overflow:visible}
+  .sheet:not(.open) #facts{display:none}
+  .sheet.open #sheet-tabs{display:block}
+  .sheet.open[data-tab="route"] #facts,.sheet.open[data-tab="risk"] #facts{display:none}
+  .sheet.open[data-tab="route"] #timeline{display:grid;overflow:visible}
+  .sheet.open[data-tab="risk"] .sheet-risk{display:block}
+  .tl-step{min-height:44px}
+  .facts{grid-template-columns:1fr}
+  #facts>.eyebrow,#facts>.step-title{display:none}   /* หัวแผ่นบอกแล้ว ไม่ซ้ำ */
+}
+@media (max-height:500px) and (orientation:landscape){
+  /* จอเตี้ย: ซ่อนแถบบนและวิธีใช้ ให้ภาพ 3 มิติได้ความสูงมากที่สุด (สลับธีม/นำเสนอใช้คีย์ T/P) */
+  #app{padding:6px 8px;gap:6px}
+  .topbar,.howto{display:none}
+  .route-wrap{padding:2px 8px}
+  .stn button{padding:2px 6px}
+  .stn .dot{width:24px;height:24px}
+  .route .stn .txt>span{display:none}
+  .layout{grid-template-columns:minmax(0,1fr) 300px}
+  #stage{aspect-ratio:auto;height:calc(100vh - 64px);height:calc(100dvh - 64px);min-height:200px}
+  .panel-inner{position:absolute;display:flex}
+  .panel-inner #facts{flex:1 1 auto;max-height:none;overflow:auto}
+  .panel-inner #station-steps{display:none}
+}
+@media (prefers-reduced-motion: reduce){.sheet{transition:none}}
+/* แท็บของแผ่นข้อมูลมือถือ */
+.sheet-tabs{display:flex;gap:6px;overflow-x:auto}
+.sheet-tabs button{min-height:40px;padding:4px 12px;font-size:.88rem;white-space:nowrap}
+.sheet-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.sheet-risk .risk-menu summary{display:none}
 }
 /* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
 /* V6: เต็มจอ ภาพ 3 มิติซ้าย แผงดำขวา ซ่อนแถบบน/แถบเส้นทาง/แผงติดตาม/แถบเล่น (คุมด้วยคีย์บอร์ดหรือรีโมตพรีเซนต์) */
@@ -263,7 +330,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .fact{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:8px;align-items:flex-start;min-width:0}
 .fact.wide{grid-column:1/-1}
 .fact .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--text)}
-.fact.risk .ic{color:var(--warn)}
+.fact.hazard .ic{color:var(--warn)}
 .fact small{display:block;font-size:.75rem;color:var(--muted)}
 .fact b{display:block;font-size:.9rem;line-height:1.4;font-weight:600}
 .meter{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -317,7 +384,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <small>ส่งปลาคาร์ฟพรีเมียม ญี่ปุ่น → ไทย ทางอากาศ · รุ่น <span id="app-version">dev</span></small>
     </div>
     <div class="chips">
-      <span class="chip route">NRT 🇯🇵 → BKK 🇹🇭</span>
+      <span class="chip trip">NRT 🇯🇵 → BKK 🇹🇭</span>
       <span class="chip flight">JL707 · 18:25 JST → 23:00 ICT</span>
       <span id="status" class="status" role="status"></span>
       <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
@@ -344,12 +411,16 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <div id="risk" class="risk"></div>
     </section>
     <aside id="present-side" class="present-side" aria-label="ข้อมูลขั้นสำหรับนำเสนอ" aria-live="polite" hidden></aside>
-    <aside id="panel" class="panel" aria-label="ติดตามการขนส่ง">
+    <aside id="panel" class="panel sheet" aria-label="ติดตามการขนส่ง">
       <div class="panel-inner">
+        <div id="sheet-head" class="sheet-head"></div>
+        <div id="sheet-ctrl" class="sheet-ctrl"></div>
+        <div id="sheet-tabs"></div>
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
         <section id="facts" aria-live="polite"></section>
         <section id="station-steps" aria-label="ขั้นในสถานีนี้"></section>
         <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
+        <div id="sheet-risk" class="sheet-risk"></div>
       </div>
     </aside>
   </main>
@@ -5709,7 +5780,7 @@ var KoiUI = (function () {
       fact(' wide', 'user', 'ใครทำ', renderGlossary(s.who)) +
       fact(' wide', 'hand', 'ทำอะไร', renderGlossary(s.what)) +
       fact('', 'doc', 'เอกสาร', s.docs.map(renderGlossary).join('<br>')) +
-      fact(' risk', 'alert', 'ความเสี่ยง', renderGlossary(s.risk)) + '</div>';
+      fact(' hazard', 'alert', 'ความเสี่ยง', renderGlossary(s.risk)) + '</div>';
     var age = L.bagAgeMin(S);
     if (age != null) {
       // มาตรวัดอายุปลาในถุง เทียบเพดาน 24 ชม. (บอกด้วยตัวเลขและ ✓/✕ เสมอ ไม่ใช้สีอย่างเดียว)
@@ -5833,6 +5904,36 @@ var KoiUI = (function () {
       '<div class="present-progress" aria-hidden="true"><i style="width:' + Math.round((S.idx + 1) / n * 100) + '%"></i></div>';
   }
 
+  /* ---------- แผ่นข้อมูลมือถือ (V6) ---------- */
+  // จอมือถือแนวตั้ง: ภาพเต็มจอ + แผ่นข้อมูลด้านล่าง (ต้องตรงกับ @media ใน CSS)
+  var MOBILE_MQ = '(max-width:767px) and (orientation:portrait)';
+
+  // ปล่อยนิ้วหลังลากแผ่น: ลากเกิน 20% ของความสูงแผ่นจึงเปลี่ยน (dy ติดลบ = ลากขึ้น) คืน true = เปิดเต็ม
+  function sheetSnap(dyPx, sheetPx, wasOpen) {
+    if (!(sheetPx > 0)) return wasOpen;
+    var th = sheetPx * 0.2;
+    if (dyPx <= -th) return true;
+    if (dyPx >= th) return false;
+    return wasOpen;
+  }
+
+  // หัวแผ่น: ที่จับ (กดแทนการลากได้) + สถานี + ชื่อขั้น + เวลา
+  function renderSheetHead(S, open) {
+    var s = D.STEPS[S.idx], k = L.stationOf(S.idx);
+    return '<button type="button" class="grab" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' +
+      (open ? 'ย่อแผ่นข้อมูล ดูภาพเต็มจอ' : 'ขยายแผ่นข้อมูล ดูรายละเอียด') + '"><span aria-hidden="true"></span></button>' +
+      '<p class="eyebrow">สถานี ' + (k + 1) + '/' + D.STATIONS.length + ' ' + esc(D.STATIONS[k].label) + ' · ขั้นที่ ' + s.n + ' จาก ' + D.STEPS.length + '</p>' +
+      '<h2 class="step-title">' + esc(s.name) + '</h2>' +
+      '<p class="times">' + icon('clock') + ' ' + esc(shortTime(S, S.idx)) + '</p>';
+  }
+
+  var SHEET_TABS = [['detail', 'รายละเอียด'], ['route', 'เส้นทาง 17 ขั้น'], ['risk', 'สถานการณ์เสี่ยง']];
+  function renderSheetTabs(tab) {
+    return '<div class="sheet-tabs" role="tablist">' + SHEET_TABS.map(function (t) {
+      return '<button type="button" role="tab" data-sheet="' + t[0] + '" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
+    }).join('') + '</div>';
+  }
+
   // หน้าต้อนรับ (V6): บอกว่าเว็บนี้คืออะไร เส้นทางไหน มีกี่ขั้น + ปุ่มเริ่ม/โหมดนำเสนอ (ภาพ 3 มิติภาพรวมอยู่ด้านหลัง)
   function renderWelcome() {
     var risks = D.SCENARIOS.length - 1; // เหตุการณ์แรกคือกรณีปกติ
@@ -5878,7 +5979,7 @@ var KoiUI = (function () {
 
   // selector ของปุ่มจาก data-* (ใช้คืนโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ เพราะ innerHTML สร้างปุ่มใหม่ทั้งหมด)
   function focusSelector(ds) {
-    var keys = ['act', 'opt', 'station', 'step', 'tab', 'sc'];
+    var keys = ['act', 'opt', 'station', 'step', 'sheet', 'sc'];
     for (var i = 0; i < keys.length; i++) if (ds && ds[keys[i]] != null) return '[data-' + keys[i] + '="' + ds[keys[i]] + '"]';
     return null;
   }
@@ -5888,7 +5989,7 @@ var KoiUI = (function () {
   // hooks.onRender(S) ให้ส่วน 3 มิติมาเกาะเพื่ออัปเดตตามสถานะ
   function mount(root, hooks) {
     hooks = hooks || {};
-    var S = L.newState(0), timer = null, present = false, moreOpen = false;
+    var S = L.newState(0), timer = null, present = false, moreOpen = false, sheetOpen = false, sheetTab = 'detail', lastMode = null;
     // หน้าต้อนรับ: แสดงตอนเปิดเว็บ เว้นแต่เปิดลิงก์ตรงไปขั้น (#step=N)
     var jump = parseStepHash(typeof location !== 'undefined' ? location.hash : '');
     var welcome = jump == null;
@@ -5909,6 +6010,16 @@ var KoiUI = (function () {
       var pb = $('#present-btn'); if (pb) pb.lastChild.nodeValue = ' ' + presentLabel(present);
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
+      // แผ่นข้อมูลมือถือ (จอใหญ่ CSS ซ่อนส่วนนี้ไว้)
+      // กล่องค้างที่ด่าน (HOLD): เปิดแผ่นให้เห็นแผงตัดสินใจทันที ไม่งั้นบนมือถือจะมองไม่เห็นปุ่ม VERIFY
+      if (S.mode === 'hold' && lastMode !== 'hold') { sheetOpen = true; sheetTab = 'detail'; }
+      lastMode = S.mode;
+      $('#sheet-head').innerHTML = renderSheetHead(S, sheetOpen);
+      $('#sheet-tabs').innerHTML = renderSheetTabs(sheetTab);
+      $('#sheet-risk').innerHTML = renderScenarioMenu(S, true);
+      var panel = $('#panel');
+      panel.classList.toggle('open', sheetOpen);
+      panel.setAttribute('data-tab', sheetTab);
       root.classList.toggle('present', present);
       var ps = $('#present-side');
       ps.hidden = !present;
@@ -5991,6 +6102,8 @@ var KoiUI = (function () {
       if (!el || el.disabled) return;
       var d = el.dataset;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
+      else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
+      else if (d.act === 'sheet') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }
       else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
@@ -6003,6 +6116,40 @@ var KoiUI = (function () {
       else if (d.act === 'present') { doAction('present'); return; }
       render();
     });
+    // ลากแผ่นข้อมูลด้วยนิ้ว/เมาส์ที่ที่จับ: ขยับเกิน 8px จึงนับว่าลาก แผ่นเลื่อนตามนิ้ว ปล่อยแล้วตัดสินด้วย sheetSnap
+    var dragY = null, dragMoved = false;
+    root.addEventListener('pointerdown', function (e) {
+      var g = e.target.closest ? e.target.closest('.grab') : null;
+      if (!g) return;
+      dragY = e.clientY; dragMoved = false;
+      if (g.setPointerCapture) { try { g.setPointerCapture(e.pointerId); } catch (err) { /* ไม่เป็นไร */ } }
+    });
+    root.addEventListener('pointermove', function (e) {
+      if (dragY == null) return;
+      var dy = e.clientY - dragY;
+      if (!dragMoved && Math.abs(dy) < 8) return;
+      dragMoved = true;
+      $('#panel').style.transform = 'translateY(' + Math.max(sheetOpen ? 0 : -80, dy) + 'px)';
+    });
+    root.addEventListener('pointerup', function (e) {
+      if (dragY == null) return;
+      var dy = e.clientY - dragY, panel = $('#panel');
+      dragY = null;
+      panel.style.transform = '';
+      if (!dragMoved) return;
+      sheetOpen = sheetSnap(dy, panel.offsetHeight, sheetOpen);
+      render();
+    });
+    root.addEventListener('pointercancel', function () { dragY = null; dragMoved = false; $('#panel').style.transform = ''; });
+
+    // แถบเล่นอยู่บนภาพเมื่อจอใหญ่ และย้ายเข้าแผ่นข้อมูลเมื่อเป็นมือถือแนวตั้ง (ใช้ปุ่มชุดเดียว ไม่ซ้ำ id)
+    var mq = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia(MOBILE_MQ) : null;
+    function placeControls() {
+      var ctrl = $('#stage-ctrl'), into = mq && mq.matches ? $('#sheet-ctrl') : $('#stage');
+      if (ctrl && into && ctrl.parentNode !== into) into.appendChild(ctrl);
+    }
+    if (mq) { placeControls(); if (mq.addEventListener) mq.addEventListener('change', placeControls); else if (mq.addListener) mq.addListener(placeControls); }
+
     render();
     return { render: render, getState: function () { return S; } };
   }
@@ -6012,7 +6159,8 @@ var KoiUI = (function () {
     esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
-    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, MOBILE_MQ: MOBILE_MQ, sheetSnap: sheetSnap, renderSheetHead: renderSheetHead, renderSheetTabs: renderSheetTabs,
+    renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>

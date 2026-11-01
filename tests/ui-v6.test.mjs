@@ -146,3 +146,49 @@ test('renderPresentSide: ตอน hold แสดง ✕ HOLD และปุ่
 test('renderPresentSide: มีปุ่มออกจากโหมดนำเสนอให้คนใช้เมาส์', () => {
   assert.match(UI.renderPresentSide(L.newState(0)), /data-act="present"/);
 });
+
+// ---- Task 7: จัดหน้าตามขนาดจอ + แผ่นข้อมูลมือถือ ----
+test('sheetSnap: ลากขึ้นเกิน 20% = เปิด · ลากลงเกิน 20% = ปิด · น้อยกว่านั้นคงเดิม', () => {
+  assert.equal(UI.sheetSnap(-100, 400, false), true);
+  assert.equal(UI.sheetSnap(100, 400, true), false);
+  assert.equal(UI.sheetSnap(-40, 400, false), false);
+  assert.equal(UI.sheetSnap(40, 400, true), true);
+  assert.equal(UI.sheetSnap(-100, 0, false), false);   // ยังวัดความสูงไม่ได้ = คงเดิม
+});
+test('renderSheetTabs: 3 แท็บ และแท็บที่เลือก aria-selected', () => {
+  const h = UI.renderSheetTabs('route');
+  assert.equal(count(h, /data-sheet="/g), 3);
+  assert.match(h, /data-sheet="route"[^>]*aria-selected="true"/);
+  assert.equal(count(h, /aria-selected="true"/g), 1);
+  for (const w of ['รายละเอียด', 'เส้นทาง 17 ขั้น', 'สถานการณ์เสี่ยง']) assert.match(h, new RegExp(w));
+});
+test('renderSheetHead: สถานี ชื่อขั้น เวลา และปุ่มเปิดแผ่นบอก aria-expanded', () => {
+  const S = L.newState(0); L.goTo(S, 3);
+  const h = UI.renderSheetHead(S, false);
+  assert.match(h, /ขั้นที่ 4 จาก 17/);
+  assert.match(h, /บรรจุถุง 3 ชั้น/);
+  assert.match(h, /data-act="sheet"[^>]*aria-expanded="false"/);
+  assert.match(UI.renderSheetHead(S, true), /aria-expanded="true"/);
+});
+test('focusSelector: แท็บแผ่นข้อมูลคืนโฟกัสได้', () => {
+  assert.equal(UI.focusSelector({ sheet: 'risk' }), '[data-sheet="risk"]');
+});
+test('CSS: มีช่วงจอ 1024 / 767 / แนวนอนเตี้ย และใช้ dvh กับมือถือ', () => {
+  assert.match(css, /@media \(min-width:1024px\)/);
+  assert.match(css, /@media \(max-width:767px\)/);
+  assert.match(css, /@media \(max-height:500px\) and \(orientation:landscape\)/);
+  assert.match(css, /100dvh/);
+  assert.match(css, /safe-area-inset-bottom/);
+});
+test('CSS: ปิดอนิเมชันแผ่นข้อมูลเมื่อ prefers-reduced-motion', () => {
+  assert.match(css, /prefers-reduced-motion[^{]*\{[^}]*\.sheet/);
+});
+test('มือถือ: ตัวเลือกจอมือถือใน JS ตรงกับใน CSS', () => {
+  assert.ok(css.includes('@media ' + UI.MOBILE_MQ + '{'), UI.MOBILE_MQ);
+});
+test('การ์ดความเสี่ยงไม่ใช้คลาส risk (ชนกับเมนูเหตุการณ์ที่ลอยมุมขวาบน)', () => {
+  assert.doesNotMatch(UI.renderFacts(L.newState(0)), /class="fact[^"]*\brisk\b/);
+});
+test('ชิปเส้นทางบนแถบบนไม่ใช้คลาส route (ชนกับแถบเส้นทาง 6 สถานี)', () => {
+  assert.doesNotMatch(readHtml(), /class="chip route"/);
+});
