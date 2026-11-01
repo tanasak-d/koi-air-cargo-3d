@@ -153,6 +153,25 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tl-step.here .tm{color:var(--on-accent)}
 .tl-step.here .dot{border-color:var(--on-accent);color:var(--on-accent)}
 
+/* ---- V6 แถบเส้นทาง 6 สถานี (บนสุด) ---- */
+.route-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0}
+.route{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));min-width:0}
+.stn{position:relative;min-width:0}
+.stn::after{content:"";position:absolute;left:38px;right:6px;top:50%;height:3px;border-radius:2px;background:var(--line)}
+.stn:last-child::after{display:none}
+.stn.done::after{background:var(--accent)}
+.stn button{position:relative;z-index:1;display:flex;align-items:center;gap:8px;width:100%;min-width:0;border:0;background:transparent;
+  border-radius:12px;padding:4px 6px;text-align:left}
+.stn .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface);
+  border:2px solid var(--line);color:var(--muted);font-size:.8rem;font-weight:700}
+.stn.done .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.stn.now .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)}
+.stn .txt{min-width:0;background:var(--surface);padding-right:6px}
+.stn .txt b{display:block;font-size:.85rem;line-height:1.3}
+.stn .txt>span{font-size:.75rem;color:var(--muted)}
+.stn.now .txt b{font-weight:800}
+.now-tag{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;background:var(--accent);color:var(--on-accent);font-size:.68rem;font-weight:700}
+
 /* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
 .st-ok{color:var(--ok);font-weight:600}
 .st-warn{color:var(--warn);font-weight:600}
@@ -228,6 +247,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
     </ul>
     <p class="muted keys">คีย์ลัด: ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · T สลับธีม · O ภาพรวม</p>
   </details>
+  <nav id="route" class="route-wrap" aria-label="เส้นทาง 6 สถานี"></nav>
   <main class="layout">
     <section id="stage" aria-label="ฉาก 3 มิติของขั้นปัจจุบัน">
       <canvas id="c" aria-label="ภาพ 3 มิติ"></canvas>
@@ -4957,12 +4977,12 @@ var KoiData = (function () {
 
   // 6 สถานี (first/last นับจาก 0)
   var STATIONS = [
-    { id: 's1', short: 'ผู้ส่ง', name: 'ผู้ส่ง (ฟาร์มในญี่ปุ่น)', first: 0, last: 5 },
-    { id: 's2', short: 'NRT', name: 'สนามบินนาริตะ (NRT)', first: 6, last: 7 },
-    { id: 's3', short: 'เครื่องบิน', name: 'บนเที่ยวบิน JL707', first: 8, last: 8 },
-    { id: 's4', short: 'BKK', name: 'สนามบินสุวรรณภูมิ (BKK)', first: 9, last: 9 },
-    { id: 's5', short: 'DOF', name: 'ด่านกรมประมง (DOF) และกักกัน', first: 10, last: 13 },
-    { id: 's6', short: 'ผู้รับ', name: 'ผู้รับ (ฟาร์มบริษัท)', first: 14, last: 16 }
+    { id: 's1', label: 'ฟาร์มผู้ส่ง', short: 'ผู้ส่ง', name: 'ผู้ส่ง (ฟาร์มในญี่ปุ่น)', first: 0, last: 5 },
+    { id: 's2', label: 'นาริตะ NRT', short: 'NRT', name: 'สนามบินนาริตะ (NRT)', first: 6, last: 7 },
+    { id: 's3', label: 'เที่ยวบิน JL707', short: 'เครื่องบิน', name: 'บนเที่ยวบิน JL707', first: 8, last: 8 },
+    { id: 's4', label: 'สุวรรณภูมิ BKK', short: 'BKK', name: 'สนามบินสุวรรณภูมิ (BKK)', first: 9, last: 9 },
+    { id: 's5', label: 'ด่าน DOF · กักกัน', short: 'DOF', name: 'ด่านกรมประมง (DOF) และกักกัน', first: 10, last: 13 },
+    { id: 's6', label: 'ฟาร์มบริษัท', short: 'ผู้รับ', name: 'ผู้รับ (ฟาร์มบริษัท)', first: 14, last: 16 }
   ];
 
   /* 17 ขั้นตอน
@@ -5540,6 +5560,22 @@ var KoiUI = (function () {
     }).join('');
   }
 
+  // แถบเส้นทาง 6 สถานี (V6): ผ่านแล้ว = วงดำเต็ม ✓ · ตอนนี้ = วงดำมีวงรอบ + ป้าย "ตอนนี้"
+  // กดชื่อสถานีเพื่อข้ามไปขั้นแรกของสถานีนั้น (ค้าง/จบแล้ว กดไม่ได้)
+  function renderRoute(S) {
+    var locked = S.mode === 'hold' || S.mode === 'end', cur = L.stationOf(S.idx);
+    return '<ol class="route">' + D.STATIONS.map(function (st, k) {
+      var done = k < cur, now = k === cur && !S.overview;
+      var range = st.first === st.last ? 'ขั้น ' + (st.first + 1) : 'ขั้น ' + (st.first + 1) + '–' + (st.last + 1);
+      return '<li class="stn' + (done ? ' done' : now ? ' now' : '') + '"><button type="button" data-station="' + k + '"' +
+        (now ? ' aria-current="location"' : '') + (locked ? ' disabled' : '') +
+        ' aria-label="สถานี ' + (k + 1) + ' ' + esc(st.label) + (done ? ' ผ่านแล้ว' : now ? ' ตอนนี้' : '') + '">' +
+        '<span class="dot" aria-hidden="true">' + (done ? '✓' : k + 1) + '</span>' +
+        '<span class="txt"><b>' + esc(st.label) + (now ? '<span class="now-tag">ตอนนี้</span>' : '') + '</b>' +
+        '<span>' + range + '</span></span></button></li>';
+    }).join('') + '</ol>';
+  }
+
   // สถานะการขนส่งบนแถบบน: ใช้ ✓ ✕ คู่กับข้อความเสมอ (ไม่พึ่งสีอย่างเดียว)
   function renderStatus(S) {
     if (S.mode === 'hold') return '<span class="st-bad">✕ HOLD · ขั้น ' + D.STEPS[S.idx].n + '</span>';
@@ -5703,6 +5739,7 @@ var KoiUI = (function () {
     function render() {
       var ae = document.activeElement, fsel = ae && root.contains(ae) ? focusSelector(ae.dataset) : null;
       $('#timeline').innerHTML = renderTimeline(S);
+      $('#route').innerHTML = renderRoute(S);
       var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
       if (stEl) stEl.innerHTML = renderStatus(S);
       $('#station-badge').innerHTML = renderStationBadge(S);
@@ -5773,6 +5810,7 @@ var KoiUI = (function () {
       if (!el || el.disabled) return;
       var d = el.dataset;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
+      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
       else if (d.tab != null) { tab = d.tab; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
@@ -5790,7 +5828,7 @@ var KoiUI = (function () {
 
   return {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
-    esc: esc, renderGlossary: renderGlossary, renderTimeline: renderTimeline, renderCard: renderCard,
+    esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
     renderStatus: renderStatus, renderStationBadge: renderStationBadge,
     renderTimeBadge: renderTimeBadge, renderTab: renderTab, renderTabBar: renderTabBar,
     renderHold: renderHold, renderEnd: renderEnd, renderStageControls: renderStageControls, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
