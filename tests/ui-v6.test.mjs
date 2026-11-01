@@ -123,3 +123,26 @@ test('keyToAction: Enter = start', () => {
 test('focusSelector: ปุ่มเริ่มบนหน้าต้อนรับ', () => {
   assert.equal(UI.focusSelector({ act: 'start' }), '[data-act="start"]');
 });
+
+// ---- Task 6: โหมดนำเสนอ (โปรเจกเตอร์) ----
+test('renderPresentSide: ขั้นที่ 4 จาก 17 · สถานี 1 จาก 6 · ความคืบหน้า 24% · มีคีย์ลัด Esc', () => {
+  const S = L.newState(0); L.goTo(S, 3);
+  const h = UI.renderPresentSide(S);
+  assert.match(h, /ขั้นที่ 4 จาก 17/);
+  assert.match(h, /สถานี 1 จาก 6/);
+  assert.match(h, /width:24%/);
+  assert.match(h, /Esc/);
+  for (const w of ['ใครทำ', 'เอกสาร', 'ความเสี่ยง']) assert.match(h, new RegExp(w));
+});
+test('renderPresentSide: ขั้นสุดท้ายความคืบหน้า 100%', () => {
+  const S = L.newState(0); L.goTo(S, 16);
+  assert.match(UI.renderPresentSide(S), /width:100%/);
+});
+test('renderPresentSide: ตอน hold แสดง ✕ HOLD และปุ่ม VERIFY', () => {
+  const h = UI.renderPresentSide(walk(L.newState(1)));
+  assert.match(h, /✕ HOLD/);
+  assert.match(h, /data-act="verify"/);
+});
+test('renderPresentSide: มีปุ่มออกจากโหมดนำเสนอให้คนใช้เมาส์', () => {
+  assert.match(UI.renderPresentSide(L.newState(0)), /data-act="present"/);
+});

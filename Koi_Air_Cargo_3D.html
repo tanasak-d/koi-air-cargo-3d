@@ -198,9 +198,29 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #card{max-width:200px;font-size:.82rem}
 }
 /* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
-#app.present{max-width:none;font-size:1.15rem}
-#app.present .risk,#app.present .brand small,#app.present .howto{display:none}
-#app.present .layout{grid-template-columns:minmax(0,1fr) 420px}
+/* V6: เต็มจอ ภาพ 3 มิติซ้าย แผงดำขวา ซ่อนแถบบน/แถบเส้นทาง/แผงติดตาม/แถบเล่น (คุมด้วยคีย์บอร์ดหรือรีโมตพรีเซนต์) */
+#app.present{max-width:none;padding:0;height:100vh;height:100dvh;grid-template-rows:minmax(0,1fr);gap:0}
+#app.present .topbar,#app.present .route-wrap,#app.present .howto,#app.present .panel,#app.present .risk,#app.present .stage-ctrl{display:none}
+#app.present .layout{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:0;height:100%}
+#app.present #stage{aspect-ratio:auto;border:0;border-radius:0;height:100%;min-height:0}
+.present-side{position:relative;background:#111;color:#fff;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:16px;
+  overflow:auto;font-size:clamp(1.05rem,1.5vw,1.45rem);line-height:1.45}
+.present-side[hidden]{display:none}
+.present-side .eyebrow{color:#c8c8c8;font-size:.8em}
+.present-side .p-step{margin:0;color:#c8c8c8;font-weight:700;font-size:.85em}
+.present-side h2{margin:0;font-size:1.9em;line-height:1.2}
+.big-facts{display:grid;gap:14px}
+.big-facts>div{display:flex;gap:14px;align-items:flex-start}
+.big-facts p{margin:0}
+.big-facts .ic{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;flex:none;background:#262626;color:#fff}
+.big-facts .ico{width:22px;height:22px}
+.big-facts small{display:block;font-size:.65em;color:#b0b0b0}
+.present-side .hold,.present-side .end{background:#fff;color:#111}
+.present-foot{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.7em;color:#b0b0b0;padding-bottom:10px}
+.kbd{border:1px solid #555;border-radius:6px;padding:2px 8px;color:#fff}
+.p-exit{margin-left:auto;background:transparent;color:#fff;border-color:#555}
+.present-progress{position:fixed;left:0;right:0;bottom:0;height:8px;background:rgba(128,128,128,.4);z-index:5}
+.present-progress i{display:block;height:100%;background:#111;box-shadow:0 0 0 1px #fff}
 .keys{margin:6px 0 0;font-size:.85rem}
 /* ---- V6 หน้าต้อนรับ: ทับทั้งจอ ภาพ 3 มิติ (ภาพรวม) ขยายเต็มจออยู่ด้านหลัง ---- */
 .welcome{position:fixed;inset:0;z-index:50;display:grid;align-items:center;padding:48px clamp(16px,5vw,64px);overflow:auto;color:#fff;
@@ -323,6 +343,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <div id="stage-ctrl" class="stage-ctrl"></div>
       <div id="risk" class="risk"></div>
     </section>
+    <aside id="present-side" class="present-side" aria-label="ข้อมูลขั้นสำหรับนำเสนอ" aria-live="polite" hidden></aside>
     <aside id="panel" class="panel" aria-label="ติดตามการขนส่ง">
       <div class="panel-inner">
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
@@ -5792,6 +5813,26 @@ var KoiUI = (function () {
       }).join('') + '</div></details>';
   }
 
+  // แผงขวาของโหมดนำเสนอ (โปรเจกเตอร์): ตัวใหญ่ พื้นดำ อ่านจากท้ายห้องได้ + แถบความคืบหน้าล่างสุด
+  // ระหว่างค้าง (HOLD) หรือจบแล้ว แสดงแผงตัดสินใจ/สรุปแทนข้อมูลขั้น
+  function renderPresentSide(S) {
+    var s = D.STEPS[S.idx], k = L.stationOf(S.idx), n = D.STEPS.length;
+    var big = function (ic, label, body) {
+      return '<div><span class="ic">' + icon(ic) + '</span><p><small>' + label + '</small>' + body + '</p></div>';
+    };
+    var body = renderHold(S) + renderEnd(S);
+    if (!body) {
+      body = '<div class="big-facts">' + big('user', 'ใครทำ', renderGlossary(s.who)) +
+        big('doc', 'เอกสาร', s.docs.map(renderGlossary).join(' · ')) + big('alert', 'ความเสี่ยง', renderGlossary(s.risk)) + '</div>';
+    }
+    return '<p class="eyebrow">สถานี ' + (k + 1) + ' จาก ' + D.STATIONS.length + ' · ' + esc(D.STATIONS[k].label) + '</p>' +
+      '<p class="p-step">ขั้นที่ ' + s.n + ' จาก ' + n + '</p>' +
+      '<h2>' + esc(s.name) + '</h2>' + body +
+      '<div class="present-foot"><span class="kbd">←</span><span class="kbd">→</span> เปลี่ยนขั้น <span class="kbd">Space</span> เล่น/หยุด ' +
+      '<span class="kbd">Esc</span> ออก <button type="button" class="p-exit" data-act="present">ออก</button></div>' +
+      '<div class="present-progress" aria-hidden="true"><i style="width:' + Math.round((S.idx + 1) / n * 100) + '%"></i></div>';
+  }
+
   // หน้าต้อนรับ (V6): บอกว่าเว็บนี้คืออะไร เส้นทางไหน มีกี่ขั้น + ปุ่มเริ่ม/โหมดนำเสนอ (ภาพ 3 มิติภาพรวมอยู่ด้านหลัง)
   function renderWelcome() {
     var risks = D.SCENARIOS.length - 1; // เหตุการณ์แรกคือกรณีปกติ
@@ -5869,6 +5910,9 @@ var KoiUI = (function () {
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
       root.classList.toggle('present', present);
+      var ps = $('#present-side');
+      ps.hidden = !present;
+      ps.innerHTML = present ? renderPresentSide(S) : '';
       root.classList.toggle('welcoming', welcome);
       var w = $('#welcome');
       if (w) { w.hidden = !welcome; if (welcome && !w.firstChild) w.innerHTML = renderWelcome(); }
@@ -5968,7 +6012,7 @@ var KoiUI = (function () {
     esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
-    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>
