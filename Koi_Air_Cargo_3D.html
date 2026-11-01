@@ -242,6 +242,20 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .tl-step{min-height:44px}
   #facts .facts{grid-template-columns:1fr}   /* ต้องเจาะจงกว่า .facts ที่ประกาศทีหลัง */
   #facts>.eyebrow,#facts>.step-title{display:none}   /* หัวแผ่นบอกแล้ว ไม่ซ้ำ */
+  /* ปุ่มกดด้วยนิ้วสูงอย่างน้อย 44px */
+  .tick{height:44px;min-height:44px}
+  .tick::before,.tick i{top:19px}
+  .tick.now::after{top:13px}
+  .scrub{height:44px}
+  .grab{min-height:44px}
+  .stn button{min-height:44px}
+  .sheet-tabs button{min-height:44px}
+  .ov-btn{min-height:44px}
+  /* โหมดนำเสนอบนมือถือ: ภาพบน 55% แผงดำล่าง */
+  body #app.present .layout{grid-template-columns:1fr;grid-template-rows:55vh auto;grid-template-rows:55dvh auto;height:auto;min-height:100dvh}
+  body #app.present #stage{position:relative;inset:auto;height:100%}
+  body #app.present .present-side{font-size:1rem}
+  .cta .w-ghost{display:none}   /* มือถือไม่มีคีย์บอร์ดคุมขั้น ใช้แบบปกติแทน */
 }
 @media (max-height:500px) and (orientation:landscape){
   /* จอเตี้ย: ซ่อนแถบบนและวิธีใช้ ให้ภาพ 3 มิติได้ความสูงมากที่สุด (สลับธีม/นำเสนอใช้คีย์ T/P) */
@@ -256,11 +270,18 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .panel-inner{position:absolute;display:flex}
   .panel-inner #facts{flex:1 1 auto;max-height:none;overflow:auto}
   .panel-inner #station-steps{display:none}
+  /* แถบเล่นแถวเดียว ไม่บังภาพ */
+  .stage-ctrl{flex-wrap:nowrap;padding:4px 6px;gap:4px;left:8px;right:8px;bottom:8px}
+  .ctl,.ctl.play{width:36px;height:36px;min-height:36px}
+  .stage-ctrl .count{display:none}
+  .ov-btn{padding:4px 8px;font-size:0;min-height:36px}
+  .ov-btn .ico{font-size:1rem}
+  .stn .txt{display:none}   /* หัวแผงบอกชื่อสถานีแล้ว แถบเส้นทางเหลือแค่จุด */
 }
 @media (prefers-reduced-motion: reduce){.sheet{transition:none}}
 /* แท็บของแผ่นข้อมูลมือถือ */
 .sheet-tabs{display:flex;gap:6px;overflow-x:auto}
-.sheet-tabs button{min-height:40px;padding:4px 12px;font-size:.88rem;white-space:nowrap}
+.sheet-tabs button{padding:4px 12px;font-size:.88rem;white-space:nowrap}
 .sheet-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .sheet-risk .risk-menu summary{display:none}
 /* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
@@ -5980,10 +6001,23 @@ var KoiUI = (function () {
   }
 
   // selector ของปุ่มจาก data-* (ใช้คืนโฟกัสคีย์บอร์ดหลังวาดหน้าใหม่ เพราะ innerHTML สร้างปุ่มใหม่ทั้งหมด)
-  function focusSelector(ds) {
+  // scope = id ของกล่องที่ปุ่มอยู่ (ปุ่ม data-step มีทั้งแถบเวลา รายการในสถานี และเส้นทาง 17 ขั้น ต้องคืนโฟกัสให้ถูกกล่อง)
+  function focusSelector(ds, scope) {
     var keys = ['act', 'opt', 'station', 'step', 'sheet', 'sc'];
-    for (var i = 0; i < keys.length; i++) if (ds && ds[keys[i]] != null) return '[data-' + keys[i] + '="' + ds[keys[i]] + '"]';
+    for (var i = 0; i < keys.length; i++) {
+      if (ds && ds[keys[i]] != null) return (scope ? '#' + scope + ' ' : '') + '[data-' + keys[i] + '="' + ds[keys[i]] + '"]';
+    }
     return null;
+  }
+  var FOCUS_SCOPES = '#welcome,#topbar,#route,#stage-ctrl,#risk,#facts,#station-steps,#timeline,#sheet-head,#sheet-tabs,#sheet-risk,#present-side';
+
+  // ระหว่างหน้าต้อนรับเปิดอยู่ ทำได้แค่ เริ่ม / นำเสนอ / สลับธีม
+  function welcomeAllows(action) { return action === 'start' || action === 'present' || action === 'theme'; }
+
+  // แผ่นข้อมูลมือถือเปิดเองเมื่อ "เพิ่งเข้า" HOLD หรือเพิ่งจบ (ไม่งั้นบนมือถือมองไม่เห็นปุ่ม VERIFY/ผลตอนจบ)
+  function sheetAutoOpen(prevMode, mode) {
+    var key = function (m) { return m === 'hold' ? 'hold' : (m === 'end' || m === 'done') ? 'end' : 'run'; };
+    return key(mode) !== 'run' && key(mode) !== key(prevMode);
   }
 
   /* ---------- 3) ผูกกับหน้าเว็บ ---------- */
@@ -6001,7 +6035,8 @@ var KoiUI = (function () {
     function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
     var riskOpen = false; // เมนูเหตุการณ์เปิดค้างไว้หรือไม่ (จำไว้ เพราะวาดใหม่ทุกครั้ง)
     function render() {
-      var ae = document.activeElement, fsel = ae && root.contains(ae) ? focusSelector(ae.dataset) : null;
+      var ae = document.activeElement, box = ae && root.contains(ae) && ae.closest ? ae.closest(FOCUS_SCOPES) : null;
+      var fsel = ae && root.contains(ae) ? focusSelector(ae.dataset, box && box.id) : null;
       $('#timeline').innerHTML = renderTimeline(S);
       $('#route').innerHTML = renderRoute(S);
       var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
@@ -6013,8 +6048,8 @@ var KoiUI = (function () {
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
       // แผ่นข้อมูลมือถือ (จอใหญ่ CSS ซ่อนส่วนนี้ไว้)
-      // กล่องค้างที่ด่าน (HOLD): เปิดแผ่นให้เห็นแผงตัดสินใจทันที ไม่งั้นบนมือถือจะมองไม่เห็นปุ่ม VERIFY
-      if (S.mode === 'hold' && lastMode !== 'hold') { sheetOpen = true; sheetTab = 'detail'; }
+      // เพิ่งค้างที่ด่าน (HOLD) หรือเพิ่งจบ: เปิดแผ่นให้เห็นแผงตัดสินใจ/ผลตอนจบทันที
+      if (sheetAutoOpen(lastMode, S.mode)) { sheetOpen = true; sheetTab = 'detail'; }
       lastMode = S.mode;
       $('#sheet-head').innerHTML = renderSheetHead(S, sheetOpen);
       $('#sheet-tabs').innerHTML = renderSheetTabs(sheetTab);
@@ -6028,7 +6063,14 @@ var KoiUI = (function () {
       ps.innerHTML = present ? renderPresentSide(S) : '';
       root.classList.toggle('welcoming', welcome);
       var w = $('#welcome');
-      if (w) { w.hidden = !welcome; if (welcome && !w.firstChild) w.innerHTML = renderWelcome(); }
+      if (w) {
+        var first = welcome && !w.firstChild;
+        w.hidden = !welcome;
+        if (first) w.innerHTML = renderWelcome();
+        // หน้าต้อนรับเป็นหน้าต่างทับ: ส่วนอื่นกด/โฟกัสไม่ได้ (inert) จนกว่าจะเริ่ม
+        ['#topbar', '.howto', '#route', '.layout'].forEach(function (sel) { var el = $(sel); if (el) el.inert = welcome; });
+        if (first) { var go = w.querySelector('[data-act="start"]'); if (go) go.focus(); }
+      }
       if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
       var here = $('#timeline').querySelector('.here'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
       // เลื่อนเฉพาะกล่องเส้นเวลา (ไม่ใช้ scrollIntoView เพราะบนมือถือจะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ)
@@ -6065,7 +6107,12 @@ var KoiUI = (function () {
     function togglePresentation() {
       present = !present;
       stopTimer();
-      if (present && L.canAdvance(S)) { togglePlay(); return; }
+      if (present && L.canAdvance(S)) { togglePlay(); }
+      else render();
+      // เข้าโหมดนำเสนอ: ปุ่มเดิมถูกซ่อน ย้ายโฟกัสไปปุ่ม "ออก" · ออกแล้วคืนโฟกัสที่ปุ่มโหมดนำเสนอบนแถบบน
+      var f = present ? $('#present-side .p-exit') : $('#present-btn');
+      if (f) f.focus();
+      return;
       render();
     }
     // ออกจากหน้าต้อนรับ แล้วเริ่มที่ขั้น 1 (โฟกัสไปปุ่มเล่น ผู้ใช้คีย์บอร์ดกด Space ต่อได้เลย)
@@ -6078,7 +6125,7 @@ var KoiUI = (function () {
     function doAction(a) {
       if (a === 'start') { startTracking(); return; }
       if (welcome && a === 'present') { welcome = false; S.overview = false; togglePresentation(); return; }
-      if (welcome && a !== 'theme') return; // หน้าต้อนรับเปิดอยู่: ใช้ได้แค่ เริ่ม / นำเสนอ / ธีม
+      if (welcome && !welcomeAllows(a)) return;
       if (a === 'next' || a === 'prev') runAction(S, a);
       else if (a === 'play') { if (L.canAdvance(S) || timer) { togglePlay(); return; } }
       else if (a === 'present') { if (a === 'present') { togglePresentation(); return; } }
@@ -6104,6 +6151,7 @@ var KoiUI = (function () {
       var el = e.target.closest ? e.target.closest('button') : null;
       if (!el || el.disabled) return;
       var d = el.dataset;
+      if (welcome && !welcomeAllows(d.act)) return;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
       else if (d.act === 'sheet') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }
@@ -6142,6 +6190,7 @@ var KoiUI = (function () {
       if (!dragMoved) return;
       sheetOpen = sheetSnap(dy, panel.offsetHeight, sheetOpen);
       render();
+      setTimeout(function () { dragMoved = false; }, 0);   // ที่จับถูกวาดใหม่ คลิกหลังลากอาจไม่มาถึง
     });
     root.addEventListener('pointercancel', function () { dragY = null; dragMoved = false; $('#panel').style.transform = ''; });
 
@@ -6163,7 +6212,7 @@ var KoiUI = (function () {
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
     renderHold: renderHold, renderEnd: renderEnd, MOBILE_MQ: MOBILE_MQ, sheetSnap: sheetSnap, renderSheetHead: renderSheetHead, renderSheetTabs: renderSheetTabs,
-    renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, welcomeAllows: welcomeAllows, sheetAutoOpen: sheetAutoOpen, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>

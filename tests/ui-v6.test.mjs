@@ -201,3 +201,51 @@ test('CSS: ปีกกาเปิด/ปิดสมดุล (ปีกกา
   }
   assert.equal(depth, 0);
 });
+
+// ---- Final review fixes ----
+const block = (head) => {            // เนื้อในของ @media ที่ขึ้นต้นด้วย head (นับปีกกา)
+  const i = css.indexOf(head + '{'); assert.ok(i >= 0, 'ไม่พบ ' + head);
+  let d = 0, j = i + head.length;
+  for (; j < css.length; j++) { if (css[j] === '{') d++; if (css[j] === '}' && --d === 0) break; }
+  return css.slice(i + head.length + 1, j);
+};
+const PORTRAIT = '@media ' + UI.MOBILE_MQ;
+test('R1: โหมดนำเสนอบนมือถือแนวตั้ง ภาพบน แผงล่าง (ไม่บีบแผงเหลือ 40px)', () => {
+  const b = block(PORTRAIT);
+  // ต้องขึ้นต้นด้วย body เพื่อให้เจาะจงกว่ากฎโหมดนำเสนอหลักที่ประกาศทีหลังในไฟล์
+  assert.match(b, /body #app\.present \.layout\{[^}]*grid-template-columns:1fr/);
+  assert.match(b, /body #app\.present #stage\{[^}]*position:relative/);
+});
+test('R2: focusSelector จำกล่องที่ปุ่มอยู่ (data-step ซ้ำ 3 ที่)', () => {
+  assert.equal(UI.focusSelector({ step: '2' }, 'station-steps'), '#station-steps [data-step="2"]');
+  assert.equal(UI.focusSelector({ step: '2' }), '[data-step="2"]');
+  assert.equal(UI.focusSelector({}, 'x'), null);
+});
+test('R3: ระหว่างหน้าต้อนรับ กดได้แค่ เริ่ม / นำเสนอ / ธีม', () => {
+  for (const a of ['start', 'present', 'theme']) assert.equal(UI.welcomeAllows(a), true, a);
+  for (const a of ['next', 'prev', 'play', 'overview', 'sheet', undefined]) assert.equal(UI.welcomeAllows(a), false, String(a));
+});
+test('R4: ปุ่มบนมือถือแนวตั้งสูงอย่างน้อย 44px (ขีดเวลา ที่จับ สถานี แท็บ)', () => {
+  const b = block(PORTRAIT);
+  assert.match(b, /\.tick\{[^}]*height:44px/);
+  assert.match(b, /\.grab\{[^}]*min-height:44px/);
+  assert.match(b, /\.stn button\{[^}]*min-height:44px/);
+  assert.match(b, /\.sheet-tabs button\{[^}]*min-height:44px/);
+});
+test('R5: มือถือแนวนอน แถบเล่นเหลือแถวเดียว (ซ่อนตัวนับ ปุ่มเล็กลง)', () => {
+  const b = block('@media (max-height:500px) and (orientation:landscape)');
+  assert.match(b, /\.stage-ctrl \.count\{display:none\}/);
+  assert.match(b, /\.ctl[^{]*\{[^}]*width:36px/);
+  assert.match(b, /\.stage-ctrl\{[^}]*flex-wrap:nowrap/);
+});
+test('R6: แผ่นมือถือเปิดเองเมื่อเข้า HOLD หรือจบ (ไม่งั้นมองไม่เห็นผล)', () => {
+  assert.equal(UI.sheetAutoOpen('play', 'hold'), true);
+  assert.equal(UI.sheetAutoOpen('hold', 'hold'), false);
+  assert.equal(UI.sheetAutoOpen('hold', 'end'), true);
+  assert.equal(UI.sheetAutoOpen('play', 'done'), true);
+  assert.equal(UI.sheetAutoOpen('done', 'done'), false);
+  assert.equal(UI.sheetAutoOpen('play', 'play'), false);
+});
+test('R1b: มือถือแนวตั้งซ่อนปุ่มโหมดนำเสนอบนหน้าต้อนรับ (มือถือไม่มีคีย์บอร์ดคุมขั้น)', () => {
+  assert.match(block(PORTRAIT), /\.cta \.w-ghost\{display:none\}/);
+});
