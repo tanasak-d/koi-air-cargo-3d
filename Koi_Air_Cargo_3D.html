@@ -202,6 +202,30 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 #app.present .risk,#app.present .brand small,#app.present .howto{display:none}
 #app.present .layout{grid-template-columns:minmax(0,1fr) 420px}
 .keys{margin:6px 0 0;font-size:.85rem}
+/* ---- V6 หน้าต้อนรับ: ทับทั้งจอ ภาพ 3 มิติ (ภาพรวม) ขยายเต็มจออยู่ด้านหลัง ---- */
+.welcome{position:fixed;inset:0;z-index:50;display:grid;align-items:center;padding:48px clamp(16px,5vw,64px);overflow:auto;color:#fff;
+  background:linear-gradient(90deg,rgba(0,0,0,.9) 0%,rgba(0,0,0,.72) 45%,rgba(0,0,0,.1) 80%)}
+.welcome[hidden]{display:none}
+#app.welcoming #stage{position:fixed;inset:0;z-index:40;border:0;border-radius:0;aspect-ratio:auto}
+#app.welcoming #stage>:not(canvas){display:none}
+.w-inner{max-width:620px}
+.welcome .kicker{display:inline-flex;gap:8px;align-items:center;margin:0;font-size:.9rem;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14)}
+.welcome h1{font-size:clamp(1.9rem,4vw,3rem);line-height:1.2;margin:16px 0 12px}
+.welcome .lead{font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.6;color:#dcdcdc;max-width:30em;margin:0}
+.w-route{margin-top:22px;display:flex;align-items:center;gap:16px;padding:14px 18px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.22);border-radius:16px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.w-route .ap b{font-size:1.75rem;display:block;line-height:1}
+.w-route .ap span,.w-route .mid{font-size:.78rem;color:#c8c8c8}
+.w-route .mid{display:grid;justify-items:center;gap:2px}
+.stats{display:flex;gap:24px;margin-top:22px;flex-wrap:wrap}
+.stats b{font-size:1.9rem;display:block;line-height:1.1}
+.stats span{font-size:.85rem;color:#c8c8c8}
+.cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+.cta button{min-height:52px;font-size:1rem;padding:0 22px;border-radius:14px;display:inline-flex;gap:8px;align-items:center}
+.cta .w-start{background:#fff;color:#111;border-color:#fff;font-weight:700}
+.cta .w-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+.cta button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.w-keys{margin:14px 0 0;font-size:.82rem;color:#bdbdbd}
 .howto summary{cursor:pointer;font-weight:600}
 .howto ul{margin:8px 0 0;padding-left:20px}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
@@ -265,6 +289,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7z M14 5h3v14h-3z" fill="currentColor"/></symbol>
 </svg>
 <div id="app">
+  <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="w-title" hidden></div>
   <header id="topbar" class="topbar">
     <div class="brandmark" aria-hidden="true">✈</div>
     <div class="brand">
@@ -5767,8 +5792,34 @@ var KoiUI = (function () {
       }).join('') + '</div></details>';
   }
 
+  // หน้าต้อนรับ (V6): บอกว่าเว็บนี้คืออะไร เส้นทางไหน มีกี่ขั้น + ปุ่มเริ่ม/โหมดนำเสนอ (ภาพ 3 มิติภาพรวมอยู่ด้านหลัง)
+  function renderWelcome() {
+    var risks = D.SCENARIOS.length - 1; // เหตุการณ์แรกคือกรณีปกติ
+    return '<div class="w-inner">' +
+      '<p class="kicker">' + icon('fish') + ' โมเดลจำลองการขนส่งสัตว์มีชีวิตทางอากาศ</p>' +
+      '<h1 id="w-title">ติดตามการเดินทางของ<br>ปลาคาร์ฟจากญี่ปุ่นสู่ไทย</h1>' +
+      '<p class="lead">ดูทีละขั้นว่าใครทำอะไร ที่ไหน ใช้เอกสารอะไร และถ้าเกิดความเสี่ยงต้องหยุด ตรวจ แก้อย่างไร</p>' +
+      '<div class="w-route"><div class="ap"><b>NRT</b><span>นาริตะ · ญี่ปุ่น</span></div>' +
+      '<div class="mid">' + icon('plane') + '<span>JL707 · Boeing 787-8</span></div>' +
+      '<div class="ap"><b>BKK</b><span>สุวรรณภูมิ · ไทย</span></div></div>' +
+      '<div class="stats"><div><b>' + D.STATIONS.length + '</b><span>สถานี</span></div>' +
+      '<div><b>' + D.STEPS.length + '</b><span>ขั้นตอน</span></div>' +
+      '<div><b>' + risks + '</b><span>สถานการณ์เสี่ยง</span></div></div>' +
+      '<div class="cta"><button type="button" class="w-start" data-act="start">' + icon('play') + ' เริ่มติดตามการขนส่ง</button>' +
+      '<button type="button" class="w-ghost" data-act="present">' + icon('screen') + ' โหมดนำเสนอ</button></div>' +
+      '<p class="w-keys">กด Enter เพื่อเริ่ม · P โหมดนำเสนอ</p></div>';
+  }
+
+  // ลิงก์ตรงไปขั้น: "#step=5" → index 4 · ค่าผิดหรือนอกช่วง → null (ใช้ข้ามหน้าต้อนรับ)
+  function parseStepHash(hash) {
+    var m = /^#step=(\d+)$/.exec(hash || '');
+    if (!m) return null;
+    var n = +m[1];
+    return n >= 1 && n <= D.STEPS.length ? n - 1 : null;
+  }
+
   // ปุ่มคีย์บอร์ด -> คำสั่ง (ไม่รู้จัก = null)
-  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', Escape: 'present' };
+  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', Escape: 'present', Enter: 'start' };
   function keyToAction(key) { return Object.prototype.hasOwnProperty.call(KEYS, key) ? KEYS[key] : null; }
   // ช่วงเวลาระหว่างขั้นตอนตอนเล่นอัตโนมัติ: โหมดนำเสนอช้าลง 2 เท่าให้ผู้พูดอธิบายทัน
   function playIntervalMs(present) { return present ? 2200 : 1100; }
@@ -5797,6 +5848,10 @@ var KoiUI = (function () {
   function mount(root, hooks) {
     hooks = hooks || {};
     var S = L.newState(0), timer = null, present = false, moreOpen = false;
+    // หน้าต้อนรับ: แสดงตอนเปิดเว็บ เว้นแต่เปิดลิงก์ตรงไปขั้น (#step=N)
+    var jump = parseStepHash(typeof location !== 'undefined' ? location.hash : '');
+    var welcome = jump == null;
+    if (jump != null) L.goTo(S, jump); else S.overview = true;
     var $ = function (id) { return root.querySelector(id); };
 
     function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
@@ -5814,6 +5869,9 @@ var KoiUI = (function () {
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
       root.classList.toggle('present', present);
+      root.classList.toggle('welcoming', welcome);
+      var w = $('#welcome');
+      if (w) { w.hidden = !welcome; if (welcome && !w.firstChild) w.innerHTML = renderWelcome(); }
       if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
       var here = $('#timeline').querySelector('.here'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
       // เลื่อนเฉพาะกล่องเส้นเวลา (ไม่ใช้ scrollIntoView เพราะบนมือถือจะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ)
@@ -5852,7 +5910,17 @@ var KoiUI = (function () {
       if (present && L.canAdvance(S)) { togglePlay(); return; }
       render();
     }
+    // ออกจากหน้าต้อนรับ แล้วเริ่มที่ขั้น 1 (โฟกัสไปปุ่มเล่น ผู้ใช้คีย์บอร์ดกด Space ต่อได้เลย)
+    function startTracking() {
+      if (!welcome) return;
+      welcome = false; S.overview = false;
+      render();
+      var play = $('[data-act="play"]'); if (play) play.focus();
+    }
     function doAction(a) {
+      if (a === 'start') { startTracking(); return; }
+      if (welcome && a === 'present') { welcome = false; S.overview = false; togglePresentation(); return; }
+      if (welcome && a !== 'theme') return; // หน้าต้อนรับเปิดอยู่: ใช้ได้แค่ เริ่ม / นำเสนอ / ธีม
       if (a === 'next' || a === 'prev') runAction(S, a);
       else if (a === 'play') { if (L.canAdvance(S) || timer) { togglePlay(); return; } }
       else if (a === 'present') { if (a === 'present') { togglePresentation(); return; } }
@@ -5869,6 +5937,7 @@ var KoiUI = (function () {
       if (!a) return;
       if (a === 'present' && e.key === 'Escape' && !present) return; // Esc ใช้ออกจากโหมดนำเสนอเท่านั้น
       if (e.key === ' ' && tg === 'BUTTON') return; // ปล่อยให้ปุ่มที่โฟกัสอยู่ทำงานตามปกติ
+      if (a === 'start' && (!welcome || tg === 'BUTTON')) return; // Enter ใช้เริ่มเฉพาะตอนหน้าต้อนรับเปิด (ปุ่มที่โฟกัสกด Enter เองได้)
       e.preventDefault();
       doAction(a);
     });
@@ -5886,7 +5955,8 @@ var KoiUI = (function () {
       else if (d.act === 'play') { togglePlay(); return; }
       else if (d.act === 'verify') { L.verify(S); }
       else if (d.act === 'overview') { S.overview = !S.overview; }
-      else if (d.act === 'present') { togglePresentation(); return; }
+      else if (d.act === 'start') { startTracking(); return; }
+      else if (d.act === 'present') { doAction('present'); return; }
       render();
     });
     render();
@@ -5898,7 +5968,7 @@ var KoiUI = (function () {
     esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
-    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderHold: renderHold, renderEnd: renderEnd, renderScrub: renderScrub, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>

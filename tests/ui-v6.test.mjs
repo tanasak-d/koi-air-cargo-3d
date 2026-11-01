@@ -98,3 +98,28 @@ test('renderStationSteps: แสดงเฉพาะขั้นของสถ
 test('V6: เลิกใช้ renderStageControls', () => {
   assert.equal(UI.renderStageControls, undefined);
 });
+
+// ---- Task 5: หน้าต้อนรับ ----
+test('renderWelcome: บอกเส้นทาง จำนวนสถานี/ขั้น/สถานการณ์เสี่ยง และมีปุ่มเริ่ม + นำเสนอ', () => {
+  const h = UI.renderWelcome();
+  assert.match(h, /NRT/); assert.match(h, /BKK/); assert.match(h, /JL707/);
+  assert.match(h, /<b>6<\/b><span>สถานี/);
+  assert.match(h, /<b>17<\/b><span>ขั้นตอน/);
+  assert.match(h, new RegExp('<b>' + (D.SCENARIOS.length - 1) + '</b><span>สถานการณ์เสี่ยง'));
+  assert.match(h, /data-act="start"/); assert.match(h, /data-act="present"/);
+  assert.match(h, /<h1/);
+});
+test('parseStepHash: #step=5 → 4 · ค่าผิด/นอกช่วง → null', () => {
+  assert.equal(UI.parseStepHash('#step=5'), 4);
+  assert.equal(UI.parseStepHash('#step=17'), 16);
+  assert.equal(UI.parseStepHash('#step=0'), null);
+  assert.equal(UI.parseStepHash('#step=99'), null);
+  assert.equal(UI.parseStepHash('#step=abc'), null);
+  assert.equal(UI.parseStepHash(''), null);
+});
+test('keyToAction: Enter = start', () => {
+  assert.equal(UI.keyToAction('Enter'), 'start');
+});
+test('focusSelector: ปุ่มเริ่มบนหน้าต้อนรับ', () => {
+  assert.equal(UI.focusSelector({ act: 'start' }), '[data-act="start"]');
+});
