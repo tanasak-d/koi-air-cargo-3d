@@ -240,7 +240,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .sheet.open[data-tab="route"] #timeline{display:grid;overflow:visible}
   .sheet.open[data-tab="risk"] .sheet-risk{display:block}
   .tl-step{min-height:44px}
-  .facts{grid-template-columns:1fr}
+  #facts .facts{grid-template-columns:1fr}   /* ต้องเจาะจงกว่า .facts ที่ประกาศทีหลัง */
   #facts>.eyebrow,#facts>.step-title{display:none}   /* หัวแผ่นบอกแล้ว ไม่ซ้ำ */
 }
 @media (max-height:500px) and (orientation:landscape){
@@ -263,13 +263,12 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .sheet-tabs button{min-height:40px;padding:4px 12px;font-size:.88rem;white-space:nowrap}
 .sheet-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .sheet-risk .risk-menu summary{display:none}
-}
 /* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
 /* V6: เต็มจอ ภาพ 3 มิติซ้าย แผงดำขวา ซ่อนแถบบน/แถบเส้นทาง/แผงติดตาม/แถบเล่น (คุมด้วยคีย์บอร์ดหรือรีโมตพรีเซนต์) */
-#app.present{max-width:none;padding:0;height:100vh;height:100dvh;grid-template-rows:minmax(0,1fr);gap:0}
+#app.present{max-width:none;padding:0;display:block}
 #app.present .topbar,#app.present .route-wrap,#app.present .howto,#app.present .panel,#app.present .risk,#app.present .stage-ctrl{display:none}
-#app.present .layout{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:0;height:100%}
-#app.present #stage{aspect-ratio:auto;border:0;border-radius:0;height:100%;min-height:0}
+#app.present .layout{grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:0;height:100vh;height:100dvh}
+#app.present #stage{aspect-ratio:auto;border:0;border-radius:0;height:100%;min-height:0;box-shadow:none}
 .present-side{position:relative;background:#111;color:#fff;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:16px;
   overflow:auto;font-size:clamp(1.05rem,1.5vw,1.45rem);line-height:1.45}
 .present-side[hidden]{display:none}

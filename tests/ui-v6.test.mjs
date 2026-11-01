@@ -192,3 +192,12 @@ test('การ์ดความเสี่ยงไม่ใช้คลา�
 test('ชิปเส้นทางบนแถบบนไม่ใช้คลาส route (ชนกับแถบเส้นทาง 6 สถานี)', () => {
   assert.doesNotMatch(readHtml(), /class="chip route"/);
 });
+test('CSS: ปีกกาเปิด/ปิดสมดุล (ปีกกาเกินทำให้กฎถัดไปหายเงียบ ๆ)', () => {
+  const body = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  let depth = 0;
+  for (const ch of body) {
+    if (ch === '{') depth++;
+    if (ch === '}') { depth--; assert.ok(depth >= 0, 'มี } เกิน'); }
+  }
+  assert.equal(depth, 0);
+});
