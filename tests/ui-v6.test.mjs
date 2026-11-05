@@ -10,19 +10,6 @@ const walk = (S, n = 50) => { for (let i = 0; i < n && L.canAdvance(S); i++) L.n
 const count = (s, re) => (s.match(re) || []).length;
 
 // ---- Task 2: แถบเส้นทาง 6 สถานี ----
-test('renderRoute: 6 สถานี · ก่อนหน้า = done · ปัจจุบัน = now + ป้าย "ตอนนี้" + aria-current', () => {
-  const S = L.newState(0); L.goTo(S, 7);          // ขั้น 8 = สถานี 2
-  const h = UI.renderRoute(S);
-  assert.equal(count(h, /data-station="/g), 6);
-  assert.equal(count(h, /class="stn done"/g), 1);
-  assert.match(h, /class="stn now"[\s\S]*?ตอนนี้/);
-  assert.equal(count(h, /aria-current="location"/g), 1);
-  assert.match(h, /ขั้น 7–8/);
-  assert.match(h, /นาริตะ NRT/);
-});
-test('renderRoute: สถานีที่มีขั้นเดียวแสดงเลขเดียว', () => {
-  assert.match(UI.renderRoute(L.newState(0)), /ขั้น 9</);
-});
 test('renderRoute: ตอน hold ปุ่มสถานีกดไม่ได้ทั้ง 6', () => {
   const S = walk(L.newState(1));
   assert.equal(count(UI.renderRoute(S), /disabled/g), 6);

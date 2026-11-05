@@ -170,21 +170,25 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 
 /* ---- V6 แถบเส้นทาง 6 สถานี (บนสุด) ---- */
 .route-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0}
-.route{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));min-width:0}
-.stn{position:relative;min-width:0}
+/* V7: แถวเดียวแบบ flex · สถานีปัจจุบันเป็นแคปซูลกว้างตามชื่อ สถานีอื่นแบ่งที่เหลือเท่า ๆ กัน */
+.route{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:4px;min-width:0}
+.stn{position:relative;min-width:0;flex:1 1 0}
+.stn.now{flex:none}
 .stn::after{content:"";position:absolute;left:38px;right:6px;top:50%;height:3px;border-radius:2px;background:var(--line)}
+.stn.now::after{display:none}
 .stn:last-child::after{display:none}
 .stn.done::after{background:var(--accent)}
 .stn button{position:relative;z-index:1;display:flex;align-items:center;gap:8px;width:100%;min-width:0;border:0;background:transparent;
-  border-radius:12px;padding:4px 6px;text-align:left}
+  border-radius:999px;padding:4px 6px;text-align:left}
 .stn .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface);
   border:2px solid var(--line);color:var(--muted);font-size:.8rem;font-weight:700}
-.stn.done .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.stn.now .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent)}
+.stn.done .dot,.stn.now .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .stn .txt{min-width:0;background:var(--surface);padding-right:6px}
-.stn .txt b{display:block;font-size:.85rem;line-height:1.3}
-.stn .txt>span{font-size:.75rem;color:var(--muted)}
-.stn.now .txt b{font-weight:800}
+.stn .txt b{display:block;font-size:.85rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stn.now button{background:var(--soft);padding:4px 16px 4px 4px}
+.stn .cap{border-radius:999px;background:transparent;padding:0}
+.stn .cap small{display:block;font-size:.72rem;color:var(--muted);line-height:1.2}
+.stn .cap b{font-weight:800;font-size:.92rem;overflow:visible}
 .now-tag{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;background:var(--accent);color:var(--on-accent);font-size:.68rem;font-weight:700}
 
 /* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
@@ -223,13 +227,17 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #app{padding:0;display:block}
   .topbar,.howto,.risk{display:none}
   #stage{position:fixed;inset:0;height:100vh;height:100dvh;border:0;border-radius:0;aspect-ratio:auto;min-height:0;box-shadow:none}
-  /* แถบเส้นทางย่อเหลือจุด 6 จุด ลอยบนภาพ (เห็นชื่อเฉพาะสถานีปัจจุบัน) */
-  .route-wrap{position:fixed;top:8px;left:8px;right:8px;z-index:3;padding:4px 6px;border-radius:14px;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+  /* แถบเส้นทางเป็นกระจกลอยบนภาพ: สถานีอื่นเหลือแค่จุด · สถานีปัจจุบันเป็นแคปซูลมีชื่อ */
+  .route-wrap{position:fixed;top:8px;left:8px;right:8px;z-index:3;padding:4px;border-radius:999px;
+    background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 var(--glass-edge),0 8px 24px rgba(0,0,0,.18)}
   .stn button{padding:4px 2px;min-height:40px}
-  .stn .dot{width:24px;height:24px;font-size:.72rem}
-  .stn .txt{display:none}   /* ชื่อสถานีปัจจุบันอยู่ที่หัวแผ่นข้อมูลแล้ว */
+  .stn .dot{width:26px;height:26px;font-size:.72rem}
+  .stn .txt{display:none}
+  .stn .txt.cap{display:block;background:transparent}
+  .stn.now button{background:var(--surface);padding:3px 12px 3px 3px}
   .stn button{justify-content:center}
-  .stn::after{left:calc(50% + 16px);right:calc(-50% + 16px)}
+  .stn::after{left:calc(50% + 14px);right:calc(-50% + 14px)}
   #card{max-width:200px;font-size:.82rem}
   /* แผ่นข้อมูลด้านล่าง: ปิด = ชื่อขั้น + ปุ่มเล่นใหญ่ · เปิด = สูง 70% มีแท็บ */
   .panel.sheet{position:fixed;left:0;right:0;bottom:0;z-index:4;border:0;border-radius:22px 22px 0 0;
@@ -5756,19 +5764,21 @@ var KoiUI = (function () {
     }).join('');
   }
 
-  // แถบเส้นทาง 6 สถานี (V6): ผ่านแล้ว = วงดำเต็ม ✓ · ตอนนี้ = วงดำมีวงรอบ + ป้าย "ตอนนี้"
-  // กดชื่อสถานีเพื่อข้ามไปขั้นแรกของสถานีนั้น (ค้าง/จบแล้ว กดไม่ได้)
+  // แถบเส้นทาง 6 สถานี (V7): ผ่านแล้ว = วงดำเต็ม ✓ · ตอนนี้ = แคปซูลพื้นเทา บอก "สถานี k/6 · ขั้น n" + ชื่อ
+  // สถานีอื่นเห็นแค่ชื่อ (ช่วงขั้นอยู่ใน aria-label ให้โปรแกรมอ่านจอ) · กดชื่อสถานีเพื่อข้ามไปขั้นแรก (ค้าง/จบแล้ว กดไม่ได้)
   function renderRoute(S) {
-    var locked = S.mode === 'hold' || S.mode === 'end', cur = L.stationOf(S.idx);
+    var locked = S.mode === 'hold' || S.mode === 'end', cur = L.stationOf(S.idx), n = D.STATIONS.length;
     return '<ol class="route">' + D.STATIONS.map(function (st, k) {
       var done = k < cur, now = k === cur && !S.overview;
       var range = st.first === st.last ? 'ขั้น ' + (st.first + 1) : 'ขั้น ' + (st.first + 1) + '–' + (st.last + 1);
+      var txt = now
+        ? '<span class="txt cap"><small>สถานี ' + (k + 1) + '/' + n + ' · ขั้น ' + (S.idx + 1) + '</small><b>' + esc(st.label) + '</b></span>'
+        : '<span class="txt"><b>' + esc(st.label) + '</b></span>';
       return '<li class="stn' + (done ? ' done' : now ? ' now' : '') + '"><button type="button" data-station="' + k + '"' +
         (now ? ' aria-current="location"' : '') + (locked ? ' disabled' : '') +
-        ' aria-label="สถานี ' + (k + 1) + ' ' + esc(st.label) + (done ? ' ผ่านแล้ว' : now ? ' ตอนนี้' : '') + '">' +
-        '<span class="dot" aria-hidden="true">' + (done ? '✓' : k + 1) + '</span>' +
-        '<span class="txt"><b>' + esc(st.label) + (now ? '<span class="now-tag">ตอนนี้</span>' : '') + '</b>' +
-        '<span>' + range + '</span></span></button></li>';
+        ' aria-label="สถานี ' + (k + 1) + ' ' + esc(st.label) + ' ' + (now ? 'ขั้น ' + (S.idx + 1) : range) +
+        (done ? ' ผ่านแล้ว' : now ? ' ตอนนี้' : '') + '">' +
+        '<span class="dot" aria-hidden="true">' + (done ? '✓' : k + 1) + '</span>' + txt + '</button></li>';
     }).join('') + '</ol>';
   }
 
