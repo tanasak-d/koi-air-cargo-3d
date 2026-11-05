@@ -27,6 +27,10 @@
   --ok:#11743a;
   --warn:#8a5300;
   --bad:#b3261e;
+  /* V7 กระจก (Liquid Glass): ใช้กับของที่ลอยบนฉาก 3 มิติเท่านั้น · ทึบ 82% ให้ตัวหนังสืออ่านได้แม้ฉากด้านหลังมืดสนิท */
+  --glass:rgba(255,255,255,.82);
+  --glass-edge:rgba(255,255,255,.75);
+  --glass-blur:blur(22px) saturate(180%);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -43,6 +47,8 @@
     --ok:#4cd388;
     --warn:#f2b84b;
     --bad:#ff8a82;
+    --glass:rgba(22,22,22,.85);
+    --glass-edge:rgba(255,255,255,.14);
   }
 }
 :root[data-theme="dark"]{
@@ -59,9 +65,16 @@
   --ok:#4cd388;
   --warn:#f2b84b;
   --bad:#ff8a82;
+  --glass:rgba(22,22,22,.85);
+  --glass-edge:rgba(255,255,255,.14);
 }
 
 *{box-sizing:border-box}
+/* ==== V7 กระจก: เบลอฉากด้านหลัง + ขอบสว่างด้านบน · เครื่องที่เบลอไม่ได้ หรือผู้ใช้ตั้งลดความโปร่งใส = พื้นทึบ ==== */
+.glass{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.glass{background:var(--surface)}}
+@media (prefers-reduced-transparency:reduce){.glass{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);
   font-family:"Noto Sans Thai","Sarabun","Segoe UI",system-ui,sans-serif;line-height:1.55}

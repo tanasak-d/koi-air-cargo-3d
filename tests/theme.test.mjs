@@ -110,3 +110,31 @@ test('localStorage ถูกบล็อก: ธีมยังทำงาน �
   assert.doesNotThrow(() => UI.toggleTheme(e));
   assert.ok(e.attrs['data-theme']);
 });
+
+// ---- V7 กระจก (Liquid Glass): ตัวอักษรบนกระจกต้องอ่านได้แม้ฉากด้านหลังเป็นสีที่แย่ที่สุด ----
+// ผสม rgba(r,g,b,a) กับพื้นหลัง ได้สี hex ที่ตาเห็นจริง
+function glassOver(rgba, bgHex) {
+  const [r, g, b, a] = rgba.match(/[\d.]+/g).map(Number);
+  const bg = [1, 3, 5].map(i => parseInt(bgHex.slice(i, i + 2), 16));
+  return '#' + [r, g, b].map((v, i) => Math.round(v * a + bg[i] * (1 - a)).toString(16).padStart(2, '0')).join('');
+}
+for (const [name, set, block, worst] of [['สว่าง', light, ':root', '#000000'], ['มืด', darkAuto, ':root:not([data-theme="light"])', '#ffffff']]) {
+  test('กระจกธีม' + name + ': text/muted บนกระจกทับพื้น ' + worst + ' ยังผ่าน 4.5:1', () => {
+    const m = rule(block).match(/--glass:\s*(rgba\([^)]*\))/);
+    assert.ok(m, 'ไม่พบ --glass');
+    const seen = glassOver(m[1], worst);
+    assert.ok(ratio(set.text, seen) >= 4.5, 'text ' + ratio(set.text, seen).toFixed(2));
+    assert.ok(ratio(set.muted, seen) >= 4.5, 'muted ' + ratio(set.muted, seen).toFixed(2));
+  });
+}
+test('กระจกธีมมืดสองชุดค่าตรงกัน', () => {
+  const a = rule(':root:not([data-theme="light"])').match(/--glass:[^;]*/);
+  const b = rule(':root[data-theme="dark"]').match(/--glass:[^;]*/);
+  assert.ok(a && b);
+  assert.equal(a[0], b[0]);
+});
+test('.glass มีทางสำรองพื้นทึบ: ไม่รองรับ backdrop-filter และ prefers-reduced-transparency', () => {
+  assert.match(css, /\.glass\{[^}]*backdrop-filter:/);
+  assert.match(css, /@supports not \(\(backdrop-filter:[^)]*\) or \(-webkit-backdrop-filter:[^)]*\)\)\{[^}]*\.glass\{[^}]*background:var\(--surface\)/);
+  assert.match(css, /@media \(prefers-reduced-transparency:\s*reduce\)\{[^}]*\.glass\{[^}]*backdrop-filter:none/);
+});
