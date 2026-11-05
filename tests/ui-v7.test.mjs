@@ -37,3 +37,42 @@ test('CSS แคปซูล: ไม่ล้นจอ (flex + min-width:0) แ�
   assert.match(css, /\.stn \.cap\{[^}]*border-radius:999px/);
   assert.match(css, /orientation:portrait\)\{[\s\S]*?\.route-wrap\{[^}]*var\(--glass\)/);
 });
+
+// ---- Task 3: เช็กลิสต์ 17 ขั้น + แถบความคืบหน้า ----
+test('renderChecklist: หัวบอก "ผ่านแล้ว x จาก 17 ขั้น" + progressbar', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderChecklist(S);
+  assert.match(h, /ผ่านแล้ว 8 จาก 17 ขั้น/);
+  assert.match(h, /role="progressbar" aria-valuemin="0" aria-valuemax="17" aria-valuenow="8"/);
+  assert.match(h, /47%/);
+});
+test('renderChecklist: 17 แถว จัด 6 กลุ่มตามสถานี ขั้นปัจจุบันมี "ตอนนี้" + aria-current', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderChecklist(S);
+  assert.equal(count(h, /data-step="/g), 17);
+  assert.equal(count(h, /class="ck-grp"/g), 6);
+  assert.equal(count(h, /class="ck-row done"/g), 8);
+  assert.match(h, /data-step="8" class="ck-row now" aria-current="step"[\s\S]*?ตอนนี้/);
+  assert.doesNotMatch(h, /line-through/);
+});
+test('renderChecklist: แต่ละขั้นมีชื่อและเวลาสั้น ๆ', () => {
+  const h = UI.renderChecklist(L.newState(0));
+  assert.match(h, /data-step="0"[\s\S]*?ฟาร์มโคอิพรีเมียม[\s\S]*?ก่อนวันส่ง/);
+  assert.match(h, /data-step="8"[\s\S]*?บิน NRT → BKK[\s\S]*?16:20 JST/);
+});
+test('renderChecklist: hold = ✕ ที่ขั้นค้าง และทุกแถวกดไม่ได้ · overview ไม่มี aria-current', () => {
+  const S = walk(L.newState(1));
+  const h = UI.renderChecklist(S);
+  assert.match(h, /class="ck-row now bad"[\s\S]*?✕/);
+  assert.equal(count(h, /disabled/g), 17);
+  const O = L.newState(0); O.overview = true;
+  assert.equal(count(UI.renderChecklist(O), /aria-current/g), 0);
+});
+test('progressDone: ครบ 17 เมื่อจบปกติ', () => {
+  assert.equal(UI.progressDone(walk(L.newState(0))), 17);
+});
+test('V7: เลิกใช้ renderTimeline และ renderStationSteps', () => {
+  assert.equal(UI.renderTimeline, undefined);
+  assert.equal(UI.renderStationSteps, undefined);
+  assert.doesNotMatch(readHtml(), /id="station-steps"/);
+});

@@ -151,22 +151,26 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .panel-inner #timeline{flex:1 1 0;min-height:120px;overflow:auto}
 .panel-title{margin:0;font-size:.9rem;color:var(--muted);font-weight:600}
 .step-title{margin:0 0 6px;font-size:1rem}
-/* เส้นเวลาแนวตั้ง 17 ขั้น (แบบหน้าติดตามพัสดุ): จุด ✓ ผ่านแล้ว · ชมพู = ตอนนี้ */
-#timeline{display:grid;gap:2px;min-width:0}
-.tl-group{display:grid;gap:2px}
-.tl-st{font-size:.8rem;color:var(--muted);margin:6px 0 2px}
-.tl-steps{display:grid;gap:2px}
-.tl-step{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;text-align:left;border-radius:10px;
-  border-color:transparent;background:transparent;padding:6px 8px;min-height:36px;width:100%}
-.tl-step .dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1}
-.tl-step .nm{font-size:.92rem}
-.tl-step .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
+/* ---- V7 เช็กลิสต์ 17 ขั้น: หัวความคืบหน้า + แถวขั้น จัดกลุ่มตามสถานี ---- */
+#timeline{min-width:0}
+.ck-prog{margin-bottom:4px;position:sticky;top:0;z-index:1;background:var(--surface);padding-bottom:6px}  /* หัวความคืบหน้าค้างไว้บนสุดตอนเลื่อน */
+.ck-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:.88rem}
+.ck-head span{color:var(--muted);font-variant-numeric:tabular-nums}
+.ck-trk{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
+.ck-trk i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.ck-grp{margin:10px 0 2px;font-size:.75rem;font-weight:700;color:var(--muted)}
+.ck-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:8px;align-items:center;width:100%;text-align:left;
+  border:0;border-radius:10px;background:transparent;padding:6px 8px;min-height:36px}
+.ck-row .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1;color:var(--muted)}
+.ck-row .nm{font-size:.92rem;min-width:0}
+.ck-row .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
+.ck-row.done .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.ck-row.done .nm{color:var(--muted)}
+.ck-row.now{background:var(--soft);font-weight:700}
+.ck-row.now .ck{border-color:var(--accent);color:var(--text);box-shadow:0 0 0 2px var(--soft),0 0 0 4px var(--accent)}
+.ck-row.bad .ck{border-color:var(--bad);color:var(--bad);box-shadow:none}
+.ck-row[disabled]{opacity:1}
 .section-label{margin:4px 0 2px;font-size:.78rem;color:var(--muted);font-weight:600}
-.tl-step.passed .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.tl-step.passed .nm{color:var(--muted)}
-.tl-step.here{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
-.tl-step.here .tm{color:var(--on-accent)}
-.tl-step.here .dot{border-color:var(--on-accent);color:var(--on-accent)}
 
 /* ---- V6 แถบเส้นทาง 6 สถานี (บนสุด) ---- */
 .route-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0}
@@ -201,8 +205,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
    ≥1024 แล็ปท็อป/โปรเจกเตอร์: ภาพซ้าย แผงขวา · 768–1023 แท็บเล็ต: แผงลงใต้ภาพ
    มือถือแนวตั้ง (<768): ภาพเต็มจอ + แผ่นข้อมูลล่าง · มือถือแนวนอน (สูง ≤500): แบบแล็ปท็อปย่อส่วน */
 /* ส่วนของแผ่นข้อมูลมือถือ: จอใหญ่ไม่ใช้ */
-.sheet-head,.sheet-ctrl,#sheet-tabs,.sheet-risk,.panel-inner #timeline{display:none}
-.panel-inner #station-steps{flex:1 1 0;min-height:120px;overflow:auto}
+.sheet-head,.sheet-ctrl,#sheet-tabs,.sheet-risk{display:none}
 @media (min-width:1024px){
   .layout{grid-template-columns:minmax(0,1fr) 400px}
   /* ภาพสูงพอดีจอ ไม่ต้องเลื่อนหน้า (สำคัญกับโปรเจกเตอร์) */
@@ -220,7 +223,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 @media (max-width:1023px){
   .layout{grid-template-columns:minmax(0,1fr)}
   .panel-inner{position:static;display:grid}
-  .panel-inner #facts,.panel-inner #station-steps{max-height:none;overflow:visible}
+  .panel-inner #facts,.panel-inner #timeline{max-height:none;overflow:visible}
   .route .stn .txt>span{display:none}
 }
 @media (max-width:767px) and (orientation:portrait){
@@ -244,7 +247,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
     box-shadow:0 -8px 30px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom);transition:transform .2s ease;touch-action:none}
   .sheet.open{height:70vh;height:70dvh}
   .panel-inner{position:static;display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;height:100%;overflow:auto;touch-action:pan-y}
-  .panel-title,.panel-inner #station-steps{display:none}
+  .panel-title,.panel-inner #timeline{display:none}
   .sheet-head{display:block}
   .sheet-head .eyebrow{font-size:.75rem}
   .sheet-head .step-title{font-size:1.05rem}
@@ -258,9 +261,9 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .sheet:not(.open) #facts{display:none}
   .sheet.open #sheet-tabs{display:block}
   .sheet.open[data-tab="route"] #facts,.sheet.open[data-tab="risk"] #facts{display:none}
-  .sheet.open[data-tab="route"] #timeline{display:grid;overflow:visible}
+  .sheet.open[data-tab="route"] #timeline{display:block;overflow:visible}
   .sheet.open[data-tab="risk"] .sheet-risk{display:block}
-  .tl-step{min-height:44px}
+  .ck-row{min-height:44px}
   #facts .facts{grid-template-columns:1fr}   /* ต้องเจาะจงกว่า .facts ที่ประกาศทีหลัง */
   #facts>.eyebrow,#facts>.step-title{display:none}   /* หัวแผ่นบอกแล้ว ไม่ซ้ำ */
   /* ปุ่มกดด้วยนิ้วสูงอย่างน้อย 44px */
@@ -290,7 +293,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #stage{aspect-ratio:auto;height:calc(100vh - 64px);height:calc(100dvh - 64px);min-height:200px}
   .panel-inner{position:absolute;display:flex}
   .panel-inner #facts{flex:1 1 auto;max-height:none;overflow:auto}
-  .panel-inner #station-steps{display:none}
+  .panel-inner #timeline{display:none}
   /* แถบเล่นแถวเดียว ไม่บังภาพ */
   .stage-ctrl{flex-wrap:nowrap;padding:4px 6px;gap:4px;left:8px;right:8px;bottom:8px}
   .ctl,.ctl.play{width:36px;height:36px;min-height:36px}
@@ -462,7 +465,6 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
         <div id="sheet-tabs"></div>
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
         <section id="facts" aria-live="polite"></section>
-        <section id="station-steps" aria-label="ขั้นในสถานีนี้"></section>
         <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
         <div id="sheet-risk" class="sheet-risk"></div>
       </div>
@@ -5743,24 +5745,31 @@ var KoiUI = (function () {
   // เส้นเวลา 17 ขั้นแนวตั้ง (แบบหน้าติดตามพัสดุ) จัดกลุ่มตาม 6 สถานี
   // แต่ละแถว: จุดสถานะ (✓ ผ่านแล้ว / ✕ ค้าง) + ชื่อขั้น + เวลาสั้น ๆ · ตรงนี้ = ชมพู
   // ระหว่างค้าง (hold) หรือจบแล้ว (end) ห้ามข้ามขั้น ปุ่มทุกปุ่มจึงกดไม่ได้
-  function renderTimeline(S) {
-    var locked = S.mode === 'hold' || S.mode === 'end';
-    return D.STATIONS.map(function (st, k) {
-      var btns = [];
+  // จำนวนขั้นที่ผ่านแล้ว (จบครบ = 17 ทุกขั้น · นอกนั้น = ขั้นก่อนหน้าขั้นปัจจุบัน)
+  function progressDone(S) { return S.mode === 'done' ? D.STEPS.length : S.idx; }
+
+  // เช็กลิสต์ 17 ขั้น (V7): หัวบอกผ่านแล้วกี่ขั้น + แถบความคืบหน้า · จัดกลุ่มตาม 6 สถานี
+  // ผ่านแล้ว = วงดำ ✓ ตัวจาง (ไม่ขีดฆ่า อ่านง่ายกว่า) · ตอนนี้ = พื้นเทาเต็มแถว + ป้าย "ตอนนี้" · ค้าง/สูญเสีย = ✕
+  function renderChecklist(S) {
+    var n = D.STEPS.length, done = progressDone(S), locked = S.mode === 'hold' || S.mode === 'end';
+    var pct = Math.round(done / n * 100);
+    var out = '<div class="ck-prog"><p class="ck-head"><b>ผ่านแล้ว ' + done + ' จาก ' + n + ' ขั้น</b><span>' + pct + '%</span></p>' +
+      '<div class="ck-trk" role="progressbar" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + done +
+      '" aria-label="ความคืบหน้าทั้งเส้นทาง"><i style="width:' + pct + '%"></i></div></div>';
+    return out + D.STATIONS.map(function (st, k) {
+      var rows = '';
       for (var i = st.first; i <= st.last; i++) {
-        var s = D.STEPS[i], here = i === S.idx, passed = i < S.idx;
-        var bad = here && (S.mode === 'hold' || S.end === 'loss');
-        var cls = 'tl-step' + (here ? ' here' : passed ? ' passed' : '');
-        var mark = bad ? '✕' : passed ? '✓' : '';
-        btns.push('<button type="button" data-step="' + i + '" class="' + cls + '"' +
-          (here && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') +
-          ' aria-label="ขั้น ' + s.n + ' ' + esc(s.name) + '">' +
-          '<span class="dot" aria-hidden="true">' + mark + '</span>' +
-          '<span class="nm">' + s.n + '. ' + esc(s.name) + '</span>' +
-          '<span class="tm">' + esc(shortTime(S, i)) + '</span></button>');
+        var s = D.STEPS[i], now = i === S.idx && S.mode !== 'done', passed = i < done && !now;
+        var bad = now && (S.mode === 'hold' || S.end === 'loss');
+        var cls = 'ck-row' + (passed ? ' done' : now ? ' now' + (bad ? ' bad' : '') : '');
+        rows += '<button type="button" data-step="' + i + '" class="' + cls + '"' +
+          (now && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
+          '<span class="ck" aria-hidden="true">' + (bad ? '✕' : passed ? '✓' : s.n) + '</span>' +
+          '<span class="nm">' + esc(s.name) + '</span>' +
+          (now && !S.overview ? '<span class="now-tag">ตอนนี้</span>' : '') +
+          '<span class="tm">' + esc(shortTime(S, i)) + '</span></button>';
       }
-      return '<div class="tl-group"><span class="tl-st">' + (k + 1) + ' ' + esc(st.name) + '</span>' +
-        '<div class="tl-steps">' + btns.join('') + '</div></div>';
+      return '<p class="ck-grp">สถานี ' + (k + 1) + ' · ' + esc(st.label) + '</p>' + rows;
     }).join('');
   }
 
@@ -5907,20 +5916,6 @@ var KoiUI = (function () {
   // ข้อความปุ่มโหมดนำเสนอบนแถบบน
   function presentLabel(present) { return present ? 'ออกจากโหมดนำเสนอ' : 'โหมดนำเสนอ'; }
 
-  // รายการขั้นของสถานีปัจจุบัน (แผงขวา) ใช้แถวแบบเดียวกับเส้นเวลา 17 ขั้น
-  function renderStationSteps(S) {
-    var st = D.STATIONS[L.stationOf(S.idx)], locked = S.mode === 'hold' || S.mode === 'end', out = [];
-    for (var i = st.first; i <= st.last; i++) {
-      var s = D.STEPS[i], here = i === S.idx, passed = i < S.idx;
-      var bad = here && (S.mode === 'hold' || S.end === 'loss');
-      out.push('<button type="button" data-step="' + i + '" class="tl-step' + (here ? ' here' : passed ? ' passed' : '') + '"' +
-        (here && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
-        '<span class="dot" aria-hidden="true">' + (bad ? '✕' : passed ? '✓' : s.n) + '</span>' +
-        '<span class="nm">' + esc(s.name) + '</span><span class="tm">' + esc(shortTime(S, i)) + '</span></button>');
-    }
-    return '<p class="section-label">ขั้นในสถานีนี้</p><div class="tl-steps">' + out.join('') + '</div>';
-  }
-
   // เมนูเหตุการณ์เสี่ยง (พับได้) หัวเมนูบอกเหตุการณ์ที่เลือกอยู่
   function renderScenarioMenu(S, open) {
     var cur = D.SCENARIOS[S.sc];
@@ -6032,7 +6027,7 @@ var KoiUI = (function () {
     }
     return null;
   }
-  var FOCUS_SCOPES = '#welcome,#topbar,#route,#stage-ctrl,#risk,#facts,#station-steps,#timeline,#sheet-head,#sheet-tabs,#sheet-risk,#present-side';
+  var FOCUS_SCOPES = '#welcome,#topbar,#route,#stage-ctrl,#risk,#facts,#timeline,#sheet-head,#sheet-tabs,#sheet-risk,#present-side';
 
   // ระหว่างหน้าต้อนรับเปิดอยู่ ทำได้แค่ เริ่ม / นำเสนอ / สลับธีม
   function welcomeAllows(action) { return action === 'start' || action === 'present' || action === 'theme'; }
@@ -6060,13 +6055,12 @@ var KoiUI = (function () {
     function render() {
       var ae = document.activeElement, box = ae && root.contains(ae) && ae.closest ? ae.closest(FOCUS_SCOPES) : null;
       var fsel = ae && root.contains(ae) ? focusSelector(ae.dataset, box && box.id) : null;
-      $('#timeline').innerHTML = renderTimeline(S);
+      $('#timeline').innerHTML = renderChecklist(S);
       $('#route').innerHTML = renderRoute(S);
       var stEl = document.getElementById('status'); // แถบบนอยู่นอก #app จึงหาจาก document
       if (stEl) stEl.innerHTML = renderStatus(S);
       $('#card').innerHTML = renderCard(S);
       $('#stage-ctrl').innerHTML = renderScrub(S, !!timer);
-      $('#station-steps').innerHTML = renderStationSteps(S);
       var pb = $('#present-btn'); if (pb) pb.lastChild.nodeValue = ' ' + presentLabel(present);
       $('#risk').innerHTML = renderScenarioMenu(S, riskOpen);
       $('#facts').innerHTML = renderHold(S) + renderEnd(S) + renderFacts(S) + renderMore(S, moreOpen);
@@ -6095,7 +6089,7 @@ var KoiUI = (function () {
         if (first) { var go = w.querySelector('[data-act="start"]'); if (go) go.focus(); }
       }
       if (fsel) { var again = root.querySelector(fsel); if (again && !again.disabled) again.focus(); }
-      var here = $('#timeline').querySelector('.here'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
+      var here = $('#timeline').querySelector('.ck-row.now'); // ขั้นปัจจุบันต้องมองเห็นเสมอ (เส้นเวลาเลื่อนได้)
       // เลื่อนเฉพาะกล่องเส้นเวลา (ไม่ใช้ scrollIntoView เพราะบนมือถือจะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ)
       var tl = $('#timeline');
       if (here && tl.scrollHeight > tl.clientHeight) {
@@ -6231,11 +6225,11 @@ var KoiUI = (function () {
 
   return {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
-    esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderTimeline: renderTimeline, renderCard: renderCard,
+    esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderChecklist: renderChecklist, progressDone: progressDone, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
     renderHold: renderHold, renderEnd: renderEnd, MOBILE_MQ: MOBILE_MQ, sheetSnap: sheetSnap, renderSheetHead: renderSheetHead, renderSheetTabs: renderSheetTabs,
-    renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel, renderStationSteps: renderStationSteps, renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, welcomeAllows: welcomeAllows, sheetAutoOpen: sheetAutoOpen, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
+    renderScrub: renderScrub, renderPresentSide: renderPresentSide, renderWelcome: renderWelcome, parseStepHash: parseStepHash, presentLabel: presentLabel,renderScenarioMenu: renderScenarioMenu, focusSelector: focusSelector, welcomeAllows: welcomeAllows, sheetAutoOpen: sheetAutoOpen, keyToAction: keyToAction, playIntervalMs: playIntervalMs, playDelayMs: playDelayMs, runAction: runAction, mount: mount
   };
 })();
 </script>

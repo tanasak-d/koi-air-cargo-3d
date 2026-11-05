@@ -75,13 +75,6 @@ test('renderScrub: ตอน hold ขีดและปุ่มเดินห�
   assert.equal(count(h, /data-step="[^"]*"[^>]*disabled/g), 17);
   assert.match(h, /data-act="next"[^>]*disabled/);
 });
-test('renderStationSteps: แสดงเฉพาะขั้นของสถานีปัจจุบัน ขั้นปัจจุบัน aria-current', () => {
-  const S = L.newState(0); L.goTo(S, 3);
-  const h = UI.renderStationSteps(S);
-  assert.equal(count(h, /data-step="/g), 6);   // สถานี 1 = ขั้น 1–6
-  assert.match(h, /data-step="3"[^>]*aria-current="step"/);
-  assert.match(h, /ขั้นในสถานีนี้/);
-});
 test('V6: เลิกใช้ renderStageControls', () => {
   assert.equal(UI.renderStageControls, undefined);
 });

@@ -10,27 +10,6 @@ const { UI, L, D } = fresh();
 const walk = (S, n = 50) => { for (let i = 0; i < n && L.canAdvance(S); i++) L.next(S); return S; };
 const count = (s, re) => (s.match(re) || []).length;
 
-// ---- รุ่น 2 Task 5: เส้นเวลา 17 ขั้น (จัดกลุ่ม 6 สถานี) ----
-test('renderTimeline: 17 ปุ่มขั้น จัดกลุ่ม 6 สถานี ขั้นปัจจุบัน aria-current, ผ่านแล้ว ✓', () => {
-  const S = L.newState(0); L.goTo(S, 7);
-  const h = UI.renderTimeline(S);
-  assert.equal(count(h, /data-step="/g), 17);
-  assert.equal(count(h, /class="tl-st"/g), 6);
-  assert.match(h, /ผู้ส่ง/);
-  assert.match(h, /data-step="7"[^>]*aria-current="step"/);
-  assert.equal(count(h, /aria-current="step"/g), 1);
-  assert.equal(count(h, /✓/g), 7);
-  assert.match(h, /data-step="0"[^>]*class="tl-step passed"/);
-  assert.match(h, /data-step="7"[^>]*class="tl-step here"/);
-});
-
-test('renderTimeline: ตอน hold ขั้นปัจจุบันมี ✕ และปุ่มขั้นอื่นกดไม่ได้', () => {
-  const S = walk(L.newState(1));
-  const h = UI.renderTimeline(S);
-  assert.match(h, new RegExp('data-step="' + S.idx + '"[^>]*><span class="dot"[^>]*>✕'));
-  assert.equal(count(h, /disabled/g), 17);
-});
-
 test('renderHold: ใน hold มีคำ HOLD, ✕ และปุ่ม VERIFY; ไม่พึ่งสีอย่างเดียว', () => {
   const S = walk(L.newState(1));
   const h = UI.renderHold(S);
@@ -85,7 +64,7 @@ test('ข้อมูลที่มี HTML ถูก escape', () => {
   const f = fresh();
   f.D.STEPS[0].name = '<script>alert(1)</script>';
   const S = f.L.newState(0);
-  const h = f.UI.renderTimeline(S) + f.UI.renderFacts(S) + f.UI.renderCard(S);
+  const h = f.UI.renderChecklist(S) + f.UI.renderFacts(S) + f.UI.renderCard(S);
   assert.doesNotMatch(h, /<script>alert/);
   assert.match(h, /&lt;script&gt;/);
 });
@@ -149,11 +128,6 @@ test('renderCard: บอก "ขั้น n" ชื่อขั้น และ 
 });
 
 // ---- Task 9: ดูทั้งเส้นทาง ----
-test('renderTimeline ตอน overview: ไม่มีขั้นใดเป็น aria-current', () => {
-  const S = L.newState(0); S.overview = true;
-  assert.equal(count(UI.renderTimeline(S), /aria-current="step"/g), 0);
-});
-
 test('renderScrub: ปุ่ม overview เปลี่ยนข้อความตามโหมด', () => {
   const S = L.newState(0);
   assert.match(UI.renderScrub(S, false), /ดูทั้งเส้นทาง/);
@@ -234,13 +208,6 @@ test('playDelayMs: รอจนช็อตของขั้นจบแล้�
 });
 
 // ---- V4 หน้าตาแบบ "ติดตามการขนส่ง" (มาร์ชอนุมัติร่าง 2026-10-18) ----
-test('renderTimeline V4: แต่ละขั้นมีชื่อขั้นและเวลาสั้น ๆ (เหมือนหน้าติดตามพัสดุ)', () => {
-  const h = UI.renderTimeline(L.newState(0));
-  assert.match(h, /data-step="0"[\s\S]*?ฟาร์มโคอิพรีเมียม[\s\S]*?ก่อนวันส่ง/);
-  assert.match(h, /data-step="8"[\s\S]*?บิน NRT → BKK[\s\S]*?16:20 JST/);
-  assert.match(h, /data-step="10"[\s\S]*?ประมาณ 04:00/);
-});
-
 test('renderStatus: แถบบนบอกสถานะการขนส่ง ปกติ ✓ / HOLD ✕ / สูญเสีย ✕ / ถึงผู้รับ ✓ (ไม่พึ่งสีอย่างเดียว)', () => {
   assert.match(UI.renderStatus(L.newState(0)), /✓ สถานะปกติ/);
   const held = walk(L.newState(2));
