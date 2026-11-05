@@ -38,7 +38,7 @@ test('renderFacts: มี 4 การ์ด ใครทำ/ทำอะไร/�
 test('renderFacts: มาตรวัดอายุถุงบอกเป็นตัวเลขและ ✓/✕ ไม่ใช่สีอย่างเดียว', () => {
   const S = L.newState(0); L.goTo(S, 8);
   const h = UI.renderFacts(S);
-  assert.match(h, /เพดาน 24 ชม\./);
+  assert.match(h, /\/ 24 ชม\./);
   assert.match(h, /[✓✕]/);
   assert.match(h, /role="meter"/);
 });

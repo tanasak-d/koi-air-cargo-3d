@@ -76,3 +76,29 @@ test('V7: เลิกใช้ renderTimeline และ renderStationSteps', ()
   assert.equal(UI.renderStationSteps, undefined);
   assert.doesNotMatch(readHtml(), /id="station-steps"/);
 });
+
+// ---- Task 4: การ์ดข้อมูล V6 ปรับใหม่ ----
+test('renderFacts V7: หัวการ์ดมีไอคอนในบรรทัดป้าย · เอกสารเป็นป้ายทีละฉบับ', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderFacts(S);
+  assert.equal(count(h, /class="fact[ "]/g), 4);
+  assert.match(h, /<span class="lab"><span class="ic">/);
+  assert.equal(count(h, /class="chip doc"/g), D.STEPS[8].docs.length);
+  assert.match(h, /class="fact wide hazard"[\s\S]*?ความเสี่ยง/);
+});
+test('renderFacts V7: มาตรวัดถุงเป็นตัวเลขใหญ่ + ป้ายสถานะ + สเกล 0–24', () => {
+  const S = L.newState(0); L.goTo(S, 8);                  // ขั้น 9 บินถึง BKK: L.bagAgeMin = 900 นาที = 15 ชม.
+  const h = UI.renderFacts(S);
+  assert.match(h, /class="bag" role="meter" aria-valuemin="0" aria-valuemax="24" aria-valuenow="15\.0"/);
+  assert.match(h, /15\.0 <small>\/ 24 ชม\.<\/small>/);
+  assert.match(h, /✓ ปลอดภัย · เหลือ 9\.0 ชม\./);
+  assert.match(h, /<span>0<\/span><span>6<\/span><span>12<\/span><span>18<\/span><span>24 ชม\.<\/span>/);
+});
+test('renderFacts V7: ถุงเกิน 24 ชม. แสดง ✕ เกิน และไม่มี "เหลือ"', () => {
+  const S = L.newState(0); L.goTo(S, 13); S.shift = 181; S.shiftFrom = 0;   // 1441 นาที (วิธีเดียวกับ time.test.mjs)
+  assert.equal(L.bagStatus(S), 'over');
+  const h = UI.renderFacts(S);
+  assert.match(h, /✕ เกิน 24 ชม\./);
+  assert.doesNotMatch(h, /เหลือ/);
+});
+test('ไม่มีอีโมจิ 🕒 ในป้ายเวลา', () => { assert.doesNotMatch(UI.renderTimeBadge(L.newState(0)), /🕒/); });

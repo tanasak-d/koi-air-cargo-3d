@@ -39,7 +39,8 @@ test('มีธีมมืดทั้งแบบตามระบบ (prefer
 const PAIRS = [
   ['text', 'bg'], ['text', 'surface'], ['muted', 'bg'], ['muted', 'surface'],
   ['accent', 'surface'], ['accent', 'bg'], ['on-accent', 'accent'], ['text', 'soft'], ['muted', 'soft'],
-  ['ok', 'surface'], ['warn', 'surface'], ['bad', 'surface']
+  ['ok', 'surface'], ['warn', 'surface'], ['bad', 'surface'],
+  ['warn', 'warn-soft'], ['text', 'warn-soft']   // V7 การ์ดความเสี่ยงพื้นเหลืองอ่อน
 ];
 for (const [name, set] of [['สว่าง', light], ['มืด', darkAuto]]) {
   test('ธีม' + name + ': ทุกคู่สีตัวอักษรผ่าน WCAG AA (>= 4.5:1)', () => {

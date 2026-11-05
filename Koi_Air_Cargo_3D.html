@@ -27,6 +27,7 @@
   --ok:#11743a;
   --warn:#8a5300;
   --bad:#b3261e;
+  --warn-soft:#fdf1dc;
   /* V7 กระจก (Liquid Glass): ใช้กับของที่ลอยบนฉาก 3 มิติเท่านั้น · ทึบ 82% ให้ตัวหนังสืออ่านได้แม้ฉากด้านหลังมืดสนิท */
   --glass:rgba(255,255,255,.82);
   --glass-edge:rgba(255,255,255,.75);
@@ -47,6 +48,7 @@
     --ok:#4cd388;
     --warn:#f2b84b;
     --bad:#ff8a82;
+    --warn-soft:#3a2a10;
     --glass:rgba(22,22,22,.85);
     --glass-edge:rgba(255,255,255,.14);
   }
@@ -65,6 +67,7 @@
   --ok:#4cd388;
   --warn:#f2b84b;
   --bad:#ff8a82;
+  --warn-soft:#3a2a10;
   --glass:rgba(22,22,22,.85);
   --glass-edge:rgba(255,255,255,.14);
 }
@@ -372,19 +375,32 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .step-title{margin:0;font-size:1.15rem;line-height:1.35}
 .times{margin:0;display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
 .ico{width:16px;height:16px;flex:none}
+/* ---- V7 การ์ดข้อมูล: ป้าย (ไอคอน + คำ) อยู่บรรทัดบน เนื้อหาบรรทัดล่าง · มุม 12px ทุกใบ ---- */
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.fact{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:8px;align-items:flex-start;min-width:0}
+.fact{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .fact.wide{grid-column:1/-1}
-.fact .ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--text)}
-.fact.hazard .ic{color:var(--warn)}
-.fact small{display:block;font-size:.75rem;color:var(--muted)}
-.fact b{display:block;font-size:.9rem;line-height:1.4;font-weight:600}
-.meter{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.meter-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.85rem}
-.meter-top b{font-variant-numeric:tabular-nums}
-.meter-bar{height:8px;border-radius:4px;background:var(--soft);margin-top:8px;overflow:hidden}
-.meter-bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
-.meter.over .meter-bar i{background:var(--bad)}
+.fact .lab,.bag .lab{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
+.fact .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--text)}
+.fact .ic .ico{width:15px;height:15px}
+.fact b{display:block;font-size:.9rem;line-height:1.45;font-weight:600}
+.fact.hazard{background:var(--warn-soft);border-color:transparent}
+.fact.hazard .lab,.fact.hazard .ic{color:var(--warn)}
+.fact.hazard .ic{background:transparent;border:1px solid var(--warn)}
+.doc-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip.doc{white-space:normal;font-size:.8rem;padding:3px 10px;background:var(--soft);border-color:transparent}
+.times .chip{display:inline-flex;align-items:center;gap:6px;white-space:normal;color:var(--text)}
+.times .chip .ico,.bag .lab .ico{width:15px;height:15px}
+.bag{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.bag-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700}
+.pill.ok{background:var(--surface);color:var(--ok);border:1px solid var(--ok)}
+.pill.bad{background:var(--surface);color:var(--bad);border:1px solid var(--bad)}
+.bag-val{margin:4px 0 0;font-size:1.45rem;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.bag-val small{font-size:.8rem;font-weight:600;color:var(--muted)}
+.bag-bar{height:10px;border-radius:5px;background:var(--soft);margin-top:8px;overflow:hidden}
+.bag-bar i{display:block;height:100%;background:var(--ok);border-radius:5px}
+.bag-bar.over i{background:var(--bad)}
+.bag-scale{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
 .more{border:1px solid var(--line);border-radius:12px;padding:8px 12px}
 .more summary{cursor:pointer;font-weight:600;font-size:.9rem}
 .more h3{margin:8px 0 2px;font-size:.95rem}
@@ -419,6 +435,10 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 2-2.5 2-2.5 4 M12 17v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M8 8c0-3 1.8-5 4-5s4 2 4 5 M5 8h14l-1 12H6z M10 13c1 1 3 1 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l5 4.5 9-10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7z M14 5h3v14h-3z" fill="currentColor"/></symbol>
 </svg>
 <div id="app">
@@ -5809,7 +5829,7 @@ var KoiUI = (function () {
 
   // ป้ายเวลา + อายุปลาในถุง (เทียบเพดาน 24 ชม.)
   function renderTimeBadge(S) {
-    var out = '<span class="badge">🕒 ' + esc(L.stepTimeLabel(S.idx, S)) + '</span>';
+    var out = '<span class="badge">' + icon('clock') + ' ' + esc(L.stepTimeLabel(S.idx, S)) + '</span>';
     var age = L.bagAgeMin(S);
     if (age != null) {
       var hrs = (age / 60).toFixed(1), over = L.bagStatus(S) === 'over';
@@ -5822,27 +5842,40 @@ var KoiUI = (function () {
   // ไอคอนเส้นเดียวกันทั้งชุด (นิยามเป็น <symbol> ไว้ต้น <body>)
   function icon(name) { return '<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-' + name + '"/></svg>'; }
 
-  // การ์ดข้อมูลของขั้นปัจจุบัน (V6 แทนแท็บ): หัวการ์ด + เวลา + 4 การ์ด ใครทำ/ทำอะไร/เอกสาร/ความเสี่ยง + มาตรวัดอายุถุง
+  // ข้อความสถานะอายุถุง (ใช้ทั้งการ์ดข้อมูลและการ์ดลอยมือถือ): บอกด้วย ✓/✕ และคำเสมอ ไม่ใช้สีอย่างเดียว
+  function bagLine(S) {
+    var age = L.bagAgeMin(S);
+    if (age == null) return null;
+    var over = L.bagStatus(S) === 'over', lim = D.CONST.BAG_LIMIT_MIN;
+    return { age: age, over: over, text: over ? '✕ เกิน 24 ชม.' : '✓ ปลอดภัย · เหลือ ' + ((lim - age) / 60).toFixed(1) + ' ชม.' };
+  }
+
+  // การ์ดข้อมูลของขั้นปัจจุบัน (V7 ปรับจาก V6): หัวการ์ด + ป้ายเวลา + 4 การ์ด (ไอคอนอยู่ในบรรทัดป้าย)
+  // เอกสารเป็นป้ายทีละฉบับ · ความเสี่ยงพื้นเหลืองอ่อน (คลาส hazard ไม่ใช้ risk เพราะชนกับเมนูเหตุการณ์) · มาตรวัดอายุถุงตัวเลขใหญ่ + ป้ายสถานะ + สเกล 0–24 ชม.
   function renderFacts(S) {
     var s = D.STEPS[S.idx], k = L.stationOf(S.idx);
     var fact = function (cls, ic, label, body) {
-      return '<div class="fact' + cls + '"><span class="ic">' + icon(ic) + '</span><div><small>' + label + '</small><b>' + body + '</b></div></div>';
+      return '<div class="fact' + cls + '"><span class="lab"><span class="ic">' + icon(ic) + '</span>' + label + '</span>' + body + '</div>';
     };
     var out = '<p class="eyebrow">ขั้นที่ ' + s.n + ' · สถานี ' + (k + 1) + ' ' + esc(D.STATIONS[k].label) + '</p>' +
       '<h2 class="step-title">' + esc(s.name) + '</h2>' +
-      '<p class="times">' + icon('clock') + ' ' + esc(L.stepTimeLabel(S.idx, S)) + '</p>' +
+      '<p class="times"><span class="chip">' + icon('clock') + ' ' + esc(L.stepTimeLabel(S.idx, S)) + '</span></p>' +
       '<div class="facts">' +
-      fact(' wide', 'user', 'ใครทำ', renderGlossary(s.who)) +
-      fact(' wide', 'hand', 'ทำอะไร', renderGlossary(s.what)) +
-      fact('', 'doc', 'เอกสาร', s.docs.map(renderGlossary).join('<br>')) +
-      fact(' hazard', 'alert', 'ความเสี่ยง', renderGlossary(s.risk)) + '</div>';
-    var age = L.bagAgeMin(S);
-    if (age != null) {
-      // มาตรวัดอายุปลาในถุง เทียบเพดาน 24 ชม. (บอกด้วยตัวเลขและ ✓/✕ เสมอ ไม่ใช้สีอย่างเดียว)
-      var over = L.bagStatus(S) === 'over', pct = Math.min(100, Math.round(age / 1440 * 100));
-      out += '<div class="meter' + (over ? ' over' : '') + '" role="meter" aria-valuemin="0" aria-valuemax="24" aria-valuenow="' + (age / 60).toFixed(1) +
-        '" aria-label="อายุปลาในถุง"><div class="meter-top"><span>อายุปลาในถุง</span><b>' + (over ? '✕ ' : '✓ ') + (age / 60).toFixed(1) +
-        ' ชม. / เพดาน 24 ชม.</b></div><div class="meter-bar"><i style="width:' + pct + '%"></i></div></div>';
+      fact(' wide', 'user', 'ใครทำ', '<b>' + renderGlossary(s.who) + '</b>') +
+      fact(' wide', 'hand', 'ทำอะไร', '<b>' + renderGlossary(s.what) + '</b>') +
+      fact(' wide docs', 'doc', 'เอกสาร', '<span class="doc-chips">' + s.docs.map(function (d) {
+        return '<span class="chip doc">' + renderGlossary(d) + '</span>';
+      }).join('') + '</span>') +
+      fact(' wide hazard', 'alert', 'ความเสี่ยง', '<b>' + renderGlossary(s.risk) + '</b>') + '</div>';
+    var bag = bagLine(S);
+    if (bag) {
+      var hrs = (bag.age / 60).toFixed(1), pct = Math.min(100, Math.round(bag.age / D.CONST.BAG_LIMIT_MIN * 100));
+      out += '<div class="bag" role="meter" aria-valuemin="0" aria-valuemax="24" aria-valuenow="' + hrs + '" aria-label="อายุปลาในถุง ' + hrs + ' จาก 24 ชั่วโมง">' +
+        '<div class="bag-top"><span class="lab">' + icon('bag') + 'อายุปลาในถุง</span>' +
+        '<span class="pill ' + (bag.over ? 'bad' : 'ok') + '">' + bag.text + '</span></div>' +
+        '<p class="bag-val">' + hrs + ' <small>/ 24 ชม.</small></p>' +
+        '<div class="bag-bar' + (bag.over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="bag-scale" aria-hidden="true"><span>0</span><span>6</span><span>12</span><span>18</span><span>24 ชม.</span></div></div>';
     }
     return out;
   }
