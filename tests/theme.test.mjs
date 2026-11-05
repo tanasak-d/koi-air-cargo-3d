@@ -135,6 +135,6 @@ test('กระจกธีมมืดสองชุดค่าตรงก�
 });
 test('.glass มีทางสำรองพื้นทึบ: ไม่รองรับ backdrop-filter และ prefers-reduced-transparency', () => {
   assert.match(css, /\.glass\{[^}]*backdrop-filter:/);
-  assert.match(css, /@supports not \(\(backdrop-filter:[^)]*\) or \(-webkit-backdrop-filter:[^)]*\)\)\{[^}]*\.glass\{[^}]*background:var\(--surface\)/);
+  assert.match(css, /@supports not \(\(backdrop-filter:blur\(1px\)\) or \(-webkit-backdrop-filter:blur\(1px\)\)\)\{\.glass\{background:var\(--surface\)/);
   assert.match(css, /@media \(prefers-reduced-transparency:\s*reduce\)\{[^}]*\.glass\{[^}]*backdrop-filter:none/);
 });
