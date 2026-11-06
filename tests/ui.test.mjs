@@ -113,7 +113,7 @@ test('renderScenarioMenu: เหตุการณ์ครบ 6 แบบ aria-
   assert.equal(count(h, /data-sc="/g), 6);
   assert.match(h, /data-sc="2" aria-pressed="true"/);
   assert.equal(count(h, /aria-pressed="true"/g), 1);
-  assert.match(h, /<summary[^>]*>[^<]*พลาด cut-off/);
+  assert.match(h, /<summary[^>]*>(?:(?!<\/summary>)[\s\S])*พลาด cut-off[\s\S]*?<\/summary>/);   // V7 หัวเมนูมีไอคอน svg นำหน้า
 });
 
 test('renderCard: บอก "ขั้น n" ชื่อขั้น และ "ใครทำ" ของขั้นปัจจุบัน; ตอน hold มี ✕ HOLD', () => {

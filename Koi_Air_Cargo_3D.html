@@ -95,7 +95,7 @@ body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
 .chip,.status{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.85rem;background:var(--surface);white-space:nowrap}
 .chip.trip{font-weight:700}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 12px}
 button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
 button:hover{border-color:var(--accent)}
@@ -350,36 +350,40 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .present-side .hold,.present-side .end{background:#fff;color:#111}
 .present-foot{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.7em;color:#b0b0b0;padding-bottom:10px}
 .kbd{border:1px solid #555;border-radius:6px;padding:2px 8px;color:#fff}
-.p-exit{margin-left:auto;background:transparent;color:#fff;border-color:#555}
+.p-exit{margin-left:auto;background:transparent;color:#fff;border-color:#555;border-radius:999px}
 .present-progress{position:fixed;left:0;right:0;bottom:0;height:8px;background:rgba(128,128,128,.4);z-index:5}
 .present-progress i{display:block;height:100%;background:#111;box-shadow:0 0 0 1px #fff}
 .keys{margin:6px 0 0;font-size:.85rem}
 /* ---- V6 หน้าต้อนรับ: ทับทั้งจอ ภาพ 3 มิติ (ภาพรวม) ขยายเต็มจออยู่ด้านหลัง ---- */
-.welcome{position:fixed;inset:0;z-index:50;display:grid;align-items:center;padding:48px clamp(16px,5vw,64px);overflow:auto;color:#fff;
-  background:linear-gradient(90deg,rgba(0,0,0,.9) 0%,rgba(0,0,0,.72) 45%,rgba(0,0,0,.1) 80%)}
+/* ---- V7 หน้าต้อนรับ: เห็นฉาก 3 มิติชัด (เงาไล่จางจากซ้าย) + เนื้อหาในการ์ดกระจก · ปุ่มแคปซูลเหมือนทุกที่ ---- */
+.welcome{position:fixed;inset:0;z-index:50;display:grid;align-items:center;padding:48px clamp(16px,5vw,64px);overflow:auto;color:var(--text);
+  background:linear-gradient(90deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,.12) 45%,rgba(0,0,0,0) 70%)}
 .welcome[hidden]{display:none}
 #app.welcoming #stage{position:fixed;inset:0;z-index:40;border:0;border-radius:0;aspect-ratio:auto}
 #app.welcoming #stage>:not(canvas){display:none}
-.w-inner{max-width:620px}
-.welcome .kicker{display:inline-flex;gap:8px;align-items:center;margin:0;font-size:.9rem;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14)}
-.welcome h1{font-size:clamp(1.9rem,4vw,3rem);line-height:1.2;margin:16px 0 12px}
-.welcome .lead{font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.6;color:#dcdcdc;max-width:30em;margin:0}
-.w-route{margin-top:22px;display:flex;align-items:center;gap:16px;padding:14px 18px;background:rgba(255,255,255,.1);
-  border:1px solid rgba(255,255,255,.22);border-radius:16px;width:fit-content;max-width:100%;flex-wrap:wrap}
-.w-route .ap b{font-size:1.75rem;display:block;line-height:1}
-.w-route .ap span,.w-route .mid{font-size:.78rem;color:#c8c8c8}
-.w-route .mid{display:grid;justify-items:center;gap:2px}
-.stats{display:flex;gap:24px;margin-top:22px;flex-wrap:wrap}
-.stats b{font-size:1.9rem;display:block;line-height:1.1}
-.stats span{font-size:.85rem;color:#c8c8c8}
-.cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
-.cta button{min-height:52px;font-size:1rem;padding:0 22px;border-radius:14px;display:inline-flex;gap:8px;align-items:center}
-.cta .w-start{background:#fff;color:#111;border-color:#fff;font-weight:700}
-.cta .w-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
-.cta button:focus-visible{outline:3px solid #fff;outline-offset:3px}
-.w-keys{margin:14px 0 0;font-size:.82rem;color:#bdbdbd}
-/* จอแคบ: ตัวหนังสือทับภาพทั้งจอ ใช้เงาดำทึบขึ้นให้อ่านง่าย */
-@media (max-width:767px){.welcome{background:rgba(0,0,0,.82);padding:32px 16px}}
+.w-inner{max-width:560px;border-radius:28px;padding:28px}
+.welcome .kicker{display:inline-flex;gap:8px;align-items:center;margin:0;font-size:.85rem;font-weight:600;padding:5px 12px;border-radius:999px;
+  background:var(--surface);border:1px solid var(--line)}
+.welcome h1{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.22;margin:16px 0 12px;letter-spacing:-.01em}
+.welcome .lead{font-size:clamp(1rem,1.3vw,1.1rem);line-height:1.6;color:var(--muted);max-width:30em;margin:0}
+.w-route{margin-top:20px;display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(127,127,127,.12);border-radius:16px}
+.w-route .ap b{font-size:1.6rem;display:block;line-height:1.05}
+.w-route .ap span{font-size:.75rem;color:var(--muted)}
+.w-route .ap:last-child{text-align:right}
+.w-route .mid{flex:1;display:grid;justify-items:center;gap:4px;font-size:.75rem;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
+.w-route .dash{display:block;width:100%;height:2px;background:repeating-linear-gradient(90deg,var(--muted) 0 6px,transparent 6px 10px)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.stats>div{border-radius:12px;padding:8px 12px;background:rgba(127,127,127,.12)}
+.stats b{font-size:1.5rem;display:block;line-height:1.15}
+.stats span{font-size:.78rem;color:var(--muted)}
+.cta{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.cta button{min-height:52px;font-size:1rem;padding:0 22px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;font-weight:700}
+.cta .w-start{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.cta .w-ghost{background:transparent;color:var(--text);border-color:var(--line)}
+.cta button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.w-keys{margin:12px 0 0;font-size:.8rem;color:var(--muted)}
+/* จอแคบ: การ์ดเต็มกว้าง เงาด้านหลังทึบขึ้น */
+@media (max-width:767px){.welcome{background:rgba(0,0,0,.45);padding:24px 12px}.w-inner{padding:20px;border-radius:24px}}
 .howto summary{cursor:pointer;font-weight:600}
 .howto ul{margin:8px 0 0;padding-left:20px}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
@@ -465,13 +469,13 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 <div id="app">
   <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="w-title" hidden></div>
   <header id="topbar" class="topbar">
-    <div class="brandmark" aria-hidden="true">✈</div>
+    <div class="brandmark" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-plane"/></svg></div>
     <div class="brand">
       <h1>Koi Air Cargo 3D</h1>
       <small>ส่งปลาคาร์ฟพรีเมียม ญี่ปุ่น → ไทย ทางอากาศ · รุ่น <span id="app-version">dev</span></small>
     </div>
     <div class="chips">
-      <span class="chip trip">NRT 🇯🇵 → BKK 🇹🇭</span>
+      <span class="chip trip">NRT → BKK</span>
       <span class="chip flight">JL707 · 18:25 JST → 23:00 ICT</span>
       <span id="status" class="status" role="status"></span>
       <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
@@ -479,13 +483,13 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
     </div>
   </header>
   <details class="card howto">
-    <summary>❓ วิธีใช้</summary>
+    <summary><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg> วิธีใช้</summary>
     <ul>
       <li>กด <b>▶ เล่น</b> หรือ <b>ถัดไป</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
       <li>แถบเส้นทางด้านบนบอกว่าตอนนี้อยู่สถานีไหน (วงดำเต็ม = ผ่านแล้ว · วงมีวงรอบ + "ตอนนี้" = ตอนนี้) กดชื่อสถานีหรือขีดบนแถบเวลาเพื่อข้ามไปดู</li>
       <li>ลากเมาส์หรือนิ้วบนภาพเพื่อหมุนดูรอบ ๆ · ล้อเมาส์หรือสองนิ้วเพื่อซูม (ปล่อยไว้สักพักกล้องจะกลับมุมเดิม)</li>
       <li>การ์ดด้านขวาบอกว่าใครทำ ทำอะไร เอกสาร ความเสี่ยง · บนมือถือลากแผ่นข้อมูลด้านล่างขึ้น (หรือกดที่จับ) เพื่อดูรายละเอียด</li>
-      <li>เลือก <b>⚠ เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
+      <li>เลือก <b>เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
       <li>กด <b>โหมดนำเสนอ</b> เมื่อฉายหน้าห้อง · สลับธีมสว่าง/มืดที่ปุ่มมุมขวาบน</li>
     </ul>
     <p class="muted keys">คีย์ลัด: Enter เริ่ม · ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · Esc ออก · T สลับธีม · O ภาพรวม</p>
@@ -5973,7 +5977,7 @@ var KoiUI = (function () {
   // เมนูเหตุการณ์เสี่ยง (พับได้) หัวเมนูบอกเหตุการณ์ที่เลือกอยู่
   function renderScenarioMenu(S, open) {
     var cur = D.SCENARIOS[S.sc];
-    return '<details class="risk-menu"' + (open ? ' open' : '') + '><summary>⚠ เหตุการณ์: ' + esc(cur.label) + '</summary>' +
+    return '<details class="risk-menu"' + (open ? ' open' : '') + '><summary>' + icon('alert') + ' เหตุการณ์: ' + esc(cur.label) + '</summary>' +
       '<div class="risk-list" aria-label="เลือกเหตุการณ์เสี่ยง">' + D.SCENARIOS.map(function (c) {
         return '<button type="button" data-sc="' + c.id + '" aria-pressed="' + (S.sc === c.id) + '">' + esc(c.label) + '</button>';
       }).join('') + '</div></details>';
@@ -6044,12 +6048,14 @@ var KoiUI = (function () {
   // หน้าต้อนรับ (V6): บอกว่าเว็บนี้คืออะไร เส้นทางไหน มีกี่ขั้น + ปุ่มเริ่ม/โหมดนำเสนอ (ภาพ 3 มิติภาพรวมอยู่ด้านหลัง)
   function renderWelcome() {
     var risks = D.SCENARIOS.length - 1; // เหตุการณ์แรกคือกรณีปกติ
-    return '<div class="w-inner">' +
-      '<p class="kicker">' + icon('fish') + ' โมเดลจำลองการขนส่งสัตว์มีชีวิตทางอากาศ</p>' +
+    var F = D.CONST.FLIGHT;
+    return '<div class="w-inner glass">' +
+      '<p class="kicker">' + icon('plane') + ' โมเดลจำลองการขนส่งสัตว์มีชีวิตทางอากาศ</p>' +
       '<h1 id="w-title">ติดตามการเดินทางของ<br>ปลาคาร์ฟจากญี่ปุ่นสู่ไทย</h1>' +
       '<p class="lead">ดูทีละขั้นว่าใครทำอะไร ที่ไหน ใช้เอกสารอะไร และถ้าเกิดความเสี่ยงต้องหยุด ตรวจ แก้อย่างไร</p>' +
       '<div class="w-route"><div class="ap"><b>NRT</b><span>นาริตะ · ญี่ปุ่น</span></div>' +
-      '<div class="mid">' + icon('plane') + '<span>JL707 · Boeing 787-8</span></div>' +
+      '<div class="mid"><span>' + esc(F.no) + ' · ' + esc(F.type) + '</span><i class="dash" aria-hidden="true"></i>' +
+      '<span>' + esc(F.depJST) + ' JST → ' + esc(F.arrICT) + ' ICT</span></div>' +
       '<div class="ap"><b>BKK</b><span>สุวรรณภูมิ · ไทย</span></div></div>' +
       '<div class="stats"><div><b>' + D.STATIONS.length + '</b><span>สถานี</span></div>' +
       '<div><b>' + D.STEPS.length + '</b><span>ขั้นตอน</span></div>' +

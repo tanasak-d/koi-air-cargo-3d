@@ -125,3 +125,22 @@ test('CSS V7: ของลอยบนฉากใช้กระจก · แ�
   assert.match(css, /\.sheet\.open\{[^}]*background:var\(--surface\)/);
   assert.match(css, /orientation:portrait\)\{[\s\S]*?#card\{[^}]*display:none/);
 });
+
+// ---- Task 6: หน้าต้อนรับใหม่ + ไอคอนชุดเดียว ----
+test('renderWelcome V7: การ์ดกระจก · เส้นทางมีเวลาออก/ถึงจากข้อมูล · ปุ่มเริ่มเป็นปุ่มหลัก', () => {
+  const h = UI.renderWelcome();
+  assert.match(h, /^<div class="w-inner glass">/);
+  assert.match(h, /18:25 JST → 23:00 ICT/);
+  assert.match(h, /JL707 · Boeing 787-8/);
+  assert.match(h, /class="w-start" data-act="start"/);
+});
+test('CSS หน้าต้อนรับ V7: ไม่มีแถบดำไล่สีทึบ 90% · ตัวหนังสือใช้โทเคนธีม · ปุ่มเป็นแคปซูล', () => {
+  assert.doesNotMatch(css, /rgba\(0,0,0,\.9\) 0%/);
+  assert.match(css, /\.welcome\{[^}]*color:var\(--text\)/);
+  assert.match(css, /\.cta button\{[^}]*border-radius:999px/);
+});
+test('ไม่มีอีโมจิเป็นไอคอนบนหน้า (แถบบน วิธีใช้ เมนูเหตุการณ์)', () => {
+  const body = readHtml().split('<body>')[1].split('<script')[0];
+  for (const e of ['✈', '🇯🇵', '🇹🇭', '❓', '⚠', '🕒']) assert.ok(!body.includes(e), e);
+  assert.doesNotMatch(UI.renderScenarioMenu(L.newState(0)), /⚠/);
+});
