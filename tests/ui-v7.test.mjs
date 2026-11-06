@@ -151,3 +151,34 @@ test('CSS V7: แผ่นมือถือตอนปิด แถบเล�
   assert.match(css, /\.sheet:not\(\.open\) \.stage-ctrl \.count\{display:none\}/);
   assert.match(css, /\.sheet:not\(\.open\) \.ov-btn\{[^}]*font-size:0/);
 });
+
+// ---- รีวิวทั้งสาขา: แก้ข้อสำคัญ ----
+test('รีวิว: การ์ดลอยตอนแผ่นปิดตัดบรรทัด (ใครทำ 1 บรรทัด · ชื่อขั้น 2 บรรทัด) ไม่ให้ดันแถบเล่นตกจอเตี้ย', () => {
+  assert.match(css, /\.sheet:not\(\.open\) \.sh-card \.eyebrow\{[^}]*-webkit-line-clamp:1/);
+  assert.match(css, /\.sheet:not\(\.open\) \.sh-card \.step-title\{[^}]*-webkit-line-clamp:2/);
+});
+test('รีวิว: ทุกกฎที่ใช้ var(--glass) มีทางสำรองพื้นทึบ', () => {
+  // รวมรายการ selector จากทุกบล็อกทางสำรอง (ทั้ง @supports not และ prefers-reduced-transparency ต้องมีชุดเดียวกัน)
+  const pick = re => [...css.matchAll(re)].flatMap(m => m[1].split(',').map(x => x.trim()));
+  const sup = pick(/@supports not \(\(backdrop-filter:blur\(1px\)\) or \(-webkit-backdrop-filter:blur\(1px\)\)\)\{([^{]+)\{background:var\(--surface\)\}\}/g);
+  const red = pick(/@media \(prefers-reduced-transparency:reduce\)\{([^{]+)\{background:var\(--surface\)/g);
+  assert.ok(sup.length && red.length, 'ไม่พบรายการทางสำรอง');
+  const list = sup.filter(x => red.includes(x));
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, '');   // ตัดคอมเมนต์ออกก่อนหา selector
+  const users = [...bare.matchAll(/([^{}]+)\{[^}]*background:var\(--glass\)/g)].map(m => m[1].trim()).filter(s => s !== '.glass');
+  for (const sel of users) for (const one of sel.split(',')) assert.ok(list.includes(one.trim()), 'ไม่มีทางสำรอง: ' + one.trim());
+});
+test('รีวิว: มือถือแนวนอน สถานีปัจจุบันไม่เป็นแคปซูลว่าง และยังมีเส้นเชื่อม', () => {
+  const land = css.slice(css.indexOf('@media (max-height:500px) and (orientation:landscape){'));
+  assert.match(land, /\.stn\.now button\{background:transparent;padding:2px 6px\}/);
+  assert.match(land, /\.stn\.now::after\{display:block\}/);
+  assert.match(land, /\.stn\.now\{flex:1 1 0\}/);
+});
+test('รีวิว: ที่จับลากไม่ใช่จุดโฟกัสซ้ำ โฟกัสกลับมาที่ปุ่มลูกศรหลังวาดใหม่', () => {
+  const h = UI.renderSheetHead(L.newState(0), false);
+  assert.match(h, /class="grab" data-act="sheet-grab"[^>]*tabindex="-1"[^>]*aria-hidden="true"/);
+  assert.equal(count(h, /data-act="sheet"/g), 1);
+});
+test('รีวิว: หัวเมนูเหตุการณ์บนกระจกใช้สีตัวหนังสือหลัก (สีแดงอยู่ที่ขอบ/ไอคอน)', () => {
+  assert.match(css, /\.risk-menu summary\{[^}]*color:var\(--text\)/);
+});

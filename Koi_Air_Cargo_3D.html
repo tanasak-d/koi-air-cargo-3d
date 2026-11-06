@@ -141,9 +141,10 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tick[disabled]{opacity:1}
 .stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
 .risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
-.risk-menu summary{list-style:none;cursor:pointer;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--bad);color:var(--bad);
+.risk-menu summary{list-style:none;cursor:pointer;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--bad);color:var(--text);
   border-radius:999px;padding:6px 14px;font-weight:600}
 .risk-menu summary::-webkit-details-marker{display:none}
+.risk-menu summary .ico{color:var(--bad)}   /* บนกระจก: ตัวหนังสือสีหลักให้อ่านง่าย สีแดงอยู่ที่ขอบและไอคอน */
 .risk-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .risk-list{display:grid;gap:6px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
 .risk-list button{border-radius:10px;text-align:left}
@@ -258,6 +259,9 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:28px;padding:8px 10px;
     box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
   .sheet.open{height:70vh;height:70dvh;background:var(--surface)}
+  /* แผ่นปิด: การ์ดลอยตัดบรรทัด (ใครทำ 1 บรรทัด · ชื่อขั้น 2 บรรทัด) จอเตี้ยแถบเล่นจะได้ไม่ตกขอบจอ · เปิดแผ่นแล้วเห็นเต็ม */
+  .sheet:not(.open) .sh-card .eyebrow{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;line-clamp:1;overflow:hidden}
+  .sheet:not(.open) .sh-card .step-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
   /* แผ่นปิด: แถบเล่นแถวเดียว ไม่ให้สูงเกิน 45% ของจอ (การ์ดบอก "ขั้น n จาก 17" แล้ว จึงซ่อนตัวนับ) */
   .sheet:not(.open) .stage-ctrl{flex-wrap:nowrap;gap:6px}
   .sheet:not(.open) .stage-ctrl .count{display:none}
@@ -328,6 +332,10 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .ov-btn{padding:4px 8px;font-size:0;min-height:36px}
   .ov-btn .ico{font-size:1rem}
   .stn .txt{display:none}   /* หัวแผงบอกชื่อสถานีแล้ว แถบเส้นทางเหลือแค่จุด */
+  /* V7: แนวนอนไม่มีแคปซูล สถานีปัจจุบันเป็นจุดธรรมดา + เส้นเชื่อม เหมือนสถานีอื่น */
+  .stn.now{flex:1 1 0}
+  .stn.now button{background:transparent;padding:2px 6px}
+  .stn.now::after{display:block}
 }
 @media (prefers-reduced-motion: reduce){.sheet{transition:none}}
 /* แท็บของแผ่นข้อมูลมือถือ */
@@ -6032,8 +6040,7 @@ var KoiUI = (function () {
     var s = D.STEPS[S.idx], k = L.stationOf(S.idx), bag = bagLine(S);
     var label = open ? 'ย่อแผ่นข้อมูล ดูภาพเต็มจอ' : 'ขยายแผ่นข้อมูล ดูรายละเอียด';
     return '<div class="sh-card">' +
-      '<button type="button" class="grab" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' + label +
-      '"><span aria-hidden="true"></span></button>' +
+      '<button type="button" class="grab" data-act="sheet-grab" tabindex="-1" aria-hidden="true"><span></span></button>' +
       '<div class="sh-top"><span class="sh-ic" aria-hidden="true">' + icon(STATION_ICONS[k] || 'box') + '</span>' +
       '<div class="sh-txt"><p class="eyebrow">ขั้น ' + s.n + ' จาก ' + D.STEPS.length + ' · ใครทำ: ' + renderGlossary(s.who) + '</p>' +
       '<h2 class="step-title">' + esc(s.name) + '</h2></div>' +
@@ -6254,7 +6261,7 @@ var KoiUI = (function () {
       if (welcome && !welcomeAllows(d.act)) return;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
-      else if (d.act === 'sheet') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
+      else if (d.act === 'sheet' || d.act === 'sheet-grab') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
       else if (d.act === 'next') { L.next(S); }
