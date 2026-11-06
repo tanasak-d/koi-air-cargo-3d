@@ -102,3 +102,26 @@ test('renderFacts V7: ถุงเกิน 24 ชม. แสดง ✕ เก�
   assert.doesNotMatch(h, /เหลือ/);
 });
 test('ไม่มีอีโมจิ 🕒 ในป้ายเวลา', () => { assert.doesNotMatch(UI.renderTimeBadge(L.newState(0)), /🕒/); });
+
+// ---- Task 5: ของลอยบนฉากเป็นกระจก + มือถือการ์ดลอย ----
+test('renderSheetHead V7: การ์ดลอยมีชื่อขั้น ใครทำ เวลา และป้ายถุง', () => {
+  const S = L.newState(0); L.goTo(S, 8);
+  const h = UI.renderSheetHead(S, false);
+  assert.match(h, /class="sh-card"/);
+  assert.match(h, /ขั้น 9 จาก 17/);
+  assert.match(h, /ใครทำ: /);
+  assert.match(h, /class="chip"[^>]*>[\s\S]*?JST/);
+  assert.match(h, /class="chip ok"[\s\S]*?ถุง/);
+  assert.match(h, /class="sheet-toggle" data-act="sheet"[^>]*aria-expanded="false"[^>]*aria-label="ขยายแผ่นข้อมูล/);
+});
+test('renderSheetHead V7: ก่อนปิดผนึกถุงไม่มีป้ายถุง · เปิดแล้วปุ่มเป็นย่อ', () => {
+  assert.doesNotMatch(UI.renderSheetHead(L.newState(0), false), /ถุง/);
+  assert.match(UI.renderSheetHead(L.newState(0), true), /aria-expanded="true"[^>]*aria-label="ย่อแผ่นข้อมูล/);
+});
+test('CSS V7: ของลอยบนฉากใช้กระจก · แผ่นมือถือปิด = โปร่ง ให้การ์ดลอยเป็นกระจก · เปิด = พื้นทึบ', () => {
+  for (const sel of ['#card', '.stage-ctrl', '.risk-menu summary']) assert.match(css, new RegExp(sel.replace(/[.#]/g, '\\$&') + '\\{[^}]*var\\(--glass\\)'), sel);
+  assert.match(css, /\.panel\.sheet:not\(\.open\)\{[^}]*background:transparent/);
+  assert.match(css, /\.sheet:not\(\.open\) \.sh-card\{[^}]*var\(--glass\)/);
+  assert.match(css, /\.sheet\.open\{[^}]*background:var\(--surface\)/);
+  assert.match(css, /orientation:portrait\)\{[\s\S]*?#card\{[^}]*display:none/);
+});

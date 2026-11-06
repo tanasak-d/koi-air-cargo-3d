@@ -145,7 +145,7 @@ test('renderSheetTabs: 3 แท็บ และแท็บที่เลือ
 test('renderSheetHead: สถานี ชื่อขั้น เวลา และปุ่มเปิดแผ่นบอก aria-expanded', () => {
   const S = L.newState(0); L.goTo(S, 3);
   const h = UI.renderSheetHead(S, false);
-  assert.match(h, /ขั้นที่ 4 จาก 17/);
+  assert.match(h, /ขั้น 4 จาก 17/);
   assert.match(h, /บรรจุถุง 3 ชั้น/);
   assert.match(h, /data-act="sheet"[^>]*aria-expanded="false"/);
   assert.match(UI.renderSheetHead(S, true), /aria-expanded="true"/);

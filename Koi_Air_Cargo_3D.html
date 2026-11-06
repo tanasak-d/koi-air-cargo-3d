@@ -112,16 +112,19 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 @media (prefers-reduced-motion: reduce){#stage canvas{transition:none}}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
-#card{position:absolute;left:0;top:0;max-width:300px;background:var(--surface);color:var(--text);
-  border:2px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
+#card{position:absolute;left:0;top:0;max-width:300px;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);color:var(--text);
+  border:1px solid var(--glass-edge);border-left:4px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
   pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);will-change:transform}
 #card b{color:var(--accent)}
 #card small{color:var(--muted)}
 /* ไม่มี WebGL: การ์ดอยู่คงที่ด้านบนของเวที (ข้อความแจ้งเตือนอยู่กลางเวที) */
 #card.static{position:absolute;left:8px;right:8px;top:8px;transform:none;max-width:none}
 /* แถบเล่นด้านล่างของภาพ: ปุ่มกลม ก่อน/เล่น/ถัดไป + แถบความคืบหน้าของขั้น */
+/* V7: แถบเล่นเป็นกระจกลอยบนภาพ */
 .stage-ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-  background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 10px;box-shadow:0 4px 14px rgba(15,28,46,.12)}
+  background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:22px;padding:8px 12px;box-shadow:inset 0 1px 0 var(--glass-edge),0 8px 24px rgba(0,0,0,.16)}
+.stage-ctrl .ctl:not(.play){background:rgba(127,127,127,.16)}
+.stage-ctrl .ov-btn{background:transparent}
 .ctl{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;border:0;background:var(--soft);flex:none}
 .ctl.play{width:48px;height:48px;background:var(--accent);color:var(--on-accent)}
 .ctl .ico{width:20px;height:20px}
@@ -138,7 +141,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .tick[disabled]{opacity:1}
 .stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
 .risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
-.risk-menu summary{list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--bad);color:var(--bad);
+.risk-menu summary{list-style:none;cursor:pointer;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--bad);color:var(--bad);
   border-radius:999px;padding:6px 14px;font-weight:600}
 .risk-menu summary::-webkit-details-marker{display:none}
 .risk-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -244,18 +247,33 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .stn.now button{background:var(--surface);padding:3px 12px 3px 3px}
   .stn button{justify-content:center}
   .stn::after{left:calc(50% + 14px);right:calc(-50% + 14px)}
-  #card{max-width:200px;font-size:.82rem}
-  /* แผ่นข้อมูลด้านล่าง: ปิด = ชื่อขั้น + ปุ่มเล่นใหญ่ · เปิด = สูง 70% มีแท็บ */
+  #card{display:none}   /* การ์ดลอยด้านล่างบอกขั้น/ใครทำแทนแล้ว ไม่ซ้ำ */
+  /* แผ่นข้อมูลด้านล่าง (V7): ปิด = การ์ดกระจกลอย + แถบเล่นกระจก เห็นภาพเต็ม · เปิด = พื้นทึบสูง 70% มีแท็บ */
   .panel.sheet{position:fixed;left:0;right:0;bottom:0;z-index:4;border:0;border-radius:22px 22px 0 0;
     box-shadow:0 -8px 30px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom);transition:transform .2s ease;touch-action:none}
-  .sheet.open{height:70vh;height:70dvh}
+  .panel.sheet:not(.open){background:transparent;box-shadow:none;max-height:45vh;max-height:45dvh}
+  .sheet:not(.open) .panel-inner{padding:0 12px 12px;gap:10px;overflow:visible}
+  .sheet:not(.open) .sh-card{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:24px;padding:4px 12px 12px;
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18);cursor:pointer}
+  .sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:28px;padding:8px 10px;
+    box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
+  .sheet.open{height:70vh;height:70dvh;background:var(--surface)}
+  .sh-top{display:flex;align-items:flex-start;gap:10px}
+  .sh-ic{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
+  .sh-txt{flex:1;min-width:0}
+  .sheet-toggle{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none;background:transparent;border-color:transparent}
+  .sh-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
+  .sh-chips .chip{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;padding:3px 10px;background:rgba(127,127,127,.14);border-color:transparent}
+  .sh-chips .chip .ico{width:14px;height:14px}
+  .sh-chips .chip.ok{color:var(--ok);background:var(--surface);border-color:var(--ok);font-weight:700}
+  .sh-chips .chip.bad{color:var(--bad);background:var(--surface);border-color:var(--bad);font-weight:700}
   .panel-inner{position:static;display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;height:100%;overflow:auto;touch-action:pan-y}
   .panel-title,.panel-inner #timeline{display:none}
   .sheet-head{display:block}
   .sheet-head .eyebrow{font-size:.75rem}
   .sheet-head .step-title{font-size:1.05rem}
   .sheet-ctrl{display:block}
-  .sheet-ctrl .stage-ctrl{position:static;border:0;box-shadow:none;padding:0;background:transparent}
+  .sheet-ctrl .stage-ctrl{position:static;border:0;box-shadow:none;padding:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
   .sheet-ctrl .ctl{width:48px;height:48px}
   .sheet-ctrl .ctl.play{width:56px;height:56px}
   .grab{display:block;width:100%;min-height:28px;padding:8px 0 4px;border:0;border-radius:0;background:transparent;touch-action:none}
@@ -413,6 +431,9 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hold h3,.end h3{margin:0 0 4px}
 .opts{display:grid;gap:6px}
 .opts button{border-radius:12px;text-align:left}
+/* V7 ทางสำรองพื้นทึบของกระจกที่ประกาศตรง ๆ (ไม่ใช้คลาส .glass) */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface)}}
+@media (prefers-reduced-transparency:reduce){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 </head>
 <body>
@@ -5991,14 +6012,26 @@ var KoiUI = (function () {
     return wasOpen;
   }
 
-  // หัวแผ่น: ที่จับ (กดแทนการลากได้) + สถานี + ชื่อขั้น + เวลา
+  // ไอคอนประจำสถานี (ใช้บนการ์ดลอยมือถือ)
+  var STATION_ICONS = ['farm', 'box', 'plane', 'box', 'shield', 'fish'];
+
+  // หัวแผ่นมือถือ (V7): การ์ดลอย = ที่จับ (ลาก/กดได้) + ไอคอนสถานี + "ขั้น n จาก 17 · ใครทำ" + ชื่อขั้น + ป้ายเวลา/อายุถุง
+  // แผ่นปิด = การ์ดกระจกลอยบนภาพ (กดการ์ดเพื่อเปิด) · แผ่นเปิด = หัวแผ่นธรรมดาบนพื้นทึบ
+  // ปุ่ม .sheet-toggle คือปุ่มจริงสำหรับคีย์บอร์ด/โปรแกรมอ่านจอ
   function renderSheetHead(S, open) {
-    var s = D.STEPS[S.idx], k = L.stationOf(S.idx);
-    return '<button type="button" class="grab" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' +
-      (open ? 'ย่อแผ่นข้อมูล ดูภาพเต็มจอ' : 'ขยายแผ่นข้อมูล ดูรายละเอียด') + '"><span aria-hidden="true"></span></button>' +
-      '<p class="eyebrow">สถานี ' + (k + 1) + '/' + D.STATIONS.length + ' ' + esc(D.STATIONS[k].label) + ' · ขั้นที่ ' + s.n + ' จาก ' + D.STEPS.length + '</p>' +
-      '<h2 class="step-title">' + esc(s.name) + '</h2>' +
-      '<p class="times">' + icon('clock') + ' ' + esc(shortTime(S, S.idx)) + '</p>';
+    var s = D.STEPS[S.idx], k = L.stationOf(S.idx), bag = bagLine(S);
+    var label = open ? 'ย่อแผ่นข้อมูล ดูภาพเต็มจอ' : 'ขยายแผ่นข้อมูล ดูรายละเอียด';
+    return '<div class="sh-card">' +
+      '<button type="button" class="grab" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' + label +
+      '"><span aria-hidden="true"></span></button>' +
+      '<div class="sh-top"><span class="sh-ic" aria-hidden="true">' + icon(STATION_ICONS[k] || 'box') + '</span>' +
+      '<div class="sh-txt"><p class="eyebrow">ขั้น ' + s.n + ' จาก ' + D.STEPS.length + ' · ใครทำ: ' + renderGlossary(s.who) + '</p>' +
+      '<h2 class="step-title">' + esc(s.name) + '</h2></div>' +
+      '<button type="button" class="sheet-toggle" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' + label + '">' +
+      icon(open ? 'down' : 'up') + '</button></div>' +
+      '<p class="chips sh-chips"><span class="chip">' + icon('clock') + ' ' + esc(shortTime(S, S.idx)) + '</span>' +
+      (bag ? '<span class="chip ' + (bag.over ? 'bad' : 'ok') + '">ถุง ' + (bag.age / 60).toFixed(1) + '/24 ชม. · ' + (bag.over ? '✕ เกิน' : '✓ ปลอดภัย') + '</span>' : '') +
+      '</p></div>';
   }
 
   var SHEET_TABS = [['detail', 'รายละเอียด'], ['route', 'เส้นทาง 17 ขั้น'], ['risk', 'สถานการณ์เสี่ยง']];
@@ -6199,13 +6232,17 @@ var KoiUI = (function () {
 
     root.addEventListener('click', function (e) {
       var el = e.target.closest ? e.target.closest('button') : null;
+      // กดที่ตัวการ์ดลอย (ไม่ใช่ปุ่ม/ศัพท์) ตอนแผ่นปิด = เปิดแผ่นข้อมูล (ปุ่มจริงสำหรับคีย์บอร์ดคือ .sheet-toggle)
+      if (!el && !sheetOpen && e.target.closest && e.target.closest('.sh-card') && !e.target.closest('abbr')) {
+        if (dragMoved) { dragMoved = false; return; }
+        sheetOpen = true; render(); return;
+      }
       if (!el || el.disabled) return;
       var d = el.dataset;
       if (welcome && !welcomeAllows(d.act)) return;
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
-      else if (d.act === 'sheet') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }
-      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
+      else if (d.act === 'sheet') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
       else if (d.act === 'next') { L.next(S); }
