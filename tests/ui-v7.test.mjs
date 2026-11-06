@@ -144,3 +144,10 @@ test('ไม่มีอีโมจิเป็นไอคอนบนหน�
   for (const e of ['✈', '🇯🇵', '🇹🇭', '❓', '⚠', '🕒']) assert.ok(!body.includes(e), e);
   assert.doesNotMatch(UI.renderScenarioMenu(L.newState(0)), /⚠/);
 });
+
+// ---- Task 7: พบตอนตรวจจอ 360×740 แผ่นปิดสูงเกินเพดาน 45% (แถบเล่น 2 แถว) ----
+test('CSS V7: แผ่นมือถือตอนปิด แถบเล่นแถวเดียว (ซ่อนตัวนับ ปุ่มภาพรวมเหลือไอคอน)', () => {
+  assert.match(css, /\.sheet:not\(\.open\) \.stage-ctrl\{[^}]*flex-wrap:nowrap/);
+  assert.match(css, /\.sheet:not\(\.open\) \.stage-ctrl \.count\{display:none\}/);
+  assert.match(css, /\.sheet:not\(\.open\) \.ov-btn\{[^}]*font-size:0/);
+});

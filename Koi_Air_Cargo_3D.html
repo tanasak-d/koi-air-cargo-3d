@@ -258,6 +258,12 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:28px;padding:8px 10px;
     box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
   .sheet.open{height:70vh;height:70dvh;background:var(--surface)}
+  /* แผ่นปิด: แถบเล่นแถวเดียว ไม่ให้สูงเกิน 45% ของจอ (การ์ดบอก "ขั้น n จาก 17" แล้ว จึงซ่อนตัวนับ) */
+  .sheet:not(.open) .stage-ctrl{flex-wrap:nowrap;gap:6px}
+  .sheet:not(.open) .stage-ctrl .count{display:none}
+  .sheet:not(.open) .ov-btn{font-size:0;width:44px;padding:0;justify-content:center;flex:none}
+  .sheet:not(.open) .ov-btn .ico{width:20px;height:20px}
+  .sheet:not(.open) .scrub{min-width:0}
   .sh-top{display:flex;align-items:flex-start;gap:10px}
   .sh-ic{width:40px;height:40px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:none}
   .sh-txt{flex:1;min-width:0}
