@@ -13,10 +13,10 @@ const count = (s, re) => (s.match(re) || []).length;
 test('renderRoute V7: สถานีปัจจุบันเป็นแคปซูล บอก "สถานี k/6 · ขั้น n" และไม่มีป้าย "ตอนนี้"', () => {
   const S = L.newState(0); L.goTo(S, 8);                 // ขั้น 9 = สถานี 3
   const h = UI.renderRoute(S);
-  assert.match(h, /class="stn now"[\s\S]*?class="txt cap"><small>สถานี 3\/6 · ขั้น 9<\/small><b>เที่ยวบิน JL707<\/b>/);
+  assert.match(h, /class="stn now"[\s\S]*?class="txt cap"><small>สถานี 3\/6 · ขั้น 9<\/small><b>เที่ยวบิน NN393<\/b>/);
   assert.doesNotMatch(h, /now-tag/);
   assert.equal(count(h, /aria-current="location"/g), 1);
-  assert.match(h, /aria-label="สถานี 3 เที่ยวบิน JL707 ขั้น 9 ตอนนี้"/);
+  assert.match(h, /aria-label="สถานี 3 เที่ยวบิน NN393 ขั้น 9 ตอนนี้"/);
 });
 test('renderRoute V7: สถานีอื่นเห็นแค่ชื่อ ช่วงขั้นอยู่ใน aria-label', () => {
   const h = UI.renderRoute(L.newState(0));
@@ -57,8 +57,8 @@ test('renderChecklist: 17 แถว จัด 6 กลุ่มตามสถ�
 });
 test('renderChecklist: แต่ละขั้นมีชื่อและเวลาสั้น ๆ', () => {
   const h = UI.renderChecklist(L.newState(0));
-  assert.match(h, /data-step="0"[\s\S]*?ฟาร์มโคอิพรีเมียม[\s\S]*?ก่อนวันส่ง/);
-  assert.match(h, /data-step="8"[\s\S]*?บิน NRT → BKK[\s\S]*?16:20 JST/);
+  assert.match(h, /data-step="0"[\s\S]*?ฟาร์มโคอิพรีเมียม[\s\S]*?ก่อนวัน D/);
+  assert.match(h, /data-step="8"[\s\S]*?บิน NRT → BKK[\s\S]*?07:00 JST/);
 });
 test('renderChecklist: hold = ✕ ที่ขั้นค้าง และทุกแถวกดไม่ได้ · overview ไม่มี aria-current', () => {
   const S = walk(L.newState(1));
@@ -86,19 +86,19 @@ test('renderFacts V7: หัวการ์ดมีไอคอนในบร�
   assert.equal(count(h, /class="chip doc"/g), D.STEPS[8].docs.length);
   assert.match(h, /class="fact wide hazard"[\s\S]*?ความเสี่ยง/);
 });
-test('renderFacts V7: มาตรวัดถุงเป็นตัวเลขใหญ่ + ป้ายสถานะ + สเกล 0–24', () => {
-  const S = L.newState(0); L.goTo(S, 8);                  // ขั้น 9 บินถึง BKK: L.bagAgeMin = 900 นาที = 15 ชม.
+test('renderFacts: มาตรวัดถุงเทียบเส้นตาย SOP 18 ชม. + ป้ายสถานะ + สเกล 0–18', () => {
+  const S = L.newState(0); L.goTo(S, 8);                  // ขั้น 9 บินถึง BKK 12:00 ICT: 840 − 60 = 780 นาที = 13 ชม.
   const h = UI.renderFacts(S);
-  assert.match(h, /class="bag" role="meter" aria-valuemin="0" aria-valuemax="24" aria-valuenow="15\.0"/);
-  assert.match(h, /15\.0 <small>\/ 24 ชม\.<\/small>/);
-  assert.match(h, /✓ ปลอดภัย · เหลือ 9\.0 ชม\./);
-  assert.match(h, /<span>0<\/span><span>6<\/span><span>12<\/span><span>18<\/span><span>24 ชม\.<\/span>/);
+  assert.match(h, /class="bag" role="meter" aria-valuemin="0" aria-valuemax="18" aria-valuenow="13\.0"/);
+  assert.match(h, /13\.0 <small>\/ 18 ชม\.<\/small>/);
+  assert.match(h, /✓ ปลอดภัย · เหลือ 5\.0 ชม\./);
+  assert.match(h, /<span>0<\/span><span>6<\/span><span>12<\/span><span>18 ชม\.<\/span>/);
 });
-test('renderFacts V7: ถุงเกิน 24 ชม. แสดง ✕ เกิน และไม่มี "เหลือ"', () => {
+test('renderFacts: ถุงเกินเส้นตาย 18 ชม. แสดง ✕ เกิน และไม่มี "เหลือ"', () => {
   const S = L.newState(0); L.goTo(S, 13); S.shift = 181; S.shiftFrom = 0;   // 1441 นาที (วิธีเดียวกับ time.test.mjs)
   assert.equal(L.bagStatus(S), 'over');
   const h = UI.renderFacts(S);
-  assert.match(h, /✕ เกิน 24 ชม\./);
+  assert.match(h, /✕ เกินเส้นตาย 18 ชม\./);
   assert.doesNotMatch(h, /เหลือ/);
 });
 test('ไม่มีอีโมจิ 🕒 ในป้ายเวลา', () => { assert.doesNotMatch(UI.renderTimeBadge(L.newState(0)), /🕒/); });
@@ -130,8 +130,8 @@ test('CSS V7: ของลอยบนฉากใช้กระจก · แ�
 test('renderWelcome V7: การ์ดกระจก · เส้นทางมีเวลาออก/ถึงจากข้อมูล · ปุ่มเริ่มเป็นปุ่มหลัก', () => {
   const h = UI.renderWelcome();
   assert.match(h, /^<div class="w-inner glass">/);
-  assert.match(h, /18:25 JST → 23:00 ICT/);
-  assert.match(h, /JL707 · Boeing 787-8/);
+  assert.match(h, /07:00 JST → 12:00 ICT/);
+  assert.match(h, /NN393 · Airbus A350-900/);
   assert.match(h, /class="w-start" data-act="start"/);
 });
 test('CSS หน้าต้อนรับ V7: ไม่มีแถบดำไล่สีทึบ 90% · ตัวหนังสือใช้โทเคนธีม · ปุ่มเป็นแคปซูล', () => {

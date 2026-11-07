@@ -38,7 +38,7 @@ test('renderFacts: มี 4 การ์ด ใครทำ/ทำอะไร/�
 test('renderFacts: มาตรวัดอายุถุงบอกเป็นตัวเลขและ ✓/✕ ไม่ใช่สีอย่างเดียว', () => {
   const S = L.newState(0); L.goTo(S, 8);
   const h = UI.renderFacts(S);
-  assert.match(h, /\/ 24 ชม\./);
+  assert.match(h, /\/ 18 ชม\./);
   assert.match(h, /[✓✕]/);
   assert.match(h, /role="meter"/);
 });
@@ -82,7 +82,7 @@ test('V6: เลิกใช้ renderStageControls', () => {
 // ---- Task 5: หน้าต้อนรับ ----
 test('renderWelcome: บอกเส้นทาง จำนวนสถานี/ขั้น/สถานการณ์เสี่ยง และมีปุ่มเริ่ม + นำเสนอ', () => {
   const h = UI.renderWelcome();
-  assert.match(h, /NRT/); assert.match(h, /BKK/); assert.match(h, /JL707/);
+  assert.match(h, /NRT/); assert.match(h, /BKK/); assert.match(h, /NN393/);
   assert.match(h, /<b>6<\/b><span>สถานี/);
   assert.match(h, /<b>17<\/b><span>ขั้นตอน/);
   assert.match(h, new RegExp('<b>' + (D.SCENARIOS.length - 1) + '</b><span>สถานการณ์เสี่ยง'));

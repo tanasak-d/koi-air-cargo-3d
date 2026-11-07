@@ -26,13 +26,37 @@ test('6 สถานีครอบขั้น 0..16 ต่อเนื่อ�
   assert.deepEqual(got, [[0, 5], [6, 7], [8, 8], [9, 9], [10, 13], [14, 16]]);
 });
 
-test('ค่าเที่ยวบินตรงกับที่ล็อก (JL707, 787-8, 18:25 JST → 23:00 ICT)', () => {
-  assert.equal(D.CONST.FLIGHT.no, 'JL707');
-  assert.equal(D.CONST.FLIGHT.type, 'Boeing 787-8');
-  assert.equal(D.CONST.FLIGHT.depJST, '18:25');
-  assert.equal(D.CONST.FLIGHT.arrICT, '23:00');
-  assert.equal(D.STEPS[8].dep, 1105); // 18:25 JST = 1105 นาที
-  assert.equal(D.STEPS[8].t[1] - D.CONST.JST_MINUS_ICT, 1380); // ลงจอด 23:00 ICT
+// รายงานรวมเล่ม 10 หัวข้อ (หัวข้อ 1.2, 1.4, 10.0.1, 10.0.3)
+test('ค่าเที่ยวบินตรงกับรายงาน (NN393, A350-900, 07:00 JST → 12:00 ICT, บินตรง 7 ชม.)', () => {
+  assert.equal(D.CONST.FLIGHT.no, 'NN393');
+  assert.equal(D.CONST.FLIGHT.type, 'Airbus A350-900');
+  assert.equal(D.CONST.FLIGHT.airline, 'No Fish No Fly Airline');
+  assert.equal(D.CONST.FLIGHT.depJST, '07:00');
+  assert.equal(D.CONST.FLIGHT.arrICT, '12:00');
+  assert.equal(D.STEPS[8].dep, 420); // 07:00 JST = 420 นาที
+  assert.equal(D.STEPS[8].t[1] - D.STEPS[8].dep, 420); // บิน 7 ชม.
+  assert.equal(D.STEPS[8].t[1] - D.CONST.JST_MINUS_ICT, 720); // ลงจอด 12:00 ICT
+});
+test('Master Timeline: ปิดถุง 01:00 JST (T0) · เปิดถุงที่สถานกักกันภายใน 15:00 ICT · อยู่ในถุง 16 ชม.', () => {
+  assert.equal(D.CONST.SEAL0, 60);
+  assert.equal(D.CONST.OPEN0, 1020);            // 15:00 ICT = 17:00 JST
+  assert.equal(D.CONST.OPEN0 - D.CONST.SEAL0, 960);
+  assert.equal(D.STEPS[12].t[1], D.CONST.OPEN0); // ขั้น 13 จบตอนเปิดถุง
+  assert.deepEqual(D.STEPS[5].t, [60, 180]);    // รถ 01:00–03:00 JST
+  assert.deepEqual(D.STEPS[9].t, [840, 890]);   // Unload + คลัง AVI 12:00–12:50 ICT
+});
+test('อุณหภูมิ 15–20°C ปรากฏในขั้นรถ คลัง และเที่ยวบิน', () => {
+  for (const i of [5, 6, 8]) assert.match(JSON.stringify(D.STEPS[i]), /15–20°C/, 'ขั้น ' + (i + 1));
+});
+test('ผู้เกี่ยวข้องใช้ชื่อสมมติตามรายงาน', () => {
+  const who = i => D.STEPS[i].who;
+  assert.match(who(0), /Lucky Koi House/);
+  assert.match(who(5), /Koi Express Logistics/);
+  assert.match(who(6), /Sakura Scale Ground Services/);
+  assert.match(who(8), /No Fish No Fly Airline/);
+  assert.match(who(9), /Golden Scale Cargo Handling/);
+  assert.match(who(10), /Lat Krabang Clearance/);
+  assert.match(who(14), /Wasana Tongsuk Koi Farm/);
 });
 
 test('ทุกขั้นมี who/what/why และ t===null ต้อง approx', () => {
@@ -50,9 +74,11 @@ test('ไม่มีคำต้องห้ามตามที่ล็อ�
   assert.doesNotMatch(all, /หัวข้อ\s*6/);
 });
 
-test('มี 1:2 และ Triple Bagging', () => {
-  assert.match(all, /1:2/);
+test('บรรจุ: Triple Bagging + 1 ตัว : 1 ถุง : 1 กล่อง และไม่ใช้สูตรน้ำ:ออกซิเจนตายตัว (หัวข้อ 2.1.4)', () => {
   assert.match(all, /Triple Bagging/);
+  assert.match(all, /1 ตัว : 1 ถุง : 1 กล่อง/);
+  assert.doesNotMatch(all, /1:2|1 : 2/);
+  assert.doesNotMatch(all, /งดอาหาร 3/);
 });
 
 test('ทุกข้อความที่พูดถึง NOTOC ต้องระบุว่าสายการบินเป็นผู้จัดทำ', () => {
@@ -83,8 +109,11 @@ test('ทุกสถานีมีชื่อสั้นสำหรับ�
   assert.deepEqual(D.STATIONS.map(s => s.short), ['ผู้ส่ง', 'NRT', 'เครื่องบิน', 'BKK', 'DOF', 'ผู้รับ']);
 });
 
-test('เพดานอายุปลาในถุงคือ 24 ชม. (1440 นาที)', () => {
-  assert.equal(D.CONST.BAG_LIMIT_MIN, 1440);
+test('เส้นตายอายุปลาในถุงตาม SOP คือ 18 ชม. (1080 นาที) · รายงาน 10.0.1', () => {
+  assert.equal(D.CONST.BAG_LIMIT_MIN, 1080);
+});
+test('ไม่เหลือค่าเที่ยวบินเดิม', () => {
+  assert.doesNotMatch(all, /JL707|787-8|18:25/);
 });
 
 test('เอกสารทางการตรงกับรายงานของทีม: DOF 2/DOF 9/ร.6, Tor.Ror.Nor.6, ร.7 + IMD', () => {

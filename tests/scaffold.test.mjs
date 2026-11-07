@@ -119,3 +119,10 @@ test('V4: มีแถบบน (สถานะการขนส่ง) แผ
   const html = readHtml();
   for (const id of ['topbar', 'status', 'panel', 'route']) assert.match(html, new RegExp('id="' + id + '"'), id);
 });
+
+// ---- รายงานรวมเล่ม 10 หัวข้อ: ไม่เหลือเที่ยวบินเดิมที่ไหนในหน้าเว็บ (แถบบน ฉาก 3 มิติ ป้าย) ----
+test('ไม่เหลือข้อความเที่ยวบินเดิม JL707 / Boeing 787-8 / 18:25 ในไฟล์งาน', () => {
+  const page = readHtml()
+    .replace(/<script id="(three|three-addons|koi-assets)">[\s\S]*?<\/script>/g, '');
+  assert.doesNotMatch(page, /JL707|787-8|18:25/);
+});
