@@ -72,3 +72,13 @@ test('renderFacts รวมการ์ด Handover · เช็กลิสต�
   assert.equal((c.match(/class="hp-tag"/g) || []).length, 6);
   assert.match(c, /data-step="9"[\s\S]*?class="hp-tag">HP4</);
 });
+
+// ---- ฉาก 3 มิติ: กล่อง 10 ใบตามรายงาน (1 ตัว : 1 ถุง : 1 กล่อง) ----
+import { readHtml, blockSource } from './helpers/load.mjs';
+test('ข้อมูลกลาง: กล่อง 10 ใบ และฉาก 3 มิติสร้างกล่องตามจำนวนนี้ (ไม่วางซ้อน)', () => {
+  assert.equal(D.CONST.BOXES, 10);
+  const scene = blockSource(readHtml(), 'koi-scene');
+  assert.match(scene, /function makeBoxSet\(/);
+  assert.match(scene, /D\.CONST\.BOXES/);
+  assert.match(scene, /kit\.fishBox\(\)[\s\S]{0,80}makeBoxSet|makeBoxSet\(\)/);
+});
