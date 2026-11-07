@@ -474,6 +474,14 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hp-ev-t{font-size:.75rem;font-weight:700;color:var(--muted);margin-top:8px;margin-bottom:4px}
 .handover .doc-chips{margin-bottom:12px}
 @media (max-width:520px){.hp-flows li{grid-template-columns:1fr;gap:2px}}
+/* ---- UX: ปุ่มตัดสินใจตอน HOLD ติดล่างกล่องเลื่อน ผู้ชมเห็นทันทีว่าต้องกดอะไร ---- */
+.hold-act{margin:8px 0}
+.hold-more summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
+.hold-act p{margin:0 0 6px;font-weight:700}
+.pill.warn{background:var(--surface);color:var(--warn);border:1px solid var(--warn)}
+.sh-chips .chip.warn{color:var(--warn);background:var(--surface);border-color:var(--warn);font-weight:700}
+/* จอสัมผัส (ไม่มีคีย์บอร์ด/เมาส์): ไม่แสดงคำแนะนำคีย์ลัดบนหน้าต้อนรับ */
+@media (hover:none){.w-keys{display:none}}
 /* V7 ทางสำรองพื้นทึบของกระจกที่ประกาศตรง ๆ (ไม่ใช้คลาส .glass) */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface)}}
 @media (prefers-reduced-transparency:reduce){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
@@ -5444,7 +5452,7 @@ var KoiData = (function () {
    เวลาทั้งหมดอิง Master Timeline (หัวข้อ 10.0.3) · ตัวเลขนาทีที่เลื่อน/บรรจุใหม่เป็นค่าสมมติของโมเดล */
 var SC=[
 {id:0,label:"ปกติ",sub:"ไม่มีเหตุการณ์ผิดปกติ"},
-{id:1,label:"ถุง / ออกซิเจนบกพร่อง",sub:"Risk Register ข้อ 3 · L3 × S5 = 15 (สูง)",step:7,lane:"p",shiftFrom:99,
+{id:1,bagIssue:1,label:"ถุง / ออกซิเจนบกพร่อง",sub:"Risk Register ข้อ 3 · L3 × S5 = 15 (สูง)",step:7,lane:"p",shiftFrom:99,
  mm:"ตรวจพบรอยรั่วที่ถุงชั้นนอก ออกซิเจนในถุงลดลง ขณะที่เอกสารระบุว่าบรรจุตามมาตรฐาน",
  cause:"ครีบปลา การซีลถุง หรือการเคลื่อนย้ายทำให้ถุงเสียหาย",cons:"ปลาเครียด ขาดออกซิเจน บาดเจ็บ หรือตายระหว่างบิน",ctrl:"ถุง 3 ชั้น + ตรวจถุงทุกใบก่อนปิดกล่อง + Forwarder ตรวจสภาพภายนอกก่อนรับ",
  verify:"ตรวจถุงทุกใบ: ความตึง รอยรั่ว พฤติกรรมปลา → ยืนยันว่าบกพร่องจริง",
@@ -5938,11 +5946,17 @@ var KoiUI = (function () {
   }
 
   // ข้อความสถานะอายุถุง (ใช้ทั้งการ์ดข้อมูลและการ์ดลอยมือถือ): บอกด้วย ✓/✕ และคำเสมอ ไม่ใช้สีอย่างเดียว
+  // kind: ok = ปกติ · bad = เกินเส้นตาย · warn = ค้างเพราะถุงมีปัญหา (ต้องตรวจถุงก่อน) · done = เปิดถุงแล้ว (ขั้น 14 เป็นต้นไป)
+  // short = ข้อความสั้นสำหรับป้ายบนการ์ดลอยมือถือ
   function bagLine(S) {
     var age = L.bagAgeMin(S);
     if (age == null) return null;
-    var over = L.bagStatus(S) === 'over', lim = D.CONST.BAG_LIMIT_MIN;
-    return { age: age, over: over, text: over ? '✕ เกินเส้นตาย ' + limH() + ' ชม.' : '✓ ปลอดภัย · เหลือ ' + ((lim - age) / 60).toFixed(1) + ' ชม.' };
+    var over = L.bagStatus(S) === 'over', lim = D.CONST.BAG_LIMIT_MIN, hrs = (age / 60).toFixed(1);
+    var sc = D.SCENARIOS[S.sc] || {};
+    if (S.mode === 'hold' && sc.bagIssue) return { age: age, over: false, kind: 'warn', text: '⚠ ต้องตรวจถุง', short: '⚠ ต้องตรวจถุง' };
+    if (over) return { age: age, over: true, kind: 'bad', text: '✕ เกินเส้นตาย ' + limH() + ' ชม.', short: '✕ เกิน' };
+    if (S.idx >= 13) return { age: age, over: false, kind: 'done', text: '✓ เปิดถุงแล้ว · อยู่ในถุงรวม ' + hrs + ' ชม.', short: '✓ เปิดถุงแล้ว' };
+    return { age: age, over: false, kind: 'ok', text: '✓ ปลอดภัย · เหลือ ' + ((lim - age) / 60).toFixed(1) + ' ชม.', short: '✓ ปลอดภัย' };
   }
 
   // การ์ดข้อมูลของขั้นปัจจุบัน (V7 ปรับจาก V6): หัวการ์ด + ป้ายเวลา + 4 การ์ด (ไอคอนอยู่ในบรรทัดป้าย)
@@ -5968,7 +5982,7 @@ var KoiUI = (function () {
       var hrs = (bag.age / 60).toFixed(1), pct = Math.min(100, Math.round(bag.age / D.CONST.BAG_LIMIT_MIN * 100));
       out += '<div class="bag" role="meter" aria-valuemin="0" aria-valuemax="' + limH() + '" aria-valuenow="' + hrs + '" aria-label="อายุปลาในถุง ' + hrs + ' จาก ' + limH() + ' ชั่วโมง">' +
         '<div class="bag-top"><span class="lab">' + icon('bag') + 'อายุปลาในถุง</span>' +
-        '<span class="pill ' + (bag.over ? 'bad' : 'ok') + '">' + bag.text + '</span></div>' +
+        '<span class="pill ' + (bag.kind === 'done' ? 'ok' : bag.kind) + '">' + bag.text + '</span></div>' +
         '<p class="bag-val">' + hrs + ' <small>/ ' + limH() + ' ชม.</small></p>' +
         '<div class="bag-bar' + (bag.over ? ' over' : '') + '"><i style="width:' + pct + '%"></i></div>' +
         '<div class="bag-scale" aria-hidden="true">' + bagScale() + '</div></div>';
@@ -6024,20 +6038,21 @@ var KoiUI = (function () {
   // แผง HOLD → VERIFY → CORRECT
   function renderHold(S) {
     if (S.mode !== 'hold') return '';
-    var sc = D.SCENARIOS[S.sc];
-    var out = '<div class="hold" role="alert"><h3><span class="st-bad">✕ HOLD</span> · กล่องปลาถูกค้างที่ด่าน</h3>' +
-      '<p>' + esc(sc.mm) + '</p>' +
-      '<p><b>สาเหตุที่เป็นไปได้:</b> ' + esc(sc.cause) + '<br><b>ถ้าปล่อยผ่าน:</b> ' + esc(sc.cons) +
-      '<br><b>ตัวควบคุม:</b> ' + esc(sc.ctrl) + '</p>';
+    var sc = D.SCENARIOS[S.sc], act;
+    // ปุ่มตัดสินใจอยู่ใต้หัวข้อ (ก่อนรายละเอียด) ผู้ชมเห็นทันทีว่าต้องกดอะไร ไม่ต้องเลื่อนหา
     if (S.hp === 0) {
-      out += '<p>ขั้นต่อไป — VERIFY: ' + esc(sc.verify) + '</p>' +
-        '<button type="button" class="primary" data-act="verify">VERIFY · ตรวจให้แน่ใจ</button>';
+      act = '<div class="hold-act"><p>ขั้นต่อไป — VERIFY: ' + esc(sc.verify) + '</p>' +
+        '<button type="button" class="primary" data-act="verify">VERIFY · ตรวจให้แน่ใจ</button></div>';
     } else {
-      out += '<p>CORRECT — เลือกวิธีแก้ที่ต้นเหตุ:</p><div class="opts">' + sc.opts.map(function (o, k) {
+      act = '<div class="hold-act"><p>CORRECT — เลือกวิธีแก้ที่ต้นเหตุ:</p><div class="opts">' + sc.opts.map(function (o, k) {
         return '<button type="button" data-opt="' + k + '">' + esc(o.t) + '</button>';
-      }).join('') + '</div>';
+      }).join('') + '</div></div>';
     }
-    return out + '</div>';
+    return '<div class="hold" role="alert"><h3><span class="st-bad">✕ HOLD</span> · กล่องปลาถูกค้างที่ด่าน</h3>' +
+      '<p>' + esc(sc.mm) + '</p>' + act +
+      '<details class="hold-more"><summary>สาเหตุ · ผลกระทบ · ตัวควบคุม</summary>' +
+      '<p><b>สาเหตุที่เป็นไปได้:</b> ' + esc(sc.cause) + '<br><b>ถ้าปล่อยผ่าน:</b> ' + esc(sc.cons) +
+      '<br><b>ตัวควบคุม:</b> ' + esc(sc.ctrl) + '</p></details></div>';
   }
 
   // สรุปตอนจบ (ครบ 17 ขั้น / จบแบบคุมได้ / จบแบบสูญเสีย)
@@ -6135,7 +6150,7 @@ var KoiUI = (function () {
       '<button type="button" class="sheet-toggle" data-act="sheet" aria-controls="panel" aria-expanded="' + open + '" aria-label="' + label + '">' +
       icon(open ? 'down' : 'up') + '</button></div>' +
       '<p class="chips sh-chips"><span class="chip">' + icon('clock') + ' ' + esc(shortTime(S, S.idx)) + '</span>' +
-      (bag ? '<span class="chip ' + (bag.over ? 'bad' : 'ok') + '">ถุง ' + (bag.age / 60).toFixed(1) + '/' + limH() + ' ชม. · ' + (bag.over ? '✕ เกิน' : '✓ ปลอดภัย') + '</span>' : '') +
+      (bag ? '<span class="chip ' + (bag.kind === 'done' ? 'ok' : bag.kind) + '">ถุง ' + (bag.age / 60).toFixed(1) + '/' + limH() + ' ชม. · ' + bag.short + '</span>' : '') +
       '</p></div>';
   }
 
@@ -6224,6 +6239,19 @@ var KoiUI = (function () {
     var $ = function (id) { return root.querySelector(id); };
 
     function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
+    var lastHoldKey = null;
+    // เลื่อนกล่องที่เลื่อนได้ (#facts บนจอใหญ่ · แผ่นข้อมูลบนมือถือ) ให้ปุ่มตัดสินใจอยู่ราวหนึ่งในสี่จากบน
+    // คำนวณเองแทน scrollIntoView เพราะบนมือถือ scrollIntoView จะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ
+    function revealHoldAct() {
+      var ha = root.querySelector('#facts .hold-act');
+      if (!ha) return;
+      [root.querySelector('#facts'), root.querySelector('.panel-inner')].forEach(function (sc) {
+        if (!sc || sc.scrollHeight <= sc.clientHeight + 1) return;
+        var a = ha.getBoundingClientRect(), b = sc.getBoundingClientRect();
+        if (a.top >= b.top && a.bottom <= b.bottom) return;   // เห็นอยู่แล้ว
+        sc.scrollTop += (a.top - b.top) - Math.min(b.height * 0.25, 120);
+      });
+    }
     var riskOpen = false; // เมนูเหตุการณ์เปิดค้างไว้หรือไม่ (จำไว้ เพราะวาดใหม่ทุกครั้ง)
     function render() {
       var ae = document.activeElement, box = ae && root.contains(ae) && ae.closest ? ae.closest(FOCUS_SCOPES) : null;
@@ -6270,6 +6298,10 @@ var KoiUI = (function () {
         if (top < tl.scrollTop) tl.scrollTop = top - 24;
         else if (bot > tl.scrollTop + tl.clientHeight) tl.scrollTop = bot - tl.clientHeight + 8;
       }
+      // HOLD: เลื่อนกล่องข้อมูลให้เห็นปุ่มตัดสินใจทันที (ทำครั้งเดียวต่อช่วง VERIFY / CORRECT ไม่แย่งการเลื่อนของผู้ใช้)
+      var holdKey = S.mode === 'hold' ? S.idx + ':' + S.hp : null;
+      if (holdKey && holdKey !== lastHoldKey) revealHoldAct();
+      lastHoldKey = holdKey;
       if (hooks.onRender) hooks.onRender(S);
     }
     // จำสถานะเปิด/ปิดของเมนูเหตุการณ์ (event toggle ไม่ bubble จึงฟังแบบ capture)
