@@ -82,3 +82,33 @@ test('ข้อมูลกลาง: กล่อง 10 ใบ และฉา�
   assert.match(scene, /D\.CONST\.BOXES/);
   assert.match(scene, /kit\.fishBox\(\)[\s\S]{0,80}makeBoxSet|makeBoxSet\(\)/);
 });
+
+// ---- รายงานรวมเล่ม v1_2 (8 พ.ย.) ----
+const docsOf = n => D.STEPS[n - 1].docs.join(' | ');
+const actor = id => D.ACTORS.find(a => a.id === id);
+test('v1_2: สายการบินเป็นผู้ออก MAWB · Forwarder จองและส่งข้อมูล แล้วตรวจ MAWB', () => {
+  assert.match(docsOf(8), /MAWB \(สายการบินออก/);
+  assert.doesNotMatch(JSON.stringify(D), /ออกโดย Koi Express Logistics/);
+  assert.match(actor('airline').duty, /^ออก MAWB/);
+  assert.match(actor('ff').duty, /ส่งข้อมูลให้สายการบินออก MAWB/);
+  assert.match(actor('ff').sop.join(' '), /ตรวจ MAWB ที่สายการบินออก/);
+  const g = D.GLOSSARY.find(x => x.term === 'MAWB');
+  assert.match(g.plain, /สายการบินเป็นผู้ออก/);
+});
+test('v1_2: Ground Handler ทั้งสองสนามบินเป็นผู้รับจ้างของสายการบิน', () => {
+  for (const id of ['gha_nrt', 'gha_bkk']) assert.match(actor(id).role, /ผู้รับจ้างของสายการบิน/);
+  assert.match(D.STEPS[6].who, /ผู้รับจ้างของสายการบิน/);
+  assert.match(D.STEPS[9].who, /ผู้รับจ้างของสายการบิน/);
+});
+test('v1_2: สายการบินอยู่ทั้งต้นทาง กลางทาง และปลายทาง', () => {
+  assert.equal(actor('airline').side, 'all');
+});
+test('v1_2: ที่ BKK ศุลกากรประเมินและเก็บภาษีก่อน (12:50–13:30) แล้วส่งต่อกรมประมงตรวจ (13:30–14:30) ผ่านแล้วปล่อย', () => {
+  const s11 = D.STEPS[10].what;
+  assert.ok(s11.indexOf('ประเมิน') < s11.indexOf('ส่งต่อ'), s11);
+  assert.match(s11, /12:50–13:30 ICT/);
+  assert.match(s11, /13:30–14:30 ICT/);
+  assert.match(actor('customs').sop.join(' '), /12:50–13:30 ICT/);
+  assert.match(actor('dof').sop.join(' '), /13:30–14:30 ICT/);
+  assert.match(D.HANDOVERS[4].flows.r, /ศุลกากรประเมินภาษีก่อน แล้วส่งต่อกรมประมงตรวจ/);
+});
