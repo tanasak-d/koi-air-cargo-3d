@@ -42,3 +42,33 @@ test('Risk Register 12 ข้อ: คะแนน = L × S และระดั
 test('ทุก KPI ที่อ้าง Risk Register ชี้ไปข้อที่มีอยู่จริง', () => {
   for (const a of D.ACTORS) for (const k of a.kpi) for (const n of (k.risk || [])) assert.ok(n >= 1 && n <= 12, a.id + ' ' + n);
 });
+
+// ---- แสดง Handover ในขั้นที่เกิดการส่งมอบ ----
+const U = loadBlocks(['koi-data', 'koi-logic', 'koi-ui']);
+const UI = U.KoiUI, L = U.KoiLogic;
+test('renderHandover: ขั้นที่ไม่มีการส่งมอบคืนค่าว่าง', () => {
+  const S = L.newState(0); L.goTo(S, 2);
+  assert.equal(UI.renderHandover(S), '');
+});
+test('renderHandover: ขั้น 7 (index 6) = Handover 2 Koi Express → Sakura Scale พร้อม 4 Flows ความเสี่ยงหลัก และหลักฐาน', () => {
+  const S = L.newState(0); L.goTo(S, 6);
+  const h = UI.renderHandover(S);
+  assert.match(h, /^<details class="handover"/);
+  assert.match(h, /Handover 2/);
+  assert.match(h, /Koi Express Logistics[\s\S]*?→[\s\S]*?Sakura Scale Ground Services/);
+  for (const w of ['Information', 'Document', 'Physical', 'Responsibility']) assert.match(h, new RegExp(w));
+  assert.match(h, /ความเสี่ยงสำคัญ/);
+  assert.match(h, /หลักฐานที่ต้องมี/);
+  assert.match(h, /Risk Register ข้อ 5/);
+});
+test('renderHandover: ขั้น 11 (index 10) = 5A ส่งให้ศุลกากรและกรมประมงพร้อมกัน', () => {
+  const S = L.newState(0); L.goTo(S, 10);
+  assert.match(UI.renderHandover(S), /Handover 5A[\s\S]*?Golden Scale[\s\S]*?ศุลกากร[\s\S]*?กรมประมง/);
+});
+test('renderFacts รวมการ์ด Handover · เช็กลิสต์มีป้าย HP ที่ขั้นส่งมอบ 6 แถว', () => {
+  const S = L.newState(0); L.goTo(S, 5);
+  assert.match(UI.renderFacts(S), /class="handover"/);
+  const c = UI.renderChecklist(S);
+  assert.equal((c.match(/class="hp-tag"/g) || []).length, 6);
+  assert.match(c, /data-step="9"[\s\S]*?class="hp-tag">HP4</);
+});
