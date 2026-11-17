@@ -472,7 +472,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .opts{display:grid;gap:6px}
 .opts button{border-radius:12px;text-align:left}
 /* ---- Handover (หัวข้อ 8): การ์ดพับได้ในขั้นที่มีการส่งมอบ ---- */
-.hp-tag{display:inline-block;padding:0 7px;border-radius:999px;border:1px solid var(--text);font-size:.7rem;font-weight:800;line-height:1.5;vertical-align:1px;white-space:nowrap}
+.hp-tag{display:inline-block;padding:0 6px;border-radius:6px;border:2px solid var(--text);font-size:.7rem;font-weight:600;line-height:1.5;vertical-align:1px;white-space:nowrap}
 .handover{border:1px solid var(--line);border-radius:12px;padding:0;margin-top:8px}
 .handover summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;padding:10px 12px;min-height:44px}
 .handover summary::-webkit-details-marker{display:none}
@@ -559,6 +559,8 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hm-lvl.hi{color:var(--bad)} .hm-lvl.md{color:var(--warn)}
 .hm-pri{font-size:.75rem;font-weight:600;color:var(--muted);white-space:nowrap}
 .hp-open{display:inline-flex;gap:6px;align-items:center;min-height:44px;margin:0 0 12px}
+.skip{position:fixed;left:16px;top:-60px;z-index:20;background:var(--accent);color:var(--on-accent);padding:10px 16px;border-radius:999px;font-weight:600;text-decoration:none}
+.skip:focus{top:12px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #app.hmapping{overflow:hidden}
 @media (max-width:767px){
@@ -604,6 +606,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7z M14 5h3v14h-3z" fill="currentColor"/></symbol>
 </svg>
 <div id="app">
+  <a class="skip" href="#panel">ข้ามไปที่ข้อมูลขั้นตอน</a>
   <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="w-title" hidden></div>
   <div id="hmap" class="hmap" role="dialog" aria-modal="true" aria-labelledby="hm-title" hidden></div>
   <header id="topbar" class="topbar">
@@ -619,7 +622,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <button id="hmap-btn" type="button" data-act="hmap"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg> แผนผัง Handover</button>
       <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
       <button id="help-btn" class="icon-btn" type="button" data-act="help" aria-expanded="false" aria-controls="howto" aria-label="วิธีใช้" title="วิธีใช้ (?)"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></button>
-      <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> ธีม</button>
+      <button id="theme-btn" type="button" aria-pressed="false" aria-label="สลับธีมสว่าง/มืด"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> ธีม</button>
     </div>
   </header>
   <div id="howto" class="card howto" role="dialog" aria-labelledby="howto-h" tabindex="-1" hidden>
@@ -643,7 +646,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <div id="risk" class="risk"></div>
     </section>
     <aside id="present-side" class="present-side" aria-label="ข้อมูลขั้นสำหรับนำเสนอ" aria-live="polite" hidden></aside>
-    <aside id="panel" class="panel sheet" aria-label="ติดตามการขนส่ง">
+    <aside id="panel" class="panel sheet" aria-label="ติดตามการขนส่ง" tabindex="-1">
       <div class="panel-inner">
         <div id="sheet-head" class="sheet-head"></div>
         <div id="sheet-ctrl" class="sheet-ctrl"></div>
@@ -5975,6 +5978,7 @@ var KoiUI = (function () {
         rows += '<button type="button" data-step="' + i + '" class="' + cls + '"' +
           (now && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
           '<span class="ck" aria-hidden="true">' + (bad ? '✕' : passed ? '✓' : s.n) + '</span>' +
+          (bad ? '<span class="sr-only">ค้าง: </span>' : passed ? '<span class="sr-only">ผ่านแล้ว: </span>' : '') +
           '<span class="nm">' + esc(s.name) + (handoverAt(i) ? ' <span class="hp-tag">' + handoverAt(i).id + '</span>' : '') + '</span>' +
           (now && !S.overview ? '<span class="now-tag">ตอนนี้</span>' : '') +
           '<span class="tm">' + esc(shortTime(S, i)) + '</span></button>';
@@ -8325,9 +8329,13 @@ var KoiScene = (function () {
   KoiUI.mount(document.getElementById("app"), {
     onRender: function (S) { KoiScene.sync(S); },
     shotSec: function (i) { return ok ? KoiScene.SHOTS[i].dur : null; },   // เล่นอัตโนมัติรอให้อนิเมชันจบ
-    onTheme: function (name) { KoiScene.setTheme(name); }   // กดคีย์ T สลับธีม
+    onTheme: function (name) { KoiScene.setTheme(name); if (typeof syncThemeBtn === 'function') syncThemeBtn(); }   // กดคีย์ T สลับธีม
   });
-  document.getElementById("theme-btn").addEventListener("click", function () { KoiUI.toggleTheme(); KoiScene.setTheme(KoiUI.currentTheme({ doc: document, matchMedia: window.matchMedia.bind(window) })); });
+  // ปุ่มธีม: aria-pressed = กำลังใช้ธีมมืด (คีย์ T ก็อัปเดตผ่าน onTheme)
+  var themeBtn = document.getElementById("theme-btn");
+  function syncThemeBtn() { themeBtn.setAttribute('aria-pressed', String(KoiUI.currentTheme({ doc: document, matchMedia: window.matchMedia.bind(window) }) === 'dark')); }
+  syncThemeBtn();
+  themeBtn.addEventListener("click", function () { KoiUI.toggleTheme(); KoiScene.setTheme(KoiUI.currentTheme({ doc: document, matchMedia: window.matchMedia.bind(window) })); syncThemeBtn(); });
 })();
 </script>
 </body>
