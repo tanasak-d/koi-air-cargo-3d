@@ -451,3 +451,11 @@ test('หน้าต้อนรับจอกว้าง: กล้องภ
   assert.equal(SC.overviewCam(true, 390, 844), SC.OV_CAM);
   assert.ok(SC.OV_WELCOME.t.x < 0);
 });
+
+test('ป้ายในฉากล้นขอบจอ: labelNudge ดันกลับเข้าจอ (เว้นขอบ) · อยู่ในจอแล้วไม่ขยับ · กว้างกว่าจอวางกลาง', () => {
+  const m = 0.02;
+  assert.equal(SC.labelNudge(0, 0.3, m), 0);
+  assert.ok(Math.abs(SC.labelNudge(-0.9, 0.3, m) - 0.22) < 1e-9);   // ซ้ายล้น → เลื่อนขวา
+  assert.ok(Math.abs(SC.labelNudge(0.95, 0.2, m) + 0.17) < 1e-9);   // ขวาล้น → เลื่อนซ้าย
+  assert.equal(SC.labelNudge(0.4, 1.2, m), -0.4);                    // กว้างเกินจอ → กึ่งกลาง
+});

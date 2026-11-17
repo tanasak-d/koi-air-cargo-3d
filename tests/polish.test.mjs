@@ -61,3 +61,7 @@ test('8 · จอคอม: ฉากยืดเต็มความสูง�
 test('9 · กระจกไม่มีเส้นขาวด้านใน (inset highlight)', () => {
   assert.doesNotMatch(css, /inset 0 1px 0 var\(--glass-edge\)/);
 });
+
+test('หัวเรื่องหน้าต้อนรับตัดบรรทัดสมดุล (ไม่เหลือคำเดียวบรรทัดสุดท้าย)', () => {
+  assert.match(css, /\.welcome h1\{[^}]*text-wrap:balance/);
+});

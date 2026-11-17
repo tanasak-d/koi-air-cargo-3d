@@ -107,7 +107,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;min-width:0;align-items:stretch}
 #stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:16px;
   aspect-ratio:16/10;min-height:300px;overflow:hidden;box-shadow:0 8px 24px rgba(15,28,46,.08)}
-#stage canvas{display:block;width:100%;height:100%;touch-action:none;transition:opacity .35s ease}
+#stage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;transition:opacity .35s ease}
 #stage canvas.switching{opacity:0;transition:none}
 @media (prefers-reduced-motion: reduce){#stage canvas{transition:none}}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
@@ -220,9 +220,18 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #app:not(.present){min-height:100vh;min-height:100dvh;grid-template-rows:auto auto minmax(0,1fr)}
   #stage{aspect-ratio:auto;height:auto;min-height:420px}
   #app{padding-bottom:12px}
+}
+/* จอ ≥1280: แถบบนบรรทัดเดียว · จอ 1024–1279 (โปรเจกเตอร์ 4:3) ให้แถบบนตัดบรรทัดได้ ปุ่มจะไม่ล้นจอ */
+@media (min-width:1280px){
   .topbar{flex-wrap:nowrap}
   .chips{flex-wrap:nowrap}
   .chips>*{flex:none}
+}
+@media (min-width:1024px) and (max-width:1279px){
+  .chips{justify-content:flex-end}
+  .stage-ctrl{flex-wrap:nowrap}
+  .stage-ctrl .ov-btn{font-size:0;width:44px;padding:0;justify-content:center;flex:none}
+  .stage-ctrl .ov-btn .ico{width:20px;height:20px}
 }
 @media (min-width:1600px){
   html{font-size:18px}   /* จอใหญ่/โปรเจกเตอร์: ตัวอักษรใหญ่ขึ้นทั้งหน้า */
@@ -379,7 +388,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .big-facts p{margin:0}
 .big-facts .ic{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;flex:none;background:#262626;color:#fff}
 .big-facts .ico{width:22px;height:22px}
-.big-facts small{display:block;font-size:.65em;color:#b0b0b0}
+.big-facts small{display:block;font-size:.75em;color:#b0b0b0}
 .present-side .hold,.present-side .end{background:#fff;color:#111}
 .present-foot{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:.7em;color:#b0b0b0;padding-bottom:10px}
 .kbd{border:1px solid #555;border-radius:6px;padding:2px 8px;color:#fff}
@@ -396,7 +405,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 #app.welcoming #stage>:not(canvas){display:none}
 .w-inner{max-width:560px;border-radius:24px;padding:28px}
 .welcome .kicker{display:flex;gap:8px;align-items:center;margin:0;font-size:.875rem;font-weight:500;color:var(--muted)}
-.welcome h1{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.22;margin:16px 0 12px;letter-spacing:-.01em}
+.welcome h1{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.22;margin:16px 0 12px;letter-spacing:-.01em;text-wrap:balance}
 .welcome .lead{font-size:clamp(1rem,1.3vw,1.1rem);line-height:1.6;color:var(--muted);max-width:30em;margin:0}
 .w-route{margin-top:20px;display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(127,127,127,.12);border-radius:16px}
 .w-route .ap b{font-size:1.5rem;display:block;line-height:1.05}
@@ -7436,7 +7445,40 @@ var KoiScene = (function () {
     return s;
   }
   function addLabels(g, i) {
-    SCENE_NOTES[i].forEach(function (l) { var s = makeLabel(l.text); s.position.set(l.x, l.y, l.z); g.add(s); });
+    SCENE_NOTES[i].forEach(function (l) {
+      var s = makeLabel(l.text); s.position.set(l.x, l.y, l.z);
+      s.userData.note = true; s.userData.base = s.position.clone();   // จำตำแหน่งเดิมไว้ ใช้ดันกลับเข้าจอ
+      g.add(s);
+    });
+  }
+  // ป้ายข้อความในฉากล้นขอบจอ (จอมือถือแนวตั้งแคบ): คืนระยะที่ต้องเลื่อน หน่วย NDC (-1..1)
+  // cx = กึ่งกลางป้าย · hw = ครึ่งความกว้างป้าย · m = เว้นขอบ · ป้ายกว้างเกินจอ = วางกึ่งกลาง
+  function labelNudge(cx, hw, m) {
+    m = m == null ? 0.02 : m;
+    if (hw >= 1 - m) return -cx;
+    if (cx - hw < -1 + m) return -1 + m - (cx - hw);
+    if (cx + hw > 1 - m) return 1 - m - (cx + hw);
+    return 0;
+  }
+  // ทุกเฟรม: เลื่อนป้ายของสถานีตามแนวขวาของกล้อง ให้ทั้งป้ายอยู่ในภาพ
+  var _nv = null;
+  function nudgeLabels(group, camera) {
+    if (!group) return;
+    if (!_nv) _nv = { right: new THREE.Vector3(), fwd: new THREE.Vector3(), cam: new THREE.Vector3(), t: new THREE.Vector3() };
+    camera.updateMatrixWorld();
+    _nv.right.setFromMatrixColumn(camera.matrixWorld, 0);
+    camera.getWorldDirection(_nv.fwd); camera.getWorldPosition(_nv.cam);
+    var tanH = Math.tan(camera.fov * Math.PI / 360);
+    group.children.forEach(function (o) {
+      if (!o.userData.note) return;
+      var b = o.userData.base;
+      var d = _nv.t.copy(b).sub(_nv.cam).dot(_nv.fwd);
+      if (!(d > 0.1)) { o.position.copy(b); return; }
+      var halfW = d * tanH * camera.aspect;                      // ครึ่งความกว้างภาพ (หน่วยโลก) ที่ระยะนี้
+      var cx = _nv.t.copy(b).project(camera).x;
+      var shift = labelNudge(cx, (o.scale.x / 2) / halfW) * halfW;
+      o.position.copy(b).addScaledVector(_nv.right, shift);
+    });
   }
 
   // โหลดโมเดลทั้งหมดครั้งเดียว แล้วจำไว้ (เรียกซ้ำได้ผลเดิม ไม่ถอดรหัสซ้ำ)
@@ -8290,6 +8332,7 @@ var KoiScene = (function () {
         R.card.style.transform = 'translate(' + Math.round(pos.left) + 'px,' + Math.round(pos.top) + 'px)';
       }
     }
+    if (!R.overview) nudgeLabels(R.stationGroup, R.camera);
     R.renderer.render(R.scene, R.camera);
   }
 
@@ -8305,7 +8348,7 @@ var KoiScene = (function () {
 
   return {
     NO_WEBGL_MESSAGE: NO_WEBGL_MESSAGE, camGlide: camGlide, glideK: glideK, IDLE_RETURN_MS: IDLE_RETURN_MS,
-    idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
+    idleReturnDue: idleReturnDue, nextQuality: nextQuality, cardPos: cardPos, labelNudge: labelNudge, SHOTS: SHOTS, SCENE_NOTES: SCENE_NOTES,
     pathPoint: pathPoint, shotPose: shotPose, poseOrder: poseOrder, DECOR: DECOR, loadPhases: loadPhases, flightPhases: flightPhases,
     MAP_Y: MAP_Y, AIRPORTS: AIRPORTS, mapXZ: mapXZ, greatCircle: greatCircle, vanPhases: vanPhases, bkkPhases: bkkPhases, DOF_LAYOUT: DOF_LAYOUT, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU, animU: animU, resumeT0: resumeT0,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize, tileSpan: tileSpan,
