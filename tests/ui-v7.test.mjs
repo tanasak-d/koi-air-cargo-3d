@@ -63,7 +63,7 @@ test('renderChecklist: แต่ละขั้นมีชื่อและเ
 test('renderChecklist: hold = ✕ ที่ขั้นค้าง และทุกแถวกดไม่ได้ · overview ไม่มี aria-current', () => {
   const S = walk(L.newState(1));
   const h = UI.renderChecklist(S);
-  assert.match(h, /class="ck-row now bad"[\s\S]*?✕/);
+  assert.match(h, /class="ck-row now bad"[\s\S]*?i-x"\/><\/svg>/);
   assert.equal(count(h, /disabled/g), 17);
   const O = L.newState(0); O.overview = true;
   assert.equal(count(UI.renderChecklist(O), /aria-current/g), 0);
@@ -91,14 +91,14 @@ test('renderFacts: มาตรวัดถุงเทียบเส้นต�
   const h = UI.renderFacts(S);
   assert.match(h, /class="bag" role="meter" aria-valuemin="0" aria-valuemax="18" aria-valuenow="13\.0"/);
   assert.match(h, /13\.0 <small>\/ 18 ชม\.<\/small>/);
-  assert.match(h, /✓ ปลอดภัย · เหลือ 5\.0 ชม\./);
+  assert.match(h, /i-check"\/><\/svg> ปลอดภัย · เหลือ 5\.0 ชม\./);
   assert.match(h, /<span>0<\/span><span>6<\/span><span>12<\/span><span>18 ชม\.<\/span>/);
 });
 test('renderFacts: ถุงเกินเส้นตาย 18 ชม. แสดง ✕ เกิน และไม่มี "เหลือ"', () => {
   const S = L.newState(0); L.goTo(S, 13); S.shift = 181; S.shiftFrom = 0;   // 1441 นาที (วิธีเดียวกับ time.test.mjs)
   assert.equal(L.bagStatus(S), 'over');
   const h = UI.renderFacts(S);
-  assert.match(h, /✕ เกินเส้นตาย 18 ชม\./);
+  assert.match(h, /i-x"\/><\/svg> เกินเส้นตาย 18 ชม\./);
   assert.doesNotMatch(h, /เหลือ/);
 });
 test('ไม่มีอีโมจิ 🕒 ในป้ายเวลา', () => { assert.doesNotMatch(UI.renderTimeBadge(L.newState(0)), /🕒/); });

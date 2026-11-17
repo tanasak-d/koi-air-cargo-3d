@@ -75,7 +75,7 @@
 *{box-sizing:border-box}
 /* ==== V7 กระจก: เบลอฉากด้านหลัง + ขอบสว่างด้านบน · เครื่องที่เบลอไม่ได้ หรือผู้ใช้ตั้งลดความโปร่งใส = พื้นทึบ ==== */
 .glass{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
+  border:1px solid var(--glass-edge);box-shadow:0 12px 40px rgba(0,0,0,.18)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.glass{background:var(--surface)}}
 @media (prefers-reduced-transparency:reduce){.glass{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
 html{-webkit-text-size-adjust:100%}
@@ -88,13 +88,13 @@ body,button,p,li,h1,h2,h3,span,div{overflow-wrap:anywhere}
 #app{max-width:1360px;margin:0 auto;padding:12px 16px 32px;display:grid;gap:12px}
 .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);
   border-radius:16px;padding:10px 14px;box-shadow:0 6px 20px rgba(15,28,46,.07)}
-.brandmark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:20px;
+.brandmark{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font-weight:600;font-size:20px;
   background:var(--accent);color:var(--on-accent);flex:0 0 auto}
-.brand h1{margin:0;font-size:1.15rem;line-height:1.2}
+.brand h1{margin:0;font-size:1.125rem;line-height:1.2}
 .brand small{color:var(--muted)}
 .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
-.chip,.status{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.85rem;background:var(--surface);white-space:nowrap}
-.chip.trip{font-weight:700}
+.chip,.status{border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:.875rem;background:var(--surface);white-space:nowrap}
+.chip.trip{font-weight:600}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 12px}
 button{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);
   border-radius:999px;padding:6px 14px;min-height:40px;cursor:pointer}
@@ -105,7 +105,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 
 /* ---- V4 เลย์เอาต์: ภาพ 3 มิติ (ซ้าย) + แผงติดตามการขนส่ง (ขวา) · จอแคบซ้อนลงมา ---- */
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:12px;min-width:0;align-items:stretch}
-#stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:18px;
+#stage{position:relative;background:var(--stage-bg);border:1px solid var(--line);border-radius:16px;
   aspect-ratio:16/10;min-height:300px;overflow:hidden;box-shadow:0 8px 24px rgba(15,28,46,.08)}
 #stage canvas{display:block;width:100%;height:100%;touch-action:none;transition:opacity .35s ease}
 #stage canvas.switching{opacity:0;transition:none}
@@ -113,7 +113,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .stage-note{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--muted)}
 /* การ์ดลอย: ตำแหน่งตั้งด้วย transform จากฉาก 3 มิติทุกเฟรม (ไม่รับการคลิก จะได้ไม่บังการหมุนกล้อง) */
 #card{position:absolute;left:0;top:0;max-width:300px;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);color:var(--text);
-  border:1px solid var(--glass-edge);border-left:4px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:.95rem;line-height:1.4;
+  border:1px solid var(--glass-edge);border-left:4px solid var(--accent);border-radius:12px;padding:8px 12px;font-size:1rem;line-height:1.4;
   pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);will-change:transform}
 #card b{color:var(--accent)}
 #card small{color:var(--muted)}
@@ -122,7 +122,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 /* แถบเล่นด้านล่างของภาพ: ปุ่มกลม ก่อน/เล่น/ถัดไป + แถบความคืบหน้าของขั้น */
 /* V7: แถบเล่นเป็นกระจกลอยบนภาพ */
 .stage-ctrl{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
-  background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:22px;padding:8px 12px;box-shadow:inset 0 1px 0 var(--glass-edge),0 8px 24px rgba(0,0,0,.16)}
+  background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:24px;padding:8px 12px;box-shadow:0 8px 24px rgba(0,0,0,.16)}
 .stage-ctrl .ctl:not(.play){background:rgba(127,127,127,.16)}
 .stage-ctrl .ov-btn{background:transparent}
 .ctl{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;border:0;background:var(--soft);flex:none}
@@ -132,14 +132,14 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 /* แถบเวลา 17 ช่อง: ปุ่มสูง 28px (กดง่าย) แต่เส้นที่เห็นบาง 6px */
 .scrub{flex:1 1 160px;min-width:120px;display:flex;align-items:center;height:28px}
 .tick{flex:1 1 0;min-width:0;height:28px;min-height:28px;padding:0;border:0;border-radius:0;background:transparent;position:relative}
-.tick::before{content:"";position:absolute;left:1px;right:1px;top:11px;height:6px;background:var(--line)}
+.tick::before{content:"";position:absolute;left:1px;right:1px;top:12px;height:6px;background:var(--line)}
 .tick.done::before{background:var(--accent)}
-.tick:first-child::before{border-radius:3px 0 0 3px}
-.tick:last-child::before{border-radius:0 3px 3px 0}
-.tick i{position:absolute;left:1px;top:11px;height:6px;width:0;max-width:calc(100% - 2px);background:var(--accent);z-index:1}
-.tick.now::after{content:"";position:absolute;left:50%;top:5px;width:3px;height:18px;margin-left:-1px;border-radius:2px;background:var(--accent)}
+.tick:first-child::before{border-radius:4px 0 0 4px}
+.tick:last-child::before{border-radius:0 4px 4px 0}
+.tick i{position:absolute;left:1px;top:12px;height:6px;width:0;max-width:calc(100% - 2px);background:var(--accent);z-index:1}
+.tick.now::after{content:"";position:absolute;left:50%;top:4px;width:3px;height:18px;margin-left:-1px;border-radius:999px;background:var(--accent)}
 .tick[disabled]{opacity:1}
-.stage-ctrl .count{color:var(--muted);font-size:.88rem;white-space:nowrap}
+.stage-ctrl .count{color:var(--muted);font-size:.875rem;white-space:nowrap}
 .risk{position:absolute;right:12px;top:12px;max-width:min(320px,calc(100% - 24px))}
 .risk-menu summary{list-style:none;cursor:pointer;background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--bad);color:var(--text);
   border-radius:999px;padding:6px 14px;font-weight:600}
@@ -147,37 +147,37 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .risk-menu summary .ico{color:var(--bad)}   /* บนกระจก: ตัวหนังสือสีหลักให้อ่านง่าย สีแดงอยู่ที่ขอบและไอคอน */
 .risk-menu summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .risk-list{display:grid;gap:6px;margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px}
-.risk-list button{border-radius:10px;text-align:left}
+.risk-list button{border-radius:8px;text-align:left}
 .risk-list button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 /* แผงติดตามด้านขวา: สูงเท่าภาพ เลื่อนอ่านภายในแผง */
-.panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;min-width:0;
+.panel{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:16px;min-width:0;
   box-shadow:0 8px 24px rgba(15,28,46,.08)}
 .panel-inner{position:absolute;inset:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 /* จอกว้าง: ข้อมูลขั้นอยู่บนสุดของแผงเสมอ เลื่อนเฉพาะเส้นเวลา (ไม่งั้นพอเลื่อนหาขั้นปัจจุบัน ข้อมูลจะหลุดจากจอ) */
 .panel-inner #facts{flex:0 1 auto;max-height:62%;overflow:auto}
 .panel-inner #timeline{flex:1 1 0;min-height:120px;overflow:auto}
-.panel-title{margin:0;font-size:.9rem;color:var(--muted);font-weight:600}
+.panel-title{margin:0;font-size:.875rem;color:var(--muted);font-weight:600}
 .step-title{margin:0 0 6px;font-size:1rem}
 /* ---- V7 เช็กลิสต์ 17 ขั้น: หัวความคืบหน้า + แถวขั้น จัดกลุ่มตามสถานี ---- */
 #timeline{min-width:0}
 .ck-prog{margin-bottom:4px;position:sticky;top:0;z-index:1;background:var(--surface);padding-bottom:6px}  /* หัวความคืบหน้าค้างไว้บนสุดตอนเลื่อน */
-.ck-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:.88rem}
+.ck-head{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 6px;font-size:.875rem}
 .ck-head span{color:var(--muted);font-variant-numeric:tabular-nums}
 .ck-trk{height:8px;border-radius:4px;background:var(--soft);overflow:hidden}
 .ck-trk i{display:block;height:100%;background:var(--accent);border-radius:4px}
-.ck-grp{margin:10px 0 2px;font-size:.75rem;font-weight:700;color:var(--muted)}
+.ck-grp{margin:10px 0 2px;font-size:.75rem;font-weight:600;color:var(--muted)}
 .ck-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto auto;gap:8px;align-items:center;width:100%;text-align:left;
-  border:0;border-radius:10px;background:transparent;padding:6px 8px;min-height:36px}
-.ck-row .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.7rem;line-height:1;color:var(--muted)}
-.ck-row .nm{font-size:.92rem;min-width:0}
-.ck-row .tm{font-size:.78rem;color:var(--muted);white-space:nowrap}
+  border:0;border-radius:8px;background:transparent;padding:6px 8px;min-height:36px}
+.ck-row .ck{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.75rem;line-height:1;color:var(--muted)}
+.ck-row .nm{font-size:1rem;min-width:0}
+.ck-row .tm{font-size:.8125rem;color:var(--muted);white-space:nowrap}
 .ck-row.done .ck{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .ck-row.done .nm{color:var(--muted)}
-.ck-row.now{background:var(--soft);font-weight:700}
+.ck-row.now{background:var(--soft);font-weight:600}
 .ck-row.now .ck{border-color:var(--accent);color:var(--text);box-shadow:0 0 0 2px var(--soft),0 0 0 4px var(--accent)}
 .ck-row.bad .ck{border-color:var(--bad);color:var(--bad);box-shadow:none}
 .ck-row[disabled]{opacity:1}
-.section-label{margin:4px 0 2px;font-size:.78rem;color:var(--muted);font-weight:600}
+.section-label{margin:4px 0 2px;font-size:.8125rem;color:var(--muted);font-weight:600}
 
 /* ---- V6 แถบเส้นทาง 6 สถานี (บนสุด) ---- */
 .route-wrap{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;min-width:0}
@@ -185,22 +185,22 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .route{list-style:none;margin:0;padding:0;display:flex;align-items:center;gap:4px;min-width:0}
 .stn{position:relative;min-width:0;flex:1 1 0}
 .stn.now{flex:none}
-.stn::after{content:"";position:absolute;left:38px;right:6px;top:50%;height:3px;border-radius:2px;background:var(--line)}
+.stn::after{content:"";position:absolute;left:38px;right:6px;top:50%;height:3px;border-radius:999px;background:var(--line)}
 .stn.now::after{display:none}
 .stn:last-child::after{display:none}
 .stn.done::after{background:var(--accent)}
-.stn button{position:relative;z-index:1;display:flex;align-items:center;gap:8px;width:100%;min-width:0;border:0;background:transparent;
+.stn button{position:relative;z-index:1;display:flex;align-items:center;gap:0;width:100%;min-width:0;border:0;background:transparent;
   border-radius:999px;padding:4px 6px;text-align:left}
 .stn .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--surface);
-  border:2px solid var(--line);color:var(--muted);font-size:.8rem;font-weight:700}
+  border:2px solid var(--line);color:var(--muted);font-size:.8125rem;font-weight:600}
 .stn.done .dot,.stn.now .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.stn .txt{min-width:0;background:var(--surface);padding-right:6px}
-.stn .txt b{display:block;font-size:.85rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stn .txt{min-width:0;background:var(--surface);padding:0 6px 0 8px}   /* พื้นชื่อเริ่มชิดวงกลม เส้นเชื่อมจึงไม่โผล่หน้าชื่อ */
+.stn .txt b{display:block;font-size:.875rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stn.now button{background:var(--soft);padding:4px 16px 4px 4px}
-.stn .cap{border-radius:999px;background:transparent;padding:0}
-.stn .cap small{display:block;font-size:.72rem;color:var(--muted);line-height:1.2}
-.stn .cap b{font-weight:800;font-size:.92rem;overflow:visible}
-.now-tag{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;background:var(--accent);color:var(--on-accent);font-size:.68rem;font-weight:700}
+.stn .cap{border-radius:999px;background:transparent;padding:0 0 0 8px}
+.stn .cap small{display:block;font-size:.75rem;color:var(--muted);line-height:1.2}
+.stn .cap b{font-weight:600;font-size:1rem;overflow:visible}
+.now-tag{display:inline-block;margin-left:4px;padding:0 6px;border-radius:4px;background:var(--accent);color:var(--on-accent);font-size:.75rem;font-weight:600}
 
 /* สถานะ: ใช้คู่กับ ✓ ✕ หรือข้อความเสมอ (ห้ามพึ่งสีอย่างเดียว) และห้ามใช้สีชมพู */
 .st-ok{color:var(--ok);font-weight:600}
@@ -216,7 +216,9 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 @media (min-width:1024px){
   .layout{grid-template-columns:minmax(0,1fr) 400px}
   /* ภาพสูงพอดีจอ ไม่ต้องเลื่อนหน้า (สำคัญกับโปรเจกเตอร์) */
-  #stage{aspect-ratio:auto;height:calc(100vh - 250px);height:calc(100dvh - 250px);min-height:420px}
+  /* ฉากยืดเต็มแถวสุดท้ายของ #app (แถบบน · เส้นทาง · ฉาก) ไม่เหลือแถบว่างใต้ฉาก */
+  #app:not(.present){min-height:100vh;min-height:100dvh;grid-template-rows:auto auto minmax(0,1fr)}
+  #stage{aspect-ratio:auto;height:auto;min-height:420px}
   #app{padding-bottom:12px}
   .topbar{flex-wrap:nowrap}
   .chips{flex-wrap:nowrap}
@@ -240,24 +242,24 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   /* แถบเส้นทางเป็นกระจกลอยบนภาพ: สถานีอื่นเหลือแค่จุด · สถานีปัจจุบันเป็นแคปซูลมีชื่อ */
   .route-wrap{position:fixed;top:8px;left:8px;right:8px;z-index:3;padding:4px;border-radius:999px;
     background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);
-    border:1px solid var(--glass-edge);box-shadow:inset 0 1px 0 var(--glass-edge),0 8px 24px rgba(0,0,0,.18)}
+    border:1px solid var(--glass-edge);box-shadow:0 8px 24px rgba(0,0,0,.18)}
   .stn button{padding:4px 2px;min-height:40px}
-  .stn .dot{width:26px;height:26px;font-size:.72rem}
+  .stn .dot{width:26px;height:26px;font-size:.75rem}
   .stn .txt{display:none}
   .stn .txt.cap{display:block;background:transparent}
-  .stn.now button{background:var(--surface);padding:3px 12px 3px 3px}
+  .stn.now button{background:var(--surface);padding:4px 12px 4px 4px}
   .stn button{justify-content:center}
   .stn::after{left:calc(50% + 14px);right:calc(-50% + 14px)}
   #card{display:none}   /* การ์ดลอยด้านล่างบอกขั้น/ใครทำแทนแล้ว ไม่ซ้ำ */
   /* แผ่นข้อมูลด้านล่าง (V7): ปิด = การ์ดกระจกลอย + แถบเล่นกระจก เห็นภาพเต็ม · เปิด = พื้นทึบสูง 70% มีแท็บ */
-  .panel.sheet{position:fixed;left:0;right:0;bottom:0;z-index:4;border:0;border-radius:22px 22px 0 0;
+  .panel.sheet{position:fixed;left:0;right:0;bottom:0;z-index:4;border:0;border-radius:24px 24px 0 0;
     box-shadow:0 -8px 30px rgba(0,0,0,.2);padding-bottom:env(safe-area-inset-bottom);transition:transform .2s ease;touch-action:none}
   .panel.sheet:not(.open){background:transparent;box-shadow:none;max-height:45vh;max-height:45dvh}
   .sheet:not(.open) .panel-inner{padding:0 12px 12px;gap:10px;overflow:visible}
   .sheet:not(.open) .sh-card{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:24px;padding:4px 12px 12px;
-    box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18);cursor:pointer}
-  .sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:28px;padding:8px 10px;
-    box-shadow:inset 0 1px 0 var(--glass-edge),0 12px 40px rgba(0,0,0,.18)}
+    box-shadow:0 12px 40px rgba(0,0,0,.18);cursor:pointer}
+  .sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--glass);-webkit-backdrop-filter:var(--glass-blur);backdrop-filter:var(--glass-blur);border:1px solid var(--glass-edge);border-radius:24px;padding:8px 10px;
+    box-shadow:0 12px 40px rgba(0,0,0,.18)}
   .sheet.open{height:70vh;height:70dvh;background:var(--surface)}
   /* แผ่นปิด: การ์ดลอยตัดบรรทัด (ใครทำ 1 บรรทัด · ชื่อขั้น 2 บรรทัด) จอเตี้ยแถบเล่นจะได้ไม่ตกขอบจอ · เปิดแผ่นแล้วเห็นเต็ม */
   .sheet:not(.open) .sh-card .eyebrow{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;line-clamp:1;overflow:hidden}
@@ -273,21 +275,21 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   .sh-txt{flex:1;min-width:0}
   .sheet-toggle{width:44px;height:44px;min-height:44px;padding:0;border-radius:50%;display:grid;place-items:center;flex:none;background:transparent;border-color:transparent}
   .sh-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0}
-  .sh-chips .chip{display:inline-flex;align-items:center;gap:5px;font-size:.78rem;padding:3px 10px;background:rgba(127,127,127,.14);border-color:transparent}
+  .sh-chips .chip{display:inline-flex;align-items:center;gap:4px;font-size:.8125rem;padding:4px 10px;background:rgba(127,127,127,.14);border-color:transparent}
   .sh-chips .chip .ico{width:14px;height:14px}
-  .sh-chips .chip.ok{color:var(--ok);background:var(--surface);border-color:var(--ok);font-weight:700}
-  .sh-chips .chip.bad{color:var(--bad);background:var(--surface);border-color:var(--bad);font-weight:700}
+  .sh-chips .chip.ok{color:var(--ok);background:var(--surface);border-color:var(--ok);font-weight:600}
+  .sh-chips .chip.bad{color:var(--bad);background:var(--surface);border-color:var(--bad);font-weight:600}
   .panel-inner{position:static;display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;height:100%;overflow:auto;touch-action:pan-y}
   .panel-title,.panel-inner #timeline{display:none}
   .sheet-head{display:block}
   .sheet-head .eyebrow{font-size:.75rem}
-  .sheet-head .step-title{font-size:1.05rem}
+  .sheet-head .step-title{font-size:1rem}
   .sheet-ctrl{display:block}
   .sheet-ctrl .stage-ctrl{position:static;border:0;box-shadow:none;padding:0;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none}
   .sheet-ctrl .ctl{width:48px;height:48px}
   .sheet-ctrl .ctl.play{width:56px;height:56px}
   .grab{display:block;width:100%;min-height:28px;padding:8px 0 4px;border:0;border-radius:0;background:transparent;touch-action:none}
-  .grab span{display:block;width:44px;height:5px;margin:0 auto;border-radius:3px;background:var(--line)}
+  .grab span{display:block;width:44px;height:5px;margin:0 auto;border-radius:999px;background:var(--line)}
   .panel-inner #facts{max-height:none;overflow:visible}
   .sheet:not(.open) #facts{display:none}
   .sheet.open #sheet-tabs{display:block}
@@ -299,8 +301,8 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   #facts>.eyebrow,#facts>.step-title{display:none}   /* หัวแผ่นบอกแล้ว ไม่ซ้ำ */
   /* ปุ่มกดด้วยนิ้วสูงอย่างน้อย 44px */
   .tick{height:44px;min-height:44px}
-  .tick::before,.tick i{top:19px}
-  .tick.now::after{top:13px}
+  .tick::before,.tick i{top:20px}
+  .tick.now::after{top:12px}
   .scrub{height:44px}
   .grab{min-height:44px}
   .stn button{min-height:44px}
@@ -340,7 +342,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 @media (prefers-reduced-motion: reduce){.sheet{transition:none}}
 /* แท็บของแผ่นข้อมูลมือถือ */
 .sheet-tabs{display:flex;gap:6px;overflow-x:auto}
-.sheet-tabs button{padding:4px 12px;font-size:.88rem;white-space:nowrap}
+.sheet-tabs button{padding:4px 12px;font-size:.875rem;white-space:nowrap}
 .sheet-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .sheet-risk .risk-menu summary{display:none}
 .panel-body{display:flex;flex-direction:column;gap:inherit;flex:1 1 auto;min-height:0}
@@ -366,7 +368,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .present-side .eyebrow{color:#c8c8c8;font-size:.8em}
 .present-side .p-step{margin:0;color:#c8c8c8;font-weight:600;font-size:.85em}
 .p-chips{margin:0;display:flex;flex-wrap:wrap;gap:8px}
-.present-side .chip{background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:999px;font-size:.8em;padding:4px 14px}
+.present-side .chip{background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:8px;font-size:.8em;padding:4px 14px}
 .present-side .chip.bad{border-color:#ff8a80;color:#ffb4ab}
 .present-side .chip.warn{border-color:#ffd166;color:#ffe08a}
 .p-hp{margin:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.85em;color:#e0e0e0}
@@ -375,7 +377,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .big-facts{display:grid;gap:14px}
 .big-facts>div{display:flex;gap:14px;align-items:flex-start}
 .big-facts p{margin:0}
-.big-facts .ic{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;flex:none;background:#262626;color:#fff}
+.big-facts .ic{width:42px;height:42px;border-radius:8px;display:grid;place-items:center;flex:none;background:#262626;color:#fff}
 .big-facts .ico{width:22px;height:22px}
 .big-facts small{display:block;font-size:.65em;color:#b0b0b0}
 .present-side .hold,.present-side .end{background:#fff;color:#111}
@@ -384,7 +386,7 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .p-exit{margin-left:auto;background:transparent;color:#fff;border-color:#555;border-radius:999px}
 .present-progress{position:fixed;left:0;right:0;bottom:0;height:8px;background:rgba(128,128,128,.4);z-index:5}
 .present-progress i{display:block;height:100%;background:#111;box-shadow:0 0 0 1px #fff}
-.keys{margin:6px 0 0;font-size:.85rem}
+.keys{margin:6px 0 0;font-size:.875rem}
 /* ---- V6 หน้าต้อนรับ: ทับทั้งจอ ภาพ 3 มิติ (ภาพรวม) ขยายเต็มจออยู่ด้านหลัง ---- */
 /* ---- V7 หน้าต้อนรับ: เห็นฉาก 3 มิติชัด (เงาไล่จางจากซ้าย) + เนื้อหาในการ์ดกระจก · ปุ่มแคปซูลเหมือนทุกที่ ---- */
 .welcome{position:fixed;inset:0;z-index:50;display:grid;align-items:center;padding:48px clamp(16px,5vw,64px);overflow:auto;color:var(--text);
@@ -392,13 +394,12 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .welcome[hidden]{display:none}
 #app.welcoming #stage{position:fixed;inset:0;z-index:40;border:0;border-radius:0;aspect-ratio:auto}
 #app.welcoming #stage>:not(canvas){display:none}
-.w-inner{max-width:560px;border-radius:28px;padding:28px}
-.welcome .kicker{display:inline-flex;gap:8px;align-items:center;margin:0;font-size:.85rem;font-weight:600;padding:5px 12px;border-radius:999px;
-  background:var(--surface);border:1px solid var(--line)}
+.w-inner{max-width:560px;border-radius:24px;padding:28px}
+.welcome .kicker{display:flex;gap:8px;align-items:center;margin:0;font-size:.875rem;font-weight:500;color:var(--muted)}
 .welcome h1{font-size:clamp(1.8rem,3.4vw,2.6rem);line-height:1.22;margin:16px 0 12px;letter-spacing:-.01em}
 .welcome .lead{font-size:clamp(1rem,1.3vw,1.1rem);line-height:1.6;color:var(--muted);max-width:30em;margin:0}
 .w-route{margin-top:20px;display:flex;align-items:center;gap:14px;padding:12px 16px;background:rgba(127,127,127,.12);border-radius:16px}
-.w-route .ap b{font-size:1.6rem;display:block;line-height:1.05}
+.w-route .ap b{font-size:1.5rem;display:block;line-height:1.05}
 .w-route .ap span{font-size:.75rem;color:var(--muted)}
 .w-route .ap:last-child{text-align:right}
 .w-route .mid{flex:1;display:grid;justify-items:center;gap:4px;font-size:.75rem;color:var(--muted);text-align:center;font-variant-numeric:tabular-nums}
@@ -406,13 +407,13 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .stats>div{border-radius:12px;padding:8px 12px;background:rgba(127,127,127,.12)}
 .stats b{font-size:1.5rem;display:block;line-height:1.15}
-.stats span{font-size:.78rem;color:var(--muted)}
+.stats span{font-size:.8125rem;color:var(--muted)}
 .cta{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
-.cta button{min-height:52px;font-size:1rem;padding:0 22px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;font-weight:700}
+.cta button{min-height:52px;font-size:1rem;padding:0 22px;border-radius:999px;display:inline-flex;gap:8px;align-items:center;font-weight:600}
 .cta .w-start{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .cta .w-ghost{background:transparent;color:var(--text);border-color:var(--line)}
 .cta button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
-.w-keys{margin:12px 0 0;font-size:.8rem;color:var(--muted)}
+.w-keys{margin:12px 0 0;font-size:.8125rem;color:var(--muted)}
 /* จอแคบ: การ์ดเต็มกว้าง เงาด้านหลังทึบขึ้น */
 @media (max-width:767px){.welcome{background:rgba(0,0,0,.45);padding:24px 12px}.w-inner{padding:20px;border-radius:24px}}
 /* วิธีใช้ = ป๊อปโอเวอร์จากปุ่ม ? บนแถบบน (Stage 3) */
@@ -426,13 +427,14 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .sep{color:var(--muted)}
 .muted{color:var(--muted)}
 .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
-.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.9rem}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:.875rem}
 /* ---- V6 การ์ดข้อมูลแบบไอคอน ---- */
 #facts{min-width:0;display:grid;gap:10px;align-content:start}
-.eyebrow{margin:0;font-size:.78rem;color:var(--muted);font-weight:700;letter-spacing:.02em}
-.step-title{margin:0;font-size:1.15rem;line-height:1.35}
-.times{margin:0;display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--muted)}
+.eyebrow{margin:0;font-size:.8125rem;color:var(--muted);font-weight:500}
+.step-title{margin:0;font-size:1.125rem;line-height:1.35}
+.times{margin:0;display:flex;gap:6px;align-items:center;font-size:.875rem;color:var(--muted)}
 .ico{width:16px;height:16px;flex:none}
+.ico.mk{width:1em;height:1em;vertical-align:-.125em}
 /* ---- V7 การ์ดข้อมูล: ป้าย (ไอคอน + คำ) อยู่บรรทัดบน เนื้อหาบรรทัดล่าง · มุม 12px ทุกใบ ---- */
 .facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fact{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -440,28 +442,28 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .fact .lab,.bag .lab{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
 .fact .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;flex:none;background:var(--soft);color:var(--text)}
 .fact .ic .ico{width:15px;height:15px}
-.fact b{display:block;font-size:.9rem;line-height:1.45;font-weight:600}
+.fact b{display:block;font-size:.875rem;line-height:1.45;font-weight:600}
 .fact.hazard{background:var(--warn-soft);border-color:transparent}
 .fact.hazard .lab,.fact.hazard .ic{color:var(--warn)}
 .fact.hazard .ic{background:transparent;border:1px solid var(--warn)}
 .doc-chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip.doc{white-space:normal;font-size:.8rem;padding:3px 10px;background:var(--soft);border-color:transparent}
+.chip.doc{white-space:normal;font-size:.8125rem;padding:4px 10px;background:var(--soft);border-color:transparent}
 .times .chip{display:inline-flex;align-items:center;gap:6px;white-space:normal;color:var(--text)}
 .times .chip .ico,.bag .lab .ico{width:15px;height:15px}
 .bag{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .bag-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:.78rem;font-weight:700}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:8px;padding:2px 10px;font-size:.8125rem;font-weight:600}
 .pill.ok{background:var(--surface);color:var(--ok);border:1px solid var(--ok)}
 .pill.bad{background:var(--surface);color:var(--bad);border:1px solid var(--bad)}
-.bag-val{margin:4px 0 0;font-size:1.45rem;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
-.bag-val small{font-size:.8rem;font-weight:600;color:var(--muted)}
-.bag-bar{height:10px;border-radius:5px;background:var(--soft);margin-top:8px;overflow:hidden}
-.bag-bar i{display:block;height:100%;background:var(--ok);border-radius:5px}
+.bag-val{margin:4px 0 0;font-size:1.5rem;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+.bag-val small{font-size:.8125rem;font-weight:600;color:var(--muted)}
+.bag-bar{height:10px;border-radius:999px;background:var(--soft);margin-top:8px;overflow:hidden}
+.bag-bar i{display:block;height:100%;background:var(--ok);border-radius:999px}
 .bag-bar.over i{background:var(--bad)}
-.bag-scale{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.bag-scale{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums}
 .more{border:1px solid var(--line);border-radius:12px;padding:8px 12px}
-.more summary{cursor:pointer;font-weight:600;font-size:.9rem}
-.more h3{margin:8px 0 2px;font-size:.95rem}
+.more summary{cursor:pointer;font-weight:600;font-size:.875rem}
+.more h3{margin:8px 0 2px;font-size:1rem}
 .more p,.more ul{margin:0 0 6px}
 .lanes{list-style:none;padding:0}
 .lanes li{margin-bottom:6px}
@@ -472,36 +474,36 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .opts{display:grid;gap:6px}
 .opts button{border-radius:12px;text-align:left}
 /* ---- Handover (หัวข้อ 8): การ์ดพับได้ในขั้นที่มีการส่งมอบ ---- */
-.hp-tag{display:inline-block;padding:0 6px;border-radius:6px;border:2px solid var(--text);font-size:.7rem;font-weight:600;line-height:1.5;vertical-align:1px;white-space:nowrap}
+.hp-tag{display:inline-block;padding:0 6px;border-radius:6px;border:2px solid var(--text);font-size:.75rem;font-weight:600;line-height:1.5;vertical-align:1px;white-space:nowrap}
 .handover{border:1px solid var(--line);border-radius:12px;padding:0;margin-top:8px}
 .handover summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;padding:10px 12px;min-height:44px}
 .handover summary::-webkit-details-marker{display:none}
 .handover summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:12px}
-.handover summary .hp-tag{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:.78rem;padding:2px 9px}
+.handover summary .hp-tag{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:.8125rem;padding:2px 8px}
 .hp-sum{display:grid;min-width:0}
-.hp-sum b{font-size:.9rem}
-.hp-sum small{font-size:.8rem;color:var(--muted)}
+.hp-sum b{font-size:.875rem}
+.hp-sum small{font-size:.8125rem;color:var(--muted)}
 .handover[open] summary{border-bottom:1px solid var(--line)}
 .handover>*:not(summary){margin-left:12px;margin-right:12px}
-.hp-where{display:flex;gap:6px;align-items:center;font-size:.8rem;color:var(--muted);margin-top:8px;margin-bottom:6px}
+.hp-where{display:flex;gap:6px;align-items:center;font-size:.8125rem;color:var(--muted);margin-top:8px;margin-bottom:6px}
 .hp-where .ico{width:14px;height:14px}
 .hp-flows{list-style:none;padding:0;margin-top:0;margin-bottom:8px;display:grid;gap:6px}
-.hp-flows li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;font-size:.84rem;line-height:1.45}
-.hp-flows li b{font-size:.78rem}
-.hp-risk{background:var(--warn-soft);border-radius:10px;padding:8px 10px;font-size:.84rem}
+.hp-flows li{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;font-size:.875rem;line-height:1.45}
+.hp-flows li b{font-size:.8125rem}
+.hp-risk{background:var(--warn-soft);border-radius:8px;padding:8px 10px;font-size:.875rem}
 .hp-risk b{display:flex;gap:6px;align-items:flex-start;color:var(--warn)}
 .hp-risk b .ico{width:15px;height:15px;flex:none;margin-top:2px}
 .hp-risk p{margin:4px 0}
 .hp-risk small{color:var(--muted)}
-.hp-ev-t{font-size:.75rem;font-weight:700;color:var(--muted);margin-top:8px;margin-bottom:4px}
+.hp-ev-t{font-size:.75rem;font-weight:600;color:var(--muted);margin-top:8px;margin-bottom:4px}
 .handover .doc-chips{margin-bottom:12px}
 @media (max-width:520px){.hp-flows li{grid-template-columns:1fr;gap:2px}}
 /* ---- UX: ปุ่มตัดสินใจตอน HOLD ติดล่างกล่องเลื่อน ผู้ชมเห็นทันทีว่าต้องกดอะไร ---- */
 .hold-act{margin:8px 0}
 .hold-more summary{cursor:pointer;font-weight:600;min-height:44px;display:flex;align-items:center}
-.hold-act p{margin:0 0 6px;font-weight:700}
+.hold-act p{margin:0 0 6px;font-weight:600}
 .pill.warn{background:var(--surface);color:var(--warn);border:1px solid var(--warn)}
-.sh-chips .chip.warn{color:var(--warn);background:var(--surface);border-color:var(--warn);font-weight:700}
+.sh-chips .chip.warn{color:var(--warn);background:var(--surface);border-color:var(--warn);font-weight:600}
 /* จอสัมผัส (ไม่มีคีย์บอร์ด/เมาส์): ไม่แสดงคำแนะนำคีย์ลัดบนหน้าต้อนรับ */
 @media (hover:none){.w-keys{display:none}}
 /* ---- แผนผัง Handover (design-pipeline ทางเลือก C) ---- */
@@ -509,26 +511,26 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hmap[hidden]{display:none}
 .hm-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .hm-titles{min-width:0;flex:1 1 260px}
-.hm-titles h2{margin:0;font-size:1.1rem;font-weight:600}
-.hm-titles p{margin:0;font-size:.82rem;color:var(--muted)}
+.hm-titles h2{margin:0;font-size:1.125rem;font-weight:600}
+.hm-titles p{margin:0;font-size:.8125rem;color:var(--muted)}
 .hm-tabs{display:flex;gap:8px;flex-wrap:wrap}
 .hm-tab{min-height:44px;padding:4px 16px;font-weight:500}
 .hm-tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .hm-close{width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center}
 .hm-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:16px;padding:16px;max-width:1600px;width:100%;margin:0 auto}
 .hm-col{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-height:0;overflow:auto}
-.hm-grp{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:.78rem;font-weight:500;color:var(--muted)}
+.hm-grp{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:.8125rem;font-weight:500;color:var(--muted)}
 .hm-grp::after{content:"";flex:1;height:1px;background:var(--line)}
 .hm-grp:first-child{margin-top:0}
 .hm-party{display:flex;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 12px;border-radius:12px;text-align:left}
-.hm-party b{display:block;font-size:.9rem;font-weight:600;line-height:1.3}
-.hm-party small{display:block;font-size:.78rem;color:var(--muted);line-height:1.3}
+.hm-party b{display:block;font-size:.875rem;font-weight:600;line-height:1.3}
+.hm-party small{display:block;font-size:.8125rem;color:var(--muted);line-height:1.3}
 .hm-party[aria-pressed="true"]{background:var(--soft);border-color:var(--text)}
-.hm-no{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--text);display:grid;place-items:center;font-size:.8rem;font-weight:500;flex:none}
+.hm-no{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--text);display:grid;place-items:center;font-size:.8125rem;font-weight:500;flex:none}
 .hm-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .hm-link{position:relative;min-height:44px;display:flex;align-items:center;padding-left:40px}
-.hm-link::before{content:"";position:absolute;left:25px;top:0;bottom:0;width:2px;background:var(--text)}
-.hm-hp{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px 4px 4px;border-radius:6px;border:2px solid var(--text);background:var(--surface);font-size:.82rem;font-weight:600}
+.hm-link::before{content:"";position:absolute;left:24px;top:0;bottom:0;width:2px;background:var(--text)}
+.hm-hp{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px 4px 4px;border-radius:6px;border:2px solid var(--text);background:var(--surface);font-size:.8125rem;font-weight:600}
 .hm-hp i{font-style:normal;background:var(--accent);color:var(--on-accent);border-radius:4px;padding:0 8px}
 .hm-hp span{font-weight:400;color:var(--muted)}
 .hm-hp[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
@@ -536,20 +538,20 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .hm-hp[aria-pressed="true"] span{color:var(--on-accent)}
 .hm-out{display:flex;gap:8px;margin:4px 0 0 40px}
 .hm-out span{font-size:.75rem;font-weight:500;padding:0 8px;border-radius:4px;border:1px dashed var(--text)}
-.hm-note{margin:4px 0 0 4px;font-size:.78rem;color:var(--muted)}
-.hm-kick{margin:0;font-size:.78rem;font-weight:500;color:var(--muted)}
-.hm-h{margin:2px 0 8px;font-size:1.2rem;font-weight:600;line-height:1.3}
-.hm-role{margin:0;font-size:.85rem;color:var(--muted)}
+.hm-note{margin:4px 0 0 4px;font-size:.8125rem;color:var(--muted)}
+.hm-kick{margin:0;font-size:.8125rem;font-weight:500;color:var(--muted)}
+.hm-h{margin:2px 0 8px;font-size:1.25rem;font-weight:600;line-height:1.3}
+.hm-role{margin:0;font-size:.875rem;color:var(--muted)}
 .hm-duty{margin:8px 0 0}
-.hm-sec{margin:16px 0 6px;font-size:.78rem;font-weight:500;color:var(--muted)}
+.hm-sec{margin:16px 0 6px;font-size:.8125rem;font-weight:500;color:var(--muted)}
 .hm-whos{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
-.hm-who{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--line);font-weight:500;font-size:.85rem}
+.hm-who{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--line);font-weight:500;font-size:.875rem}
 .hm-flows{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .hm-flow{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .hm-flow b{display:block;font-size:.75rem;font-weight:500;color:var(--muted)}
-.hm-flow p{margin:4px 0 0;font-size:.88rem}
-.hm-sop{margin:0;padding-left:20px;display:grid;gap:6px;font-size:.9rem}
-.hm-kpi,.hm-risk{width:100%;border-collapse:collapse;font-size:.85rem}
+.hm-flow p{margin:4px 0 0;font-size:.875rem}
+.hm-sop{margin:0;padding-left:20px;display:grid;gap:6px;font-size:.875rem}
+.hm-kpi,.hm-risk{width:100%;border-collapse:collapse;font-size:.875rem}
 .hm-kpi td,.hm-risk td{border-top:1px solid var(--line);padding:8px 6px;vertical-align:top}
 .hm-kpi td:last-child{text-align:right;white-space:nowrap;font-weight:600}
 .hm-kpi small{color:var(--muted)}
@@ -5977,7 +5979,7 @@ var KoiUI = (function () {
         var cls = 'ck-row' + (passed ? ' done' : now ? ' now' + (bad ? ' bad' : '') : '');
         rows += '<button type="button" data-step="' + i + '" class="' + cls + '"' +
           (now && !S.overview ? ' aria-current="step"' : '') + (locked ? ' disabled' : '') + '>' +
-          '<span class="ck" aria-hidden="true">' + (bad ? '✕' : passed ? '✓' : s.n) + '</span>' +
+          '<span class="ck" aria-hidden="true">' + (bad ? '' + mk('x') + '' : passed ? '' + mk('check') + '' : s.n) + '</span>' +
           (bad ? '<span class="sr-only">ค้าง: </span>' : passed ? '<span class="sr-only">ผ่านแล้ว: </span>' : '') +
           '<span class="nm">' + esc(s.name) + (handoverAt(i) ? ' <span class="hp-tag">' + handoverAt(i).id + '</span>' : '') + '</span>' +
           (now && !S.overview ? '<span class="now-tag">ตอนนี้</span>' : '') +
@@ -6001,23 +6003,23 @@ var KoiUI = (function () {
         (now ? ' aria-current="location"' : '') + (locked ? ' disabled' : '') +
         ' aria-label="สถานี ' + (k + 1) + ' ' + esc(st.label) + ' ' + (now ? 'ขั้น ' + (S.idx + 1) : range) +
         (done ? ' ผ่านแล้ว' : now ? ' ตอนนี้' : '') + '">' +
-        '<span class="dot" aria-hidden="true">' + (done ? '✓' : k + 1) + '</span>' + txt + '</button></li>';
+        '<span class="dot" aria-hidden="true">' + (done ? '' + mk('check') + '' : k + 1) + '</span>' + txt + '</button></li>';
     }).join('') + '</ol>';
   }
 
   // สถานะการขนส่งบนแถบบน: ใช้ ✓ ✕ คู่กับข้อความเสมอ (ไม่พึ่งสีอย่างเดียว)
   function renderStatus(S) {
-    if (S.mode === 'hold') return '<span class="st-bad">✕ HOLD · ขั้น ' + D.STEPS[S.idx].n + '</span>';
-    if (S.end === 'loss') return '<span class="st-bad">✕ สูญเสีย</span>';
-    if (S.end === 'ctl') return '<span class="st-ok">✓ ควบคุมความเสี่ยงได้</span>';
-    if (S.mode === 'done' || S.mode === 'end') return '<span class="st-ok">✓ ถึงมือผู้รับ</span>';
-    return '<span class="st-ok">✓ สถานะปกติ</span>';
+    if (S.mode === 'hold') return '<span class="st-bad">' + mk('x') + ' HOLD · ขั้น ' + D.STEPS[S.idx].n + '</span>';
+    if (S.end === 'loss') return '<span class="st-bad">' + mk('x') + ' สูญเสีย</span>';
+    if (S.end === 'ctl') return '<span class="st-ok">' + mk('check') + ' ควบคุมความเสี่ยงได้</span>';
+    if (S.mode === 'done' || S.mode === 'end') return '<span class="st-ok">' + mk('check') + ' ถึงมือผู้รับ</span>';
+    return '<span class="st-ok">' + mk('check') + ' สถานะปกติ</span>';
   }
 
   // การ์ดลอยบนภาพ 3 มิติ: ขั้นอะไร ใครทำ (ค้างที่ด่าน = ✕ HOLD)
   function renderCard(S) {
     var s = D.STEPS[S.idx];
-    var hold = S.mode === 'hold' ? ' <span class="st-bad">✕ HOLD</span>' : '';
+    var hold = S.mode === 'hold' ? ' <span class="st-bad">' + mk('x') + ' HOLD</span>' : '';
     return '<b>ขั้น ' + s.n + '</b> · ' + esc(s.name) + hold + '<br><small>ใครทำ: ' + renderGlossary(s.who) + '</small>';
   }
 
@@ -6028,12 +6030,14 @@ var KoiUI = (function () {
     if (age != null) {
       var hrs = (age / 60).toFixed(1), over = L.bagStatus(S) === 'over';
       out += ' <span class="badge ' + (over ? 'st-bad' : 'st-ok') + '">อายุถุง ' + hrs + ' ชม. · ' +
-        (over ? '✕ เกิน ' + limH() + ' ชม.' : '✓ ไม่เกิน ' + limH() + ' ชม.') + '</span>';
+        (over ? '' + mk('x') + ' เกิน ' + limH() + ' ชม.' : '' + mk('check') + ' ไม่เกิน ' + limH() + ' ชม.') + '</span>';
     }
     return out;
   }
 
   // ไอคอนเส้นเดียวกันทั้งชุด (นิยามเป็น <symbol> ไว้ต้น <body>)
+  // ไอคอนสถานะคู่กับคำ (ผ่าน/ค้าง/เตือน) แทนสัญลักษณ์ตัวอักษร · ไม่พึ่งสีอย่างเดียว
+  function mk(name) { return '<svg class="ico mk" aria-hidden="true" focusable="false"><use href="#i-' + name + '"/></svg>'; }
   function icon(name) { return '<svg class="ico" aria-hidden="true" focusable="false"><use href="#i-' + name + '"/></svg>'; }
 
   // เส้นตายอายุถุงเป็นชั่วโมง (อ่านจากข้อมูล ไม่เขียนตัวเลขตายตัว)
@@ -6053,10 +6057,10 @@ var KoiUI = (function () {
     if (age == null) return null;
     var over = L.bagStatus(S) === 'over', lim = D.CONST.BAG_LIMIT_MIN, hrs = (age / 60).toFixed(1);
     var sc = D.SCENARIOS[S.sc] || {};
-    if (S.mode === 'hold' && sc.bagIssue) return { age: age, over: false, kind: 'warn', text: '⚠ ต้องตรวจถุง', short: '⚠ ต้องตรวจถุง' };
-    if (over) return { age: age, over: true, kind: 'bad', text: '✕ เกินเส้นตาย ' + limH() + ' ชม.', short: '✕ เกิน' };
-    if (S.idx >= 13) return { age: age, over: false, kind: 'done', text: '✓ เปิดถุงแล้ว · อยู่ในถุงรวม ' + hrs + ' ชม.', short: '✓ เปิดถุงแล้ว' };
-    return { age: age, over: false, kind: 'ok', text: '✓ ปลอดภัย · เหลือ ' + ((lim - age) / 60).toFixed(1) + ' ชม.', short: '✓ ปลอดภัย' };
+    if (S.mode === 'hold' && sc.bagIssue) return { age: age, over: false, kind: 'warn', text: '' + mk('alert') + ' ต้องตรวจถุง', short: '' + mk('alert') + ' ต้องตรวจถุง' };
+    if (over) return { age: age, over: true, kind: 'bad', text: '' + mk('x') + ' เกินเส้นตาย ' + limH() + ' ชม.', short: '' + mk('x') + ' เกิน' };
+    if (S.idx >= 13) return { age: age, over: false, kind: 'done', text: '' + mk('check') + ' เปิดถุงแล้ว · อยู่ในถุงรวม ' + hrs + ' ชม.', short: '' + mk('check') + ' เปิดถุงแล้ว' };
+    return { age: age, over: false, kind: 'ok', text: '' + mk('check') + ' ปลอดภัย · เหลือ ' + ((lim - age) / 60).toFixed(1) + ' ชม.', short: '' + mk('check') + ' ปลอดภัย' };
   }
 
   // การ์ดข้อมูลของขั้นปัจจุบัน (V7 ปรับจาก V6): หัวการ์ด + ป้ายเวลา + 4 การ์ด (ไอคอนอยู่ในบรรทัดป้าย)
@@ -6100,7 +6104,7 @@ var KoiUI = (function () {
         var okLane = S.lanes[f.lane] === 1;
         var detail = f.lane === 'r' ? s.who : s.flow[f.lane];
         return '<li data-lane="' + f.lane + '"><span class="' + (okLane ? 'st-ok' : 'st-bad') + '">' +
-          (okLane ? '✓' : '✕') + '</span> <b>' + esc(f.name) + '</b> (' + esc(f.sub) + '): ' + renderGlossary(detail) + '</li>';
+          (okLane ? '' + mk('check') + '' : '' + mk('x') + '') + '</span> <b>' + esc(f.name) + '</b> (' + esc(f.sub) + '): ' + renderGlossary(detail) + '</li>';
       }).join('') + '</ul></details>';
   }
 
@@ -6180,7 +6184,7 @@ var KoiUI = (function () {
         '<table class="hm-risk"><thead><tr class="hm-th"><th>ข้อ</th><th>เหตุการณ์</th><th>L × S</th><th>ระดับ</th><th>มาตรการควบคุม</th><th>คงเหลือ</th></tr></thead><tbody>' +
         D.RISKS.map(function (r) {
           return '<tr data-risk="' + r.no + '"><td>' + r.no + '</td><td>' + esc(r.name) + '</td><td class="hm-num">' + r.l + ' × ' + r.s + ' = ' + r.score + '</td>' +
-            '<td><span class="hm-lvl ' + (r.level === 'สูง' ? 'hi' : 'md') + '">' + (r.level === 'สูง' ? '▲ ' : '● ') + r.level + '</span> <small class="hm-pri">P' + r.pri + '</small></td>' +
+            '<td><span class="hm-lvl ' + (r.level === 'สูง' ? 'hi' : 'md') + '">' + (r.level === 'สูง' ? '' + mk('alert') + ' ' : '') + r.level + '</span> <small class="hm-pri">P' + r.pri + '</small></td>' +
             '<td>' + esc(r.ctrl) + '</td><td class="hm-num">' + (r.res ? esc(r.res) : '—') + '</td></tr>';
         }).join('') + '</tbody></table>';
     }
@@ -6227,7 +6231,7 @@ var KoiUI = (function () {
         return '<button type="button" data-opt="' + k + '">' + esc(o.t) + '</button>';
       }).join('') + '</div></div>';
     }
-    return '<div class="hold" role="alert"><h3><span class="st-bad">✕ HOLD</span> · กล่องปลาถูกค้างที่ด่าน</h3>' +
+    return '<div class="hold" role="alert"><h3><span class="st-bad">' + mk('x') + ' HOLD</span> · กล่องปลาถูกค้างที่ด่าน</h3>' +
       '<p>' + esc(sc.mm) + '</p>' + act +
       '<details class="hold-more"><summary>สาเหตุ · ผลกระทบ · ตัวควบคุม</summary>' +
       '<p><b>สาเหตุที่เป็นไปได้:</b> ' + esc(sc.cause) + '<br><b>ถ้าปล่อยผ่าน:</b> ' + esc(sc.cons) +
@@ -6239,12 +6243,12 @@ var KoiUI = (function () {
     if (S.mode !== 'done' && S.mode !== 'end') return '';
     var res = S.opt != null ? D.SCENARIOS[S.sc].opts[S.opt].res : '';
     if (S.end === 'loss') {
-      return '<div class="end" role="status"><h3 class="st-bad">✕ จบแบบสูญเสีย</h3><p>' + esc(res) + '</p></div>';
+      return '<div class="end" role="status"><h3 class="st-bad">' + mk('x') + ' จบแบบสูญเสีย</h3><p>' + esc(res) + '</p></div>';
     }
     if (S.end === 'ctl') {
-      return '<div class="end" role="status"><h3 class="st-ok">✓ ควบคุมความเสี่ยงได้</h3><p>' + esc(res) + '</p></div>';
+      return '<div class="end" role="status"><h3 class="st-ok">' + mk('check') + ' ควบคุมความเสี่ยงได้</h3><p>' + esc(res) + '</p></div>';
     }
-    return '<div class="end" role="status"><h3 class="st-ok">✓ ส่งถึงมือผู้รับครบ 17 ขั้นตอน</h3>' +
+    return '<div class="end" role="status"><h3 class="st-ok">' + mk('check') + ' ส่งถึงมือผู้รับครบ 17 ขั้นตอน</h3>' +
       (res ? '<p>' + esc(res) + '</p>' : '') + '</div>';
   }
 
@@ -7956,6 +7960,9 @@ var KoiScene = (function () {
   var OV_BOX_Z = 0.95;   // กล่องปลาในภาพรวมวางด้านหน้าอาคารของกระเบื้อง จะได้ไม่ถูกบัง
   function overviewTile(i) { return { x: -10 + 4 * i, z: 0 }; }
   var OV_CAM = { p: v(0, 15, 17), t: v(0, 0, 0) };
+  // หน้าต้อนรับบนจอกว้าง: การ์ดต้อนรับอยู่ซ้าย จึงเลื่อนกล้องให้ภาพรวม 6 สถานีไปอยู่ฝั่งขวาที่ว่าง
+  var OV_WELCOME = { p: v(-12, 25, 29), t: v(-12, 0, -0.5) };
+  function overviewCam(welcoming, w, h) { return welcoming && w >= 1024 && w / h > 1.2 ? OV_WELCOME : OV_CAM; }
 
   // สร้างภาพรวม: กระเบื้อง 6 แผ่นต่อกัน (ผ่านแล้ว=ฟ้า ตรงนี้=ชมพู ยังไม่ถึง=เทา) + ไอคอนโลว์โพลี + ป้ายชื่อ
   function buildOverview(S) {
@@ -8146,11 +8153,14 @@ var KoiScene = (function () {
   // ภาพรวม: แสดงกระเบื้อง 6 สถานี กล่องปลาไปอยู่ที่สถานีปัจจุบัน กล้องถอยมามุมภาพรวม
   function showOverview(S) {
     var cur = L.stationOf(S.idx), key = cur + '|' + themeName();
+    // มุมกล้องภาพรวม: ตรวจทุกครั้ง เพราะหน้าต้อนรับอาจเพิ่งเปิด/ปิดหลังเข้าภาพรวมแล้ว
+    var app = document.getElementById('app');
+    var goal = overviewCam(!!(app && app.classList.contains('welcoming')), window.innerWidth, window.innerHeight);
     if (!R.overview) {
       R.overview = true;
       if (R.stationGroup) R.stationGroup.visible = false;
-      R.camGoal = OV_CAM; R.gliding = true;
     }
+    if (R.camGoal !== goal) { R.camGoal = goal; R.gliding = true; }
     if (R.ovKey !== key) {
       if (R.overviewGroup) { R.scene.remove(R.overviewGroup); disposeGroup(R.overviewGroup); }
       R.overviewGroup = buildOverview(S); R.scene.add(R.overviewGroup); R.ovKey = key;
@@ -8300,7 +8310,7 @@ var KoiScene = (function () {
     MAP_Y: MAP_Y, AIRPORTS: AIRPORTS, mapXZ: mapXZ, greatCircle: greatCircle, vanPhases: vanPhases, bkkPhases: bkkPhases, DOF_LAYOUT: DOF_LAYOUT, ACTIONS: ACTIONS, riskCue: riskCue, holdU: holdU, animU: animU, resumeT0: resumeT0,
     MODEL_NAMES: MODEL_NAMES, assetUrl: assetUrl, base64ToBuffer: base64ToBuffer, placeholderSize: placeholderSize, tileSpan: tileSpan,
     loadModels: loadModels, cloneModel: cloneModel, koiBreed: koiBreed,
-    riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
+    riskLook: riskLook, boxPulse: boxPulse, overviewTile: overviewTile, overviewCam: overviewCam, OV_CAM: OV_CAM, OV_WELCOME: OV_WELCOME, boxTarget: boxTarget, easeInOut: easeInOut, lerpPose: lerpPose, blinkOn: blinkOn,
     supported: supported, init: init, showStation: showStation, attachCard: attachCard,
     // ใช้ตรวจในเบราว์เซอร์ (DevTools): ดูว่ากล้อง/อนิเมชันอยู่ตรงไหน
     // เลื่อนเวลาฉากไปข้างหน้า sec วินาที (วาดทีละ 1/30 วินาที) ใช้ตรวจตอนเบราว์เซอร์ไม่วาดเฟรมเอง

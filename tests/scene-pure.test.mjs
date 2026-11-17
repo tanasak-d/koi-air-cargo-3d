@@ -444,3 +444,10 @@ test('DECOR: ของตกแต่งไม่ขวางเส้นทา�
     }
   });
 });
+
+test('หน้าต้อนรับจอกว้าง: กล้องภาพรวมเลื่อนให้ 6 สถานีอยู่ฝั่งขวาของการ์ด · จอแคบ/ไม่ใช่หน้าต้อนรับใช้มุมเดิม', () => {
+  assert.equal(SC.overviewCam(true, 1366, 768), SC.OV_WELCOME);
+  assert.equal(SC.overviewCam(false, 1366, 768), SC.OV_CAM);
+  assert.equal(SC.overviewCam(true, 390, 844), SC.OV_CAM);
+  assert.ok(SC.OV_WELCOME.t.x < 0);
+});

@@ -39,7 +39,7 @@ test('renderFacts: มาตรวัดอายุถุงบอกเป็�
   const S = L.newState(0); L.goTo(S, 8);
   const h = UI.renderFacts(S);
   assert.match(h, /\/ 18 ชม\./);
-  assert.match(h, /[✓✕]/);
+  assert.match(h, /i-(check|x)"/);
   assert.match(h, /role="meter"/);
 });
 test('renderFacts: ก่อนปิดผนึกถุงไม่มีมาตรวัด', () => {
@@ -120,7 +120,7 @@ test('renderPresentSide: ขั้นสุดท้ายความคืบ�
 });
 test('renderPresentSide: ตอน hold แสดง ✕ HOLD และปุ่ม VERIFY', () => {
   const h = UI.renderPresentSide(walk(L.newState(1)));
-  assert.match(h, /✕ HOLD/);
+  assert.match(h, /i-x"\/><\/svg> HOLD/);
   assert.match(h, /data-act="verify"/);
 });
 test('renderPresentSide: มีปุ่มออกจากโหมดนำเสนอให้คนใช้เมาส์', () => {

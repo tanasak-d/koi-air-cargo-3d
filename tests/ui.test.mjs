@@ -14,7 +14,7 @@ test('renderHold: ใน hold มีคำ HOLD, ✕ และปุ่ม VERIF
   const S = walk(L.newState(1));
   const h = UI.renderHold(S);
   assert.match(h, /HOLD/);
-  assert.match(h, /✕/);
+  assert.match(h, /i-x"\/><\/svg>/);
   assert.match(h, /data-act="verify"/);
   assert.match(h, new RegExp(D.SCENARIOS[1].cause.slice(0, 10)));
   assert.doesNotMatch(h, /data-opt=/); // ยังไม่ VERIFY ยังเลือกวิธีแก้ไม่ได้
@@ -35,10 +35,10 @@ test('renderEnd: กรณีสูญเสีย มีข้อความ�
   const S = walk(L.newState(1));
   L.verify(S); L.correct(S, D.SCENARIOS[1].opts.findIndex(o => !o.good));
   const h = UI.renderEnd(S);
-  assert.match(h, /✕/);
+  assert.match(h, /i-x"\/><\/svg>/);
   assert.match(h, /สูญเสีย/);
   const ok = walk(L.newState(0));
-  assert.match(UI.renderEnd(ok), /✓/);
+  assert.match(UI.renderEnd(ok), /i-check"\/><\/svg>/);
   assert.equal(UI.renderEnd(L.newState(0)), '');
 });
 
@@ -56,8 +56,8 @@ test('renderFacts/renderMore (V6 แทนแท็บ): ความเสี�
 test('renderMore 4-Flow: เลนที่มีปัญหาแสดง ✕ ไม่ใช่สีอย่างเดียว', () => {
   const S = walk(L.newState(1));
   const flow = UI.renderMore(S);
-  assert.match(flow, /✕/);
-  assert.match(flow, /✓/);
+  assert.match(flow, /i-x"\/><\/svg>/);
+  assert.match(flow, /i-check"\/><\/svg>/);
 });
 
 test('ข้อมูลที่มี HTML ถูก escape', () => {
@@ -80,11 +80,11 @@ test('renderTimeBadge: ขั้นประมาณการมีคำ "โ�
 test('renderTimeBadge: ถุงเกินเส้นตาย 18 ชม. แสดง ✕ พร้อมข้อความ และไม่เกินแสดง ✓', () => {
   const S = walk(L.newState(0)); // จบที่ขั้น 17 อายุถุง 16 ชม. ยังไม่เกิน
   assert.equal(L.bagStatus(S), 'ok');
-  assert.match(UI.renderTimeBadge(S), /✓ ไม่เกิน 18 ชม\./);
+  assert.match(UI.renderTimeBadge(S), /i-check"\/><\/svg> ไม่เกิน 18 ชม\./);
   S.shift = 121; S.shiftFrom = 0; // เลื่อนจนเกิน 1080 นาที
   assert.equal(L.bagStatus(S), 'over');
   const h = UI.renderTimeBadge(S);
-  assert.match(h, /✕/);
+  assert.match(h, /i-x"\/><\/svg>/);
   assert.match(h, /เกิน 18 ชม\./);
 });
 
@@ -124,7 +124,7 @@ test('renderCard: บอก "ขั้น n" ชื่อขั้น และ 
   assert.match(h, /ใครทำ/);
   assert.match(h, /Lucky Koi House/);
   assert.doesNotMatch(h, /HOLD/);
-  assert.match(UI.renderCard(walk(L.newState(1))), /✕ HOLD/);
+  assert.match(UI.renderCard(walk(L.newState(1))), /i-x"\/><\/svg> HOLD/);
 });
 
 // ---- Task 9: ดูทั้งเส้นทาง ----
@@ -141,7 +141,7 @@ test('ทุกเหตุการณ์ 1–5 ที่เข้า hold: แ
     const S = walk(L.newState(id));
     const h = UI.renderHold(S);
     assert.match(h, /HOLD/, 'เหตุการณ์ ' + id);
-    assert.match(h, /✕/);
+    assert.match(h, /i-x"\/><\/svg>/);
     assert.ok(h.includes(UI.esc(D.SCENARIOS[id].cause)), 'ไม่มีสาเหตุของเหตุการณ์ ' + id);
   }
 });
@@ -209,12 +209,12 @@ test('playDelayMs: รอจนช็อตของขั้นจบแล้�
 
 // ---- V4 หน้าตาแบบ "ติดตามการขนส่ง" (มาร์ชอนุมัติร่าง 2026-10-18) ----
 test('renderStatus: แถบบนบอกสถานะการขนส่ง ปกติ ✓ / HOLD ✕ / สูญเสีย ✕ / ถึงผู้รับ ✓ (ไม่พึ่งสีอย่างเดียว)', () => {
-  assert.match(UI.renderStatus(L.newState(0)), /✓ สถานะปกติ/);
+  assert.match(UI.renderStatus(L.newState(0)), /i-check"\/><\/svg> สถานะปกติ/);
   const held = walk(L.newState(2));
-  assert.match(UI.renderStatus(held), /✕ HOLD · ขั้น 7/);
+  assert.match(UI.renderStatus(held), /i-x"\/><\/svg> HOLD · ขั้น 7/);
   L.verify(held); L.correct(held, D.SCENARIOS[2].opts.findIndex(o => !o.good));
-  assert.match(UI.renderStatus(held), /✕ สูญเสีย/);
-  assert.match(UI.renderStatus(walk(L.newState(0))), /✓ ถึงมือผู้รับ/);
+  assert.match(UI.renderStatus(held), /i-x"\/><\/svg> สูญเสีย/);
+  assert.match(UI.renderStatus(walk(L.newState(0))), /i-check"\/><\/svg> ถึงมือผู้รับ/);
 });
 
 test('renderScrub V6: มีแถบความคืบหน้าของขั้น (ฉาก 3 มิติเติมความยาวเอง)', () => {

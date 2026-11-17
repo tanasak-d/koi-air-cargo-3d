@@ -20,7 +20,7 @@ test('ข้อ 1: ปุ่มตัดสินใจตอน HOLD อยู�
 test('ข้อ 2: เหตุการณ์ถุงรั่ว ระหว่าง HOLD ป้ายถุงบอก "⚠ ต้องตรวจถุง" ไม่ใช่ "ปลอดภัย"', () => {
   const S = walk(L.newState(1));
   const h = UI.renderFacts(S) + UI.renderSheetHead(S, false);
-  assert.match(h, /⚠ ต้องตรวจถุง/);
+  assert.match(h, /i-alert"\/><\/svg> ต้องตรวจถุง/);
   assert.doesNotMatch(h, /ปลอดภัย/);
 });
 test('ข้อ 2: เหตุการณ์อื่นตอน HOLD (เอกสารไม่ตรง) ป้ายถุงยังบอกเวลาตามปกติ', () => {
@@ -30,7 +30,7 @@ test('ข้อ 2: เหตุการณ์อื่นตอน HOLD (เอ
 test('ข้อ 3: หลังเปิดถุง (ขั้น 14 เป็นต้นไป) บอก "เปิดถุงแล้ว" และเวลาในถุงรวม ไม่บอก "เหลือ"', () => {
   const S = L.newState(0); L.goTo(S, 13);
   const h = UI.renderFacts(S);
-  assert.match(h, /✓ เปิดถุงแล้ว · อยู่ในถุงรวม 16\.0 ชม\./);
+  assert.match(h, /i-check"\/><\/svg> เปิดถุงแล้ว · อยู่ในถุงรวม 16\.0 ชม\./);
   assert.doesNotMatch(h, /เหลือ/);
   const at13 = L.newState(0); L.goTo(at13, 12);
   assert.match(UI.renderFacts(at13), /เหลือ 2\.0 ชม\./);   // ขั้น 13 ยังนับถอยหลังถึงเปิดถุง
