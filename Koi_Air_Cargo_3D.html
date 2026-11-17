@@ -482,6 +482,72 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
 .sh-chips .chip.warn{color:var(--warn);background:var(--surface);border-color:var(--warn);font-weight:700}
 /* จอสัมผัส (ไม่มีคีย์บอร์ด/เมาส์): ไม่แสดงคำแนะนำคีย์ลัดบนหน้าต้อนรับ */
 @media (hover:none){.w-keys{display:none}}
+/* ---- แผนผัง Handover (design-pipeline ทางเลือก C) ---- */
+.hmap{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
+.hmap[hidden]{display:none}
+.hm-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.hm-titles{min-width:0;flex:1 1 260px}
+.hm-titles h2{margin:0;font-size:1.1rem;font-weight:600}
+.hm-titles p{margin:0;font-size:.82rem;color:var(--muted)}
+.hm-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.hm-tab{min-height:44px;padding:4px 16px;font-weight:500}
+.hm-tab[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.hm-close{width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center}
+.hm-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(300px,420px) minmax(0,1fr);gap:16px;padding:16px;max-width:1600px;width:100%;margin:0 auto}
+.hm-col{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-height:0;overflow:auto}
+.hm-grp{display:flex;align-items:center;gap:8px;margin:16px 0 8px;font-size:.78rem;font-weight:500;color:var(--muted)}
+.hm-grp::after{content:"";flex:1;height:1px;background:var(--line)}
+.hm-grp:first-child{margin-top:0}
+.hm-party{display:flex;gap:12px;align-items:center;width:100%;min-height:52px;padding:8px 12px;border-radius:12px;text-align:left}
+.hm-party b{display:block;font-size:.9rem;font-weight:600;line-height:1.3}
+.hm-party small{display:block;font-size:.78rem;color:var(--muted);line-height:1.3}
+.hm-party[aria-pressed="true"]{background:var(--soft);border-color:var(--text)}
+.hm-no{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--text);display:grid;place-items:center;font-size:.8rem;font-weight:500;flex:none}
+.hm-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hm-link{position:relative;min-height:44px;display:flex;align-items:center;padding-left:40px}
+.hm-link::before{content:"";position:absolute;left:25px;top:0;bottom:0;width:2px;background:var(--text)}
+.hm-hp{position:relative;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:4px 12px 4px 4px;border-radius:6px;border:2px solid var(--text);background:var(--surface);font-size:.82rem;font-weight:600}
+.hm-hp i{font-style:normal;background:var(--accent);color:var(--on-accent);border-radius:4px;padding:0 8px}
+.hm-hp span{font-weight:400;color:var(--muted)}
+.hm-hp[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.hm-hp[aria-pressed="true"] i{background:var(--on-accent);color:var(--accent)}
+.hm-hp[aria-pressed="true"] span{color:var(--on-accent)}
+.hm-out{display:flex;gap:8px;margin:4px 0 0 40px}
+.hm-out span{font-size:.75rem;font-weight:500;padding:0 8px;border-radius:4px;border:1px dashed var(--text)}
+.hm-note{margin:4px 0 0 4px;font-size:.78rem;color:var(--muted)}
+.hm-kick{margin:0;font-size:.78rem;font-weight:500;color:var(--muted)}
+.hm-h{margin:2px 0 8px;font-size:1.2rem;font-weight:600;line-height:1.3}
+.hm-role{margin:0;font-size:.85rem;color:var(--muted)}
+.hm-duty{margin:8px 0 0}
+.hm-sec{margin:16px 0 6px;font-size:.78rem;font-weight:500;color:var(--muted)}
+.hm-whos{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+.hm-who{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--line);font-weight:500;font-size:.85rem}
+.hm-flows{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.hm-flow{border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.hm-flow b{display:block;font-size:.75rem;font-weight:500;color:var(--muted)}
+.hm-flow p{margin:4px 0 0;font-size:.88rem}
+.hm-sop{margin:0;padding-left:20px;display:grid;gap:6px;font-size:.9rem}
+.hm-kpi,.hm-risk{width:100%;border-collapse:collapse;font-size:.85rem}
+.hm-kpi td,.hm-risk td{border-top:1px solid var(--line);padding:8px 6px;vertical-align:top}
+.hm-kpi td:last-child{text-align:right;white-space:nowrap;font-weight:600}
+.hm-kpi small{color:var(--muted)}
+.hm-risk th{text-align:left;font-size:.75rem;font-weight:500;color:var(--muted);padding:6px}
+.hm-num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.hm-lvl{font-size:.75rem;font-weight:600;padding:0 8px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+.hm-lvl.hi{color:var(--bad)} .hm-lvl.md{color:var(--warn)}
+.hp-open{display:inline-flex;gap:6px;align-items:center;min-height:44px;margin:0 0 12px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+#app.hmapping{overflow:hidden}
+@media (max-width:767px){
+  .hm-body{display:block;overflow:auto;padding:12px}
+  .hm-col{overflow:visible;margin-bottom:12px}
+  .hm-flows{grid-template-columns:1fr}
+  .hm-risk thead{display:none}
+  .hm-risk tr{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;border-top:1px solid var(--line);padding:8px 0}
+  .hm-risk td{border:0;padding:0}
+  .hm-risk td:nth-child(n+3){grid-column:2}
+  .hm-tab{flex:1 1 auto}
+}
 /* V7 ทางสำรองพื้นทึบของกระจกที่ประกาศตรง ๆ (ไม่ใช้คลาส .glass) */
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface)}}
 @media (prefers-reduced-transparency:reduce){#card,.stage-ctrl,.risk-menu summary,.route-wrap,.sheet:not(.open) .sh-card,.sheet:not(.open) .sheet-ctrl .stage-ctrl{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none}}
@@ -511,10 +577,12 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l5 4.5 9-10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7z M14 5h3v14h-3z" fill="currentColor"/></symbol>
 </svg>
 <div id="app">
   <div id="welcome" class="welcome" role="dialog" aria-modal="true" aria-labelledby="w-title" hidden></div>
+  <div id="hmap" class="hmap" role="dialog" aria-modal="true" aria-labelledby="hm-title" hidden></div>
   <header id="topbar" class="topbar">
     <div class="brandmark" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-plane"/></svg></div>
     <div class="brand">
@@ -525,6 +593,7 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <span class="chip trip">NRT → BKK</span>
       <span class="chip flight">NN393 · 07:00 JST → 12:00 ICT</span>
       <span id="status" class="status" role="status"></span>
+      <button id="hmap-btn" type="button" data-act="hmap"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg> แผนผัง Handover</button>
       <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
       <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> ธีม</button>
     </div>
@@ -6032,7 +6101,86 @@ var KoiUI = (function () {
       '<small>Risk Register ข้อ ' + h.riskNo.join(', ') + '</small></div>' +
       '<p class="hp-ev-t">หลักฐานที่ต้องมี</p><div class="doc-chips">' + h.evidence.map(function (e) {
         return '<span class="chip doc">' + renderGlossary(e) + '</span>';
-      }).join('') + '</div></details>';
+      }).join('') + '</div>' +
+      '<button type="button" class="hp-open" data-act="hmap" data-hp="' + h.id + '">' + icon('map') + ' ดูในแผนผัง Handover</button></details>';
+  }
+
+  /* ---------- แผนผัง Handover (หน้าต่างเต็มจอ · ทางเลือก C ของ design-pipeline) ---------- */
+  var SIDE_TEXT = { origin: 'ต้นทาง', all: 'ต้นทาง กลางทาง และปลายทาง', dest: 'ปลายทาง' };
+  var HP_SHORT = { HP1: 'ที่ฟาร์ม', HP2: 'คลัง NRT', HP3: 'ก่อนขึ้นเครื่อง', HP4: 'ลงที่ BKK', HP5A: 'ตรวจปล่อย', HP5B: 'ปล่อยให้ผู้รับ' };
+  function actorById(id) { for (var k = 0; k < D.ACTORS.length; k++) if (D.ACTORS[k].id === id) return D.ACTORS[k]; return null; }
+  function hpById(id) { for (var k = 0; k < D.HANDOVERS.length; k++) if (D.HANDOVERS[k].id === id) return D.HANDOVERS[k]; return null; }
+
+  // แท็บด้านบนของหน้าต่าง
+  function renderHmTabs(tab) {
+    return [['hp', 'Handover 5 จุด'], ['actor', 'SOP / KPI 8 ฝ่าย'], ['risk', 'Risk Register 12 ข้อ']].map(function (t) {
+      return '<button type="button" role="tab" class="hm-tab" data-ht="' + t[0] + '" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
+    }).join('');
+  }
+
+  // แผนภาพแนวตั้งตามภาพวาดของมาร์ช: ฝ่าย 1–8 เรียงลง จุดส่งมอบอยู่บนเส้นระหว่างฝ่าย กลุ่มช่วงทางเป็นป้ายแนวนอน
+  function renderHmChain(sel) {
+    var party = function (id) {
+      var a = actorById(id), on = sel.kind === 'actor' && sel.id === id;
+      return '<button type="button" class="hm-party" data-actor="' + id + '" aria-pressed="' + on + '">' +
+        '<span class="hm-no" aria-hidden="true">' + a.no + '</span><span><b>' + esc(a.role.split(' (')[0]) + '</b><small>' + esc(a.name) + '</small></span></button>';
+    };
+    var hp = function (id) {
+      var h = hpById(id), on = sel.kind === 'hp' && sel.id === id;
+      return '<div class="hm-link"><button type="button" class="hm-hp" data-hp="' + id + '" aria-pressed="' + on + '">' +
+        '<i>' + id.replace('HP', '') + '</i>' + esc(h.label) + ' <span>' + HP_SHORT[id] + '</span></button></div>';
+    };
+    var grp = function (t) { return '<p class="hm-grp">' + t + '</p>'; };
+    var note = function (t) { return '<p class="hm-note">' + t + '</p>'; };
+    return '<div class="hm-chain">' +
+      grp('ต้นทาง · ฝ่าย 1–4 · ญี่ปุ่น') + party('shipper') + hp('HP1') + party('ff') + hp('HP2') + party('gha_nrt') + hp('HP3') +
+      grp('กลางทาง · ฝ่าย 4 · เที่ยวบิน ' + esc(D.CONST.FLIGHT.no)) + party('airline') +
+      '<p class="hm-out"><span>ออก MAWB</span><span>จัดทำ NOTOC</span></p>' +
+      grp('ปลายทาง · ฝ่าย 4–8 · ไทย') + hp('HP4') + party('gha_bkk') + hp('HP5A') +
+      '<div class="hm-pair">' + party('customs') + party('dof') + '</div>' +
+      note('ศุลกากรประเมินภาษีก่อน → กรมประมงตรวจ → ผ่านแล้วปล่อย') + hp('HP5B') + party('consignee') +
+      note('→ กักกันตามที่กรมประมงระบุ (สถานกักกันลาดกระบัง)') + '</div>';
+  }
+
+  // รายละเอียดด้านขวา: จุดส่งมอบ / ฝ่าย / ตาราง Risk Register
+  function renderHmDetail(sel, tab) {
+    if (tab === 'risk') {
+      return '<p class="hm-kick">KOI Cargo Risk Register · ความเสี่ยงจาก 5 Handover และ 4 Flows</p><h3 class="hm-h">12 ความเสี่ยง (โอกาส L × ความรุนแรง S)</h3>' +
+        '<table class="hm-risk"><thead><tr class="hm-th"><th>ข้อ</th><th>เหตุการณ์</th><th>L × S</th><th>ระดับ</th><th>มาตรการควบคุม</th><th>คงเหลือ</th></tr></thead><tbody>' +
+        D.RISKS.map(function (r) {
+          return '<tr data-risk="' + r.no + '"><td>' + r.no + '</td><td>' + esc(r.name) + '</td><td class="hm-num">' + r.l + ' × ' + r.s + ' = ' + r.score + '</td>' +
+            '<td><span class="hm-lvl ' + (r.level === 'สูง' ? 'hi' : 'md') + '">' + (r.level === 'สูง' ? '▲ ' : '● ') + r.level + '</span></td>' +
+            '<td>' + esc(r.ctrl) + '</td><td class="hm-num">' + (r.res ? esc(r.res) : '—') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    if (sel.kind === 'actor') {
+      var a = actorById(sel.id);
+      return '<p class="hm-kick">ฝ่ายที่ ' + a.no + ' · ' + SIDE_TEXT[a.side] + ' · ' + esc(a.place) + '</p><h3 class="hm-h">' + esc(a.name) + '</h3>' +
+        '<p class="hm-role">' + esc(a.role) + '</p><p class="hm-duty">' + renderGlossary(a.duty) + '</p>' +
+        '<p class="hm-sec">SOP</p><ol class="hm-sop">' + a.sop.map(function (x) { return '<li>' + renderGlossary(x) + '</li>'; }).join('') + '</ol>' +
+        '<p class="hm-sec">KPI</p><table class="hm-kpi"><tbody>' + a.kpi.map(function (k) {
+          return '<tr><td>' + esc(k.t) + (k.risk ? ' <small>· Risk ' + k.risk.join(', ') + '</small>' : '') + '</td><td>' + esc(k.v) + '</td></tr>';
+        }).join('') + '</tbody></table>';
+    }
+    var h = hpById(sel.id);
+    var names = function (ids) { return ids.map(function (id) { var x = actorById(id); return '<span class="hm-who">' + x.no + ' ' + esc(x.name) + '</span>'; }).join(' + '); };
+    var flow = function (k, label) { return '<div class="hm-flow"><b>' + label + '</b><p>' + renderGlossary(h.flows[k]) + '</p></div>'; };
+    return '<p class="hm-kick">' + esc(h.label) + ' · ' + esc(h.where) + '</p><h3 class="hm-h">ส่งมอบความรับผิดชอบ</h3>' +
+      '<p class="hm-whos">' + names(h.from) + ' <span aria-hidden="true">→</span><span class="sr-only">ส่งให้</span> ' + names(h.to) + '</p>' +
+      '<div class="hm-flows">' + flow('i', 'Information · ข้อมูล') + flow('d', 'Document · เอกสาร') + flow('p', 'Physical · สินค้า') + flow('r', 'Responsibility · ความรับผิดชอบ') + '</div>' +
+      '<div class="hp-risk"><b>' + icon('alert') + ' ความเสี่ยงสำคัญ: ' + renderGlossary(h.risk.name) + '</b><p>' + renderGlossary(h.risk.why) + '</p>' +
+      '<small>Risk Register ข้อ ' + h.riskNo.join(', ') + '</small></div>' +
+      '<p class="hm-sec">หลักฐานที่ต้องมี</p><div class="doc-chips">' + h.evidence.map(function (e) { return '<span class="chip doc">' + renderGlossary(e) + '</span>'; }).join('') + '</div>';
+  }
+
+  // ทั้งหน้าต่าง (หัว + แท็บ + แผนภาพ + รายละเอียด)
+  function renderHmap(sel, tab) {
+    return '<div class="hm-head"><div class="hm-titles"><h2 id="hm-title">Handover Point · จุดเปลี่ยนความรับผิดชอบ</h2>' +
+      '<p>ส่งต่อทั้งข้อมูล เอกสาร สินค้า และความรับผิดชอบ · 8 ฝ่าย · 5 จุด (6 Interface)</p></div>' +
+      '<div class="hm-tabs" role="tablist" aria-label="เนื้อหาแผนผัง">' + renderHmTabs(tab) + '</div>' +
+      '<button type="button" class="hm-close" data-act="hmap-close" aria-label="ปิดแผนผัง Handover">' + icon('x') + '</button></div>' +
+      '<div class="hm-body"><div class="hm-col hm-left">' + renderHmChain(sel) + '</div>' +
+      '<div class="hm-col hm-detail" aria-live="polite">' + renderHmDetail(sel, tab) + '</div></div>';
   }
 
   // แผง HOLD → VERIFY → CORRECT
@@ -6116,7 +6264,7 @@ var KoiUI = (function () {
       '<p class="p-step">ขั้นที่ ' + s.n + ' จาก ' + n + '</p>' +
       '<h2>' + esc(s.name) + '</h2>' + body +
       '<div class="present-foot"><span class="kbd">←</span><span class="kbd">→</span> เปลี่ยนขั้น <span class="kbd">Space</span> เล่น/หยุด ' +
-      '<span class="kbd">Esc</span> ออก <button type="button" class="p-exit" data-act="present">ออก</button></div>' +
+      '<span class="kbd">H</span> แผนผัง Handover <span class="kbd">Esc</span> ออก <button type="button" class="p-exit" data-act="present">ออก</button></div>' +
       '<div class="present-progress" aria-hidden="true"><i style="width:' + Math.round((S.idx + 1) / n * 100) + '%"></i></div>';
   }
 
@@ -6190,7 +6338,7 @@ var KoiUI = (function () {
   }
 
   // ปุ่มคีย์บอร์ด -> คำสั่ง (ไม่รู้จัก = null)
-  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', Escape: 'present', Enter: 'start' };
+  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', h: 'hmap', H: 'hmap', Escape: 'present', Enter: 'start' };
   function keyToAction(key) { return Object.prototype.hasOwnProperty.call(KEYS, key) ? KEYS[key] : null; }
   // ช่วงเวลาระหว่างขั้นตอนตอนเล่นอัตโนมัติ: โหมดนำเสนอช้าลง 2 เท่าให้ผู้พูดอธิบายทัน
   function playIntervalMs(present) { return present ? 2200 : 1100; }
@@ -6240,6 +6388,44 @@ var KoiUI = (function () {
 
     function stopTimer() { if (timer) { clearTimeout(timer); timer = null; } }
     var lastHoldKey = null;
+
+    /* ---------- หน้าต่างแผนผัง Handover ---------- */
+    // hm.sel = จุด/ฝ่ายที่เลือก · hm.tab = แท็บ · hm.opener = ปุ่มที่กดเปิด (คืนโฟกัสตอนปิด)
+    var hm = { open: false, sel: { kind: 'hp', id: 'HP1' }, tab: 'hp', opener: null };
+    var HM_BLOCK = ['#topbar', '.howto', '#route', '.layout', '#present-side'];
+    function drawHmap(focusSel) {
+      var box = $('#hmap');
+      if (!box) return;
+      box.hidden = !hm.open;
+      root.classList.toggle('hmapping', hm.open);
+      HM_BLOCK.forEach(function (q) { var el = $(q); if (el) el.inert = hm.open || (q !== '#present-side' && welcome); });
+      if (!hm.open) { box.innerHTML = ''; return; }
+      box.innerHTML = renderHmap(hm.sel, hm.tab);
+      var f = focusSel ? box.querySelector(focusSel) : null;
+      (f || box.querySelector('.hm-close')).focus();
+    }
+    function openHmap(hpId, opener) {
+      if (hpId) { hm.sel = { kind: 'hp', id: hpId }; hm.tab = 'hp'; }
+      hm.open = true; hm.opener = opener || document.activeElement;
+      stopTimer(); render(); drawHmap(hpId ? '[data-hp="' + hpId + '"]' : null);
+    }
+    function closeHmap() {
+      hm.open = false; drawHmap();
+      var back = hm.opener && root.contains(hm.opener) && !hm.opener.disabled ? hm.opener : $('#hmap-btn');
+      if (back && back.focus) back.focus();
+    }
+    // คลิกภายในหน้าต่าง: แท็บ / จุดส่งมอบ / ฝ่าย / ปิด
+    function hmClick(d) {
+      if (d.act === 'hmap-close') { closeHmap(); return; }
+      if (d.ht) {
+        hm.tab = d.ht;
+        if (hm.tab === 'hp' && hm.sel.kind !== 'hp') hm.sel = { kind: 'hp', id: 'HP1' };
+        if (hm.tab === 'actor' && hm.sel.kind !== 'actor') hm.sel = { kind: 'actor', id: 'shipper' };
+        drawHmap('[data-ht="' + d.ht + '"]'); return;
+      }
+      if (d.hp) { hm.sel = { kind: 'hp', id: d.hp }; hm.tab = 'hp'; drawHmap('[data-hp="' + d.hp + '"]'); return; }
+      if (d.actor) { hm.sel = { kind: 'actor', id: d.actor }; hm.tab = 'actor'; drawHmap('[data-actor="' + d.actor + '"]'); }
+    }
     // เลื่อนกล่องที่เลื่อนได้ (#facts บนจอใหญ่ · แผ่นข้อมูลบนมือถือ) ให้ปุ่มตัดสินใจอยู่ราวหนึ่งในสี่จากบน
     // คำนวณเองแทน scrollIntoView เพราะบนมือถือ scrollIntoView จะพาทั้งหน้าเลื่อนหนีภาพ 3 มิติ
     function revealHoldAct() {
@@ -6348,6 +6534,7 @@ var KoiUI = (function () {
       if (a === 'start') { startTracking(); return; }
       if (welcome && a === 'present') { welcome = false; S.overview = false; togglePresentation(); return; }
       if (welcome && !welcomeAllows(a)) return;
+      if (a === 'hmap') { if (hm.open) closeHmap(); else openHmap(); return; }
       if (a === 'next' || a === 'prev') runAction(S, a);
       else if (a === 'play') { if (L.canAdvance(S) || timer) { togglePlay(); return; } }
       else if (a === 'present') { if (a === 'present') { togglePresentation(); return; } }
@@ -6362,6 +6549,8 @@ var KoiUI = (function () {
       if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
       var a = keyToAction(e.key);
       if (!a) return;
+      // หน้าต่างแผนผังเปิดอยู่: Esc หรือ H ปิด · คีย์อื่นไม่ไปขยับฉากด้านหลัง
+      if (hm.open) { if (e.key === 'Escape' || a === 'hmap') { e.preventDefault(); closeHmap(); } return; }
       if (a === 'present' && e.key === 'Escape' && !present) return; // Esc ใช้ออกจากโหมดนำเสนอเท่านั้น
       if (e.key === ' ' && tg === 'BUTTON') return; // ปล่อยให้ปุ่มที่โฟกัสอยู่ทำงานตามปกติ
       if (a === 'start' && (!welcome || tg === 'BUTTON')) return; // Enter ใช้เริ่มเฉพาะตอนหน้าต้อนรับเปิด (ปุ่มที่โฟกัสกด Enter เองได้)
@@ -6378,10 +6567,13 @@ var KoiUI = (function () {
       }
       if (!el || el.disabled) return;
       var d = el.dataset;
+      if (el.closest('#hmap')) { hmClick(d); return; }
       if (welcome && !welcomeAllows(d.act)) return;
+      if (d.act === 'hmap') { openHmap(d.hp, el); return; }
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
-      else if (d.act === 'sheet' || d.act === 'sheet-grab') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
+      else if (d.act === 'sheet' || d.act === 'sheet-grab') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }
+      else if (d.station != null) { L.goTo(S, D.STATIONS[+d.station].first); S.overview = false; }
       else if (d.sc != null) { stopTimer(); S = L.newState(+d.sc); riskOpen = false; }
       else if (d.opt != null) { L.correct(S, +d.opt); }
       else if (d.act === 'next') { L.next(S); }
@@ -6434,7 +6626,7 @@ var KoiUI = (function () {
 
   return {
     initTheme: initTheme, toggleTheme: toggleTheme, currentTheme: currentTheme,
-    esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderChecklist: renderChecklist, progressDone: progressDone, renderHandover: renderHandover, renderCard: renderCard,
+    esc: esc, renderGlossary: renderGlossary, renderRoute: renderRoute, renderChecklist: renderChecklist, progressDone: progressDone, renderHandover: renderHandover, renderHmTabs: renderHmTabs, renderHmChain: renderHmChain, renderHmDetail: renderHmDetail, renderHmap: renderHmap, renderCard: renderCard,
     renderStatus: renderStatus,
     renderTimeBadge: renderTimeBadge, renderFacts: renderFacts, renderMore: renderMore,
     renderHold: renderHold, renderEnd: renderEnd, MOBILE_MQ: MOBILE_MQ, sheetSnap: sheetSnap, renderSheetHead: renderSheetHead, renderSheetTabs: renderSheetTabs,
