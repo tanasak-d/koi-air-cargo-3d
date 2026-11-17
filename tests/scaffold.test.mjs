@@ -96,7 +96,7 @@ test('เลย์เอาต์ B: มีเวที (การ์ดลอ�
 });
 
 test('เลย์เอาต์ B: วิธีใช้บอกคีย์ลัดครบ (← → Space P T O)', () => {
-  const how = /<details class="card howto">([\s\S]*?)<\/details>/.exec(readHtml())[1];
+  const how = /<div id="howto"[^>]*>([\s\S]*?)<\/div>/.exec(readHtml())[1];
   assert.match(how, /คีย์ลัด/);
   for (const k of ['←', '→', 'Space', 'P', 'T', 'O']) assert.ok(how.includes(k), k);
 });

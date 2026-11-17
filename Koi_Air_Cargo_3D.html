@@ -343,6 +343,17 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .sheet-tabs button{padding:4px 12px;font-size:.88rem;white-space:nowrap}
 .sheet-tabs button[aria-selected="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .sheet-risk .risk-menu summary{display:none}
+.panel-body{display:flex;flex-direction:column;gap:inherit;flex:1 1 auto;min-height:0}
+/* จอคอม/แท็บเล็ต (Stage 3): แผงขวาเป็นแท็บ ขั้นนี้ / เส้นทาง 17 ขั้น / สถานการณ์เสี่ยง · เลื่อนในกล่องเดียว */
+@media (min-width:768px) and (min-height:501px){
+  #sheet-tabs{display:block}
+  .panel-inner{overflow:auto;gap:10px}
+  .panel-inner #facts,.panel-inner #timeline{max-height:none;overflow:visible;flex:none;min-height:0}
+  .panel[data-tab="route"] #facts,.panel[data-tab="risk"] #facts{display:none}
+  .panel:not([data-tab="route"]) #timeline{display:none}
+  .panel[data-tab="risk"] .sheet-risk{display:block}
+  .panel-title{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
 /* ---- โหมดนำเสนอ: ตัวอักษรใหญ่ ซ่อนเมนูเหตุการณ์และคำอธิบายรอง ภาพกว้างขึ้น ---- */
 /* V6: เต็มจอ ภาพ 3 มิติซ้าย แผงดำขวา ซ่อนแถบบน/แถบเส้นทาง/แผงติดตาม/แถบเล่น (คุมด้วยคีย์บอร์ดหรือรีโมตพรีเซนต์) */
 #app.present{max-width:none;padding:0;display:block}
@@ -353,7 +364,13 @@ button[disabled]{opacity:.55;cursor:not-allowed}
   overflow:auto;font-size:clamp(1.05rem,1.5vw,1.45rem);line-height:1.45}
 .present-side[hidden]{display:none}
 .present-side .eyebrow{color:#c8c8c8;font-size:.8em}
-.present-side .p-step{margin:0;color:#c8c8c8;font-weight:700;font-size:.85em}
+.present-side .p-step{margin:0;color:#c8c8c8;font-weight:600;font-size:.85em}
+.p-chips{margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.present-side .chip{background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:999px;font-size:.8em;padding:4px 14px}
+.present-side .chip.bad{border-color:#ff8a80;color:#ffb4ab}
+.present-side .chip.warn{border-color:#ffd166;color:#ffe08a}
+.p-hp{margin:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:.85em;color:#e0e0e0}
+.present-side .p-hp .hp-tag{border:2px solid #fff;border-radius:6px;padding:0 8px;font-weight:600;color:#fff;background:transparent;font-size:1em}
 .present-side h2{margin:0;font-size:1.9em;line-height:1.2}
 .big-facts{display:grid;gap:14px}
 .big-facts>div{display:flex;gap:14px;align-items:flex-start}
@@ -398,7 +415,12 @@ button[disabled]{opacity:.55;cursor:not-allowed}
 .w-keys{margin:12px 0 0;font-size:.8rem;color:var(--muted)}
 /* จอแคบ: การ์ดเต็มกว้าง เงาด้านหลังทึบขึ้น */
 @media (max-width:767px){.welcome{background:rgba(0,0,0,.45);padding:24px 12px}.w-inner{padding:20px;border-radius:24px}}
-.howto summary{cursor:pointer;font-weight:600}
+/* วิธีใช้ = ป๊อปโอเวอร์จากปุ่ม ? บนแถบบน (Stage 3) */
+.howto{position:fixed;top:72px;right:16px;z-index:7;width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 96px);max-height:calc(100dvh - 96px);overflow:auto;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,.18)}
+.howto[hidden]{display:none}
+.howto-h{margin:0;font-size:1rem;font-weight:600}
+.icon-btn{width:40px;min-width:40px;padding:0;justify-content:center;display:inline-grid;place-items:center}
+.icon-btn[aria-expanded="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .howto ul{margin:8px 0 0;padding-left:20px}
 /* ---- ส่วนประกอบของแผงต่าง ๆ (เพิ่มใน Task 6) ---- */
 .sep{color:var(--muted)}
@@ -596,21 +618,22 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
       <span id="status" class="status" role="status"></span>
       <button id="hmap-btn" type="button" data-act="hmap"><svg class="ico" aria-hidden="true"><use href="#i-map"/></svg> แผนผัง Handover</button>
       <button id="present-btn" type="button" data-act="present"><svg class="ico" aria-hidden="true"><use href="#i-screen"/></svg> โหมดนำเสนอ</button>
+      <button id="help-btn" class="icon-btn" type="button" data-act="help" aria-expanded="false" aria-controls="howto" aria-label="วิธีใช้" title="วิธีใช้ (?)"><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg></button>
       <button id="theme-btn" type="button" aria-label="สลับธีมสว่าง/มืด"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg> ธีม</button>
     </div>
   </header>
-  <details class="card howto">
-    <summary><svg class="ico" aria-hidden="true"><use href="#i-help"/></svg> วิธีใช้</summary>
+  <div id="howto" class="card howto" role="dialog" aria-labelledby="howto-h" tabindex="-1" hidden>
+    <h2 id="howto-h" class="howto-h">วิธีใช้</h2>
     <ul>
       <li>กด <b>▶ เล่น</b> หรือ <b>ถัดไป</b> เพื่อดูกล่องปลาเดินทางจากผู้ส่งถึงผู้รับ (17 ขั้นตอน 6 สถานี) กล้องจะเลื่อนไปจับจุดที่กำลังทำงานเอง</li>
       <li>แถบเส้นทางด้านบนบอกว่าตอนนี้อยู่สถานีไหน (วงดำเต็ม = ผ่านแล้ว · วงมีวงรอบ + "ตอนนี้" = ตอนนี้) กดชื่อสถานีหรือขีดบนแถบเวลาเพื่อข้ามไปดู</li>
       <li>ลากเมาส์หรือนิ้วบนภาพเพื่อหมุนดูรอบ ๆ · ล้อเมาส์หรือสองนิ้วเพื่อซูม (ปล่อยไว้สักพักกล้องจะกลับมุมเดิม)</li>
-      <li>การ์ดด้านขวาบอกว่าใครทำ ทำอะไร เอกสาร ความเสี่ยง · บนมือถือลากแผ่นข้อมูลด้านล่างขึ้น (หรือกดที่จับ) เพื่อดูรายละเอียด</li>
+      <li>แผงด้านขวามี 3 แท็บ: รายละเอียด (ใครทำ ทำอะไร เอกสาร ความเสี่ยง) · เส้นทาง 17 ขั้น · สถานการณ์เสี่ยง · บนมือถือลากแผ่นข้อมูลด้านล่างขึ้น (หรือกดที่จับ) เพื่อดูรายละเอียด</li>
       <li>เลือก <b>เหตุการณ์</b> มุมขวาบนของภาพเพื่อลองสถานการณ์เสี่ยง กล่องจะค้างที่ด่าน แล้วให้ตัดสินใจ HOLD → VERIFY → CORRECT</li>
       <li>กด <b>โหมดนำเสนอ</b> เมื่อฉายหน้าห้อง · สลับธีมสว่าง/มืดที่ปุ่มมุมขวาบน</li>
     </ul>
-    <p class="muted keys">คีย์ลัด: Enter เริ่ม · ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · Esc ออก · T สลับธีม · O ภาพรวม</p>
-  </details>
+    <p class="muted keys">คีย์ลัด: Enter เริ่ม · ← → ก่อน/ถัดไป · Space เล่น/หยุด · P โหมดนำเสนอ · Esc ออก · T สลับธีม · O ภาพรวม · H แผนผัง Handover · ? วิธีใช้</p>
+  </div>
   <nav id="route" class="route-wrap" aria-label="เส้นทาง 6 สถานี"></nav>
   <main class="layout">
     <section id="stage" aria-label="ฉาก 3 มิติของขั้นปัจจุบัน">
@@ -626,9 +649,11 @@ abbr[title]{text-decoration:underline dotted var(--accent);cursor:help}
         <div id="sheet-ctrl" class="sheet-ctrl"></div>
         <div id="sheet-tabs"></div>
         <h2 class="panel-title">ติดตามการขนส่ง</h2>
-        <section id="facts" aria-live="polite"></section>
-        <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
-        <div id="sheet-risk" class="sheet-risk"></div>
+        <div id="panel-body" class="panel-body" role="tabpanel" aria-label="ข้อมูลตามแท็บที่เลือก">
+          <section id="facts" aria-live="polite"></section>
+          <nav id="timeline" aria-label="17 ขั้นตอน แบ่งเป็น 6 สถานี"></nav>
+          <div id="sheet-risk" class="sheet-risk"></div>
+        </div>
       </div>
     </aside>
   </main>
@@ -6252,6 +6277,14 @@ var KoiUI = (function () {
 
   // แผงขวาของโหมดนำเสนอ (โปรเจกเตอร์): ตัวใหญ่ พื้นดำ อ่านจากท้ายห้องได้ + แถบความคืบหน้าล่างสุด
   // ระหว่างค้าง (HOLD) หรือจบแล้ว แสดงแผงตัดสินใจ/สรุปแทนข้อมูลขั้น
+  // โหมดนำเสนอ V7: แคปซูลเวลา + ชิปอายุถุง + ป้ายจุดส่งมอบ (เฉพาะขั้นที่มี Handover)
+  function presentChips(S) {
+    var bag = bagLine(S), h = handoverAt(S.idx);
+    var who = function (ids) { return ids.map(function (id) { return esc(actorName(id)); }).join(' + '); };
+    return '<p class="p-chips"><span class="chip">' + icon('clock') + ' ' + esc(shortTime(S, S.idx)) + '</span>' +
+      (bag ? '<span class="chip ' + (bag.kind === 'done' ? 'ok' : bag.kind) + '">ถุง ' + (bag.age / 60).toFixed(1) + '/' + limH() + ' ชม. · ' + bag.short + '</span>' : '') + '</p>' +
+      (h ? '<p class="p-hp"><span class="hp-tag">' + esc(h.id) + '</span><span>' + esc(h.label) + ' · ' + who(h.from) + ' → ' + who(h.to) + '</span></p>' : '');
+  }
   function renderPresentSide(S) {
     var s = D.STEPS[S.idx], k = L.stationOf(S.idx), n = D.STEPS.length;
     var big = function (ic, label, body) {
@@ -6264,7 +6297,7 @@ var KoiUI = (function () {
     }
     return '<p class="eyebrow">สถานี ' + (k + 1) + ' จาก ' + D.STATIONS.length + ' · ' + esc(D.STATIONS[k].label) + '</p>' +
       '<p class="p-step">ขั้นที่ ' + s.n + ' จาก ' + n + '</p>' +
-      '<h2>' + esc(s.name) + '</h2>' + body +
+      '<h2>' + esc(s.name) + '</h2>' + presentChips(S) + body +
       '<div class="present-foot"><span class="kbd">←</span><span class="kbd">→</span> เปลี่ยนขั้น <span class="kbd">Space</span> เล่น/หยุด ' +
       '<span class="kbd">H</span> แผนผัง Handover <span class="kbd">Esc</span> ออก <button type="button" class="p-exit" data-act="present">ออก</button></div>' +
       '<div class="present-progress" aria-hidden="true"><i style="width:' + Math.round((S.idx + 1) / n * 100) + '%"></i></div>';
@@ -6306,8 +6339,8 @@ var KoiUI = (function () {
 
   var SHEET_TABS = [['detail', 'รายละเอียด'], ['route', 'เส้นทาง 17 ขั้น'], ['risk', 'สถานการณ์เสี่ยง']];
   function renderSheetTabs(tab) {
-    return '<div class="sheet-tabs" role="tablist">' + SHEET_TABS.map(function (t) {
-      return '<button type="button" role="tab" data-sheet="' + t[0] + '" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
+    return '<div class="sheet-tabs" role="tablist" aria-label="ข้อมูลในแผง">' + SHEET_TABS.map(function (t) {
+      return '<button type="button" role="tab" data-sheet="' + t[0] + '" aria-controls="panel-body" aria-selected="' + (t[0] === tab) + '">' + t[1] + '</button>';
     }).join('') + '</div>';
   }
 
@@ -6340,7 +6373,7 @@ var KoiUI = (function () {
   }
 
   // ปุ่มคีย์บอร์ด -> คำสั่ง (ไม่รู้จัก = null)
-  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', h: 'hmap', H: 'hmap', Escape: 'present', Enter: 'start' };
+  var KEYS = { ArrowRight: 'next', ArrowLeft: 'prev', ' ': 'play', p: 'present', P: 'present', t: 'theme', T: 'theme', o: 'overview', O: 'overview', h: 'hmap', H: 'hmap', '?': 'help', Escape: 'present', Enter: 'start' };
   function keyToAction(key) { return Object.prototype.hasOwnProperty.call(KEYS, key) ? KEYS[key] : null; }
   // ช่วงเวลาระหว่างขั้นตอนตอนเล่นอัตโนมัติ: โหมดนำเสนอช้าลง 2 เท่าให้ผู้พูดอธิบายทัน
   function playIntervalMs(present) { return present ? 2200 : 1100; }
@@ -6532,11 +6565,24 @@ var KoiUI = (function () {
       render();
       var play = $('[data-act="play"]'); if (play) play.focus();
     }
+    // ป๊อปโอเวอร์วิธีใช้ (ปุ่ม ? บนแถบบน): เปิดแล้วโฟกัสเข้า · ปิดแล้วคืนโฟกัสที่ปุ่ม
+    var helpOpen = false;
+    function setHelp(open, back) {
+      var hw = root.querySelector('#howto'), hb = root.querySelector('#help-btn');
+      if (!hw) return;
+      helpOpen = open; hw.hidden = !open;
+      // วางใต้แถบบนเสมอ (แถบบนตัดเป็น 2 แถวบนแท็บเล็ต)
+      var tb = root.querySelector('#topbar');
+      if (open && tb) hw.style.top = Math.max(8, Math.round(tb.getBoundingClientRect().bottom) + 8) + 'px';
+      if (hb) hb.setAttribute('aria-expanded', String(open));
+      if (open) hw.focus(); else if (back && hb) hb.focus();
+    }
     function doAction(a) {
       if (a === 'start') { startTracking(); return; }
+      if (a === 'help') { if (!welcome) setHelp(!helpOpen, true); return; }
       if (welcome && a === 'present') { welcome = false; S.overview = false; togglePresentation(); return; }
       if (welcome && !welcomeAllows(a)) return;
-      if (a === 'hmap') { if (hm.open) closeHmap(); else openHmap(); return; }
+      if (a === 'hmap') { setHelp(false); if (hm.open) closeHmap(); else openHmap(); return; }
       if (a === 'next' || a === 'prev') runAction(S, a);
       else if (a === 'play') { if (L.canAdvance(S) || timer) { togglePlay(); return; } }
       else if (a === 'present') { if (a === 'present') { togglePresentation(); return; } }
@@ -6553,6 +6599,7 @@ var KoiUI = (function () {
       if (!a) return;
       // หน้าต่างแผนผังเปิดอยู่: Esc หรือ H ปิด · คีย์อื่นไม่ไปขยับฉากด้านหลัง
       if (hm.open) { if (e.key === 'Escape' || a === 'hmap') { e.preventDefault(); closeHmap(); } return; }
+      if (helpOpen && e.key === 'Escape') { e.preventDefault(); setHelp(false, true); return; }
       if (a === 'present' && e.key === 'Escape' && !present) return; // Esc ใช้ออกจากโหมดนำเสนอเท่านั้น
       if (e.key === ' ' && tg === 'BUTTON') return; // ปล่อยให้ปุ่มที่โฟกัสอยู่ทำงานตามปกติ
       if (a === 'start' && (!welcome || tg === 'BUTTON')) return; // Enter ใช้เริ่มเฉพาะตอนหน้าต้อนรับเปิด (ปุ่มที่โฟกัสกด Enter เองได้)
@@ -6562,6 +6609,8 @@ var KoiUI = (function () {
 
     root.addEventListener('click', function (e) {
       var el = e.target.closest ? e.target.closest('button') : null;
+      // กดนอกป๊อปโอเวอร์วิธีใช้ = ปิด
+      if (helpOpen && !e.target.closest('#howto') && !(el && el.id === 'help-btn')) setHelp(false);
       // กดที่ตัวการ์ดลอย (ไม่ใช่ปุ่ม/ศัพท์) ตอนแผ่นปิด = เปิดแผ่นข้อมูล (ปุ่มจริงสำหรับคีย์บอร์ดคือ .sheet-toggle)
       if (!el && !sheetOpen && e.target.closest && e.target.closest('.sh-card') && !e.target.closest('abbr')) {
         if (dragMoved) { dragMoved = false; return; }
@@ -6571,7 +6620,8 @@ var KoiUI = (function () {
       var d = el.dataset;
       if (el.closest('#hmap')) { hmClick(d); return; }
       if (welcome && !welcomeAllows(d.act)) return;
-      if (d.act === 'hmap') { openHmap(d.hp, el); return; }
+      if (d.act === 'help') { setHelp(!helpOpen, true); return; }
+      if (d.act === 'hmap') { setHelp(false); openHmap(d.hp, el); return; }
       if (d.step != null) { L.goTo(S, +d.step); S.overview = false; }
       else if (d.sheet != null) { sheetTab = d.sheet; sheetOpen = true; }
       else if (d.act === 'sheet' || d.act === 'sheet-grab') { if (dragMoved) { dragMoved = false; return; } sheetOpen = !sheetOpen; }
