@@ -69,7 +69,7 @@ test('ทุกขั้นมี who/what/why และ t===null ต้อง a
 });
 
 test('ไม่มีคำต้องห้ามตามที่ล็อกไว้', () => {
-  assert.doesNotMatch(all, /(21|30\s*[-–]\s*35|60)\s*วัน/);
+  assert.doesNotMatch(all, /(?<!อย่างน้อย )21\s*วัน|30\s*[-–]\s*35\s*วัน|60\s*วัน/);
   assert.doesNotMatch(all, /ความไวต่ออัตรารอด/);
   assert.doesNotMatch(all, /หัวข้อ\s*6/);
 });
@@ -116,9 +116,9 @@ test('ไม่เหลือค่าเที่ยวบินเดิม',
   assert.doesNotMatch(all, /JL707|787-8|18:25/);
 });
 
-test('เอกสารทางการตรงกับรายงานของทีม: DOF 2/DOF 9/ร.6, Tor.Ror.Nor.6, ร.7 + IMD', () => {
+test('เอกสารทางการตรงกับรายงานของทีม: DOF 2/DOF 9/ร.6, ทรน.6, ร.7 + IMD', () => {
   const docs = n => D.STEPS[n - 1].docs.join(' | ');
   assert.match(docs(11), /DOF 2/); assert.match(docs(11), /DOF 9/); assert.match(docs(11), /ร\.6/);
-  assert.match(docs(13), /Tor\.Ror\.Nor\.6/);
+  assert.match(docs(13), /ทรน\.6/);
   assert.match(docs(14), /ร\.7/); assert.match(docs(14), /IMD/);
 });

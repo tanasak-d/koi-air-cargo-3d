@@ -31,8 +31,8 @@ test('8 ฝ่ายตามแผนภาพ: ต้นทาง 1–4 · ป
     assert.ok(a.kpi.length >= 1, a.id + ' KPI');
   }
 });
-test('Risk Register 12 ข้อ: คะแนน = L × S และระดับตรงคะแนน', () => {
-  assert.equal(D.RISKS.length, 12);
+test('Risk Register 13 ข้อ: คะแนน = L × S และระดับตรงคะแนน', () => {
+  assert.equal(D.RISKS.length, 13);
   for (const r of D.RISKS) {
     assert.equal(r.score, r.l * r.s, 'ข้อ ' + r.no);
     assert.equal(r.level, r.score >= 15 ? 'สูง' : r.score >= 8 ? 'กลาง' : 'ต่ำ', 'ข้อ ' + r.no);

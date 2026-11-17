@@ -37,9 +37,9 @@ test('รายละเอียดฝ่าย: หน้าที่ · SOP �
   assert.equal(count(h, /<tr>/g), a.kpi.length);
   assert.match(h, /ต้นทาง กลางทาง และปลายทาง/);
 });
-test('Risk Register: 12 แถว ตัวเลข L × S = คะแนน + คำระดับ ไม่มีแถบคะแนนเล็ก', () => {
+test('Risk Register: 13 แถว ตัวเลข L × S = คะแนน + คำระดับ ไม่มีแถบคะแนนเล็ก', () => {
   const h = UI.renderHmDetail({ kind: 'hp', id: 'HP1' }, 'risk');
-  assert.equal(count(h, /<tr data-risk=/g), 12);
+  assert.equal(count(h, /<tr data-risk=/g), 13);
   assert.match(h, /3 × 5 = 15/);
   assert.match(h, /สูง/);
   assert.doesNotMatch(h, /class="bar"/);

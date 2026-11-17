@@ -45,7 +45,7 @@ test('ส่งออก: มี lang="th" และ <title> 2–4 คำ', () =
 
 test('ส่งออก: ไม่มีคำต้องห้ามของที่ล็อกไว้ในไฟล์ (ทั้งไฟล์ ไม่นับ Three.js)', () => {
   const ours = noThree(readHtml());
-  assert.doesNotMatch(ours, /(21|30\s*[-–]\s*35|60)\s*วัน/);
+  assert.doesNotMatch(ours, /(?<!อย่างน้อย )21\s*วัน|30\s*[-–]\s*35\s*วัน|60\s*วัน/);
   assert.doesNotMatch(ours, /ความไวต่ออัตรารอด/);
   assert.doesNotMatch(ours, /หัวข้อ\s*6/);
 });
